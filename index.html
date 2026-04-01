@@ -8,463 +8,85 @@
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Cinzel:wght@400;600&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
 <style>
 *{margin:0;padding:0;box-sizing:border-box;}
-
-:root{
-–green:#0f2219;
-–green-mid:#1a3a2a;
-–gold:#c9a84c;
-–paper:#f5f0e8;
-–paper2:#ece5d0;
-–ink:#1a1208;
-–bg:#e8e0cc;
-}
-
-body{
-background:var(–bg);
-min-height:100vh;
-font-family:‘EB Garamond’,serif;
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-overflow:hidden;
-}
-
-/* ===== COVER SCREEN ===== */
-#cover-screen{
-display:flex;
-flex-direction:column;
-align-items:center;
-justify-content:center;
-width:100vw;
-height:100vh;
-}
-
-.book-cover{
-width:min(260px, 55vw);
-aspect-ratio: 0.7;
-background:var(–green);
-border-radius:3px 8px 8px 3px;
-box-shadow: -6px 0 0 #060f0a, 6px 6px 20px rgba(0,0,0,0.4), 20px 20px 60px rgba(0,0,0,0.3);
-display:flex;
-align-items:center;
-justify-content:center;
-cursor:pointer;
-transition:transform 0.3s ease, box-shadow 0.3s ease;
-position:relative;
-border:1px solid #2a5a3a;
-}
-
-.book-cover::before{
-content:’’;
-position:absolute;
-inset:10px;
-border:1px solid rgba(201,168,76,0.25);
-pointer-events:none;
-}
-
-.book-cover::after{
-content:’’;
-position:absolute;
-inset:14px;
-border:1px solid rgba(201,168,76,0.12);
-pointer-events:none;
-}
-
-.book-cover:hover{
-transform:translateY(-6px) rotate(-0.5deg);
-box-shadow: -6px 0 0 #060f0a, 8px 14px 30px rgba(0,0,0,0.5), 24px 24px 70px rgba(0,0,0,0.35);
-}
-
-.cover-inner{
-text-align:center;
-z-index:1;
-padding:20px;
-}
-
-.cover-orn{color:var(–gold);font-size:1.2rem;display:block;margin-bottom:14px;}
-.cover-title{font-family:‘Cinzel Decorative’,serif;font-size:clamp(1rem,4vw,1.3rem);color:var(–gold);line-height:1.35;text-shadow:0 0 20px rgba(201,168,76,0.3);}
-.cover-div{width:50px;height:1px;background:linear-gradient(90deg,transparent,var(–gold),transparent);margin:12px auto;}
-.cover-years{font-family:‘Cinzel’,serif;font-size:0.65rem;color:rgba(201,168,76,0.65);letter-spacing:0.3em;}
-.cover-orn-b{color:var(–gold);font-size:1.2rem;display:block;margin-top:14px;transform:rotate(180deg);}
-
-.open-hint{
-margin-top:24px;
-font-family:‘Cinzel’,serif;
-font-size:0.6rem;
-letter-spacing:0.35em;
-color:rgba(26,18,8,0.4);
-text-transform:uppercase;
-animation:hint 2s ease-in-out infinite;
-}
-
+:root{--green:#0f2219;--green-mid:#1a3a2a;--gold:#c9a84c;--paper:#f5f0e8;--paper2:#ece5d0;--ink:#1a1208;--bg:#e8e0cc;}
+body{background:var(--bg);min-height:100vh;font-family:'EB Garamond',serif;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+#cover-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100vw;height:100vh;}
+.book-cover{width:min(260px,55vw);aspect-ratio:0.7;background:var(--green);border-radius:3px 8px 8px 3px;box-shadow:-6px 0 0 #060f0a,6px 6px 20px rgba(0,0,0,0.4),20px 20px 60px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.3s ease,box-shadow 0.3s ease;position:relative;border:1px solid #2a5a3a;}
+.book-cover::before{content:'';position:absolute;inset:10px;border:1px solid rgba(201,168,76,0.25);pointer-events:none;}
+.book-cover::after{content:'';position:absolute;inset:14px;border:1px solid rgba(201,168,76,0.12);pointer-events:none;}
+.book-cover:hover{transform:translateY(-6px) rotate(-0.5deg);box-shadow:-6px 0 0 #060f0a,8px 14px 30px rgba(0,0,0,0.5),24px 24px 70px rgba(0,0,0,0.35);}
+.cover-inner{text-align:center;z-index:1;padding:20px;}
+.cover-orn{color:var(--gold);font-size:1.2rem;display:block;margin-bottom:14px;}
+.cover-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1rem,4vw,1.3rem);color:var(--gold);line-height:1.35;text-shadow:0 0 20px rgba(201,168,76,0.3);}
+.cover-div{width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:12px auto;}
+.cover-years{font-family:'Cinzel',serif;font-size:0.65rem;color:rgba(201,168,76,0.65);letter-spacing:0.3em;}
+.cover-orn-b{color:var(--gold);font-size:1.2rem;display:block;margin-top:14px;transform:rotate(180deg);}
+.open-hint{margin-top:24px;font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.35em;color:rgba(26,18,8,0.4);text-transform:uppercase;animation:hint 2s ease-in-out infinite;}
 @keyframes hint{0%,100%{opacity:0.4}50%{opacity:0.9}}
-
-/* ===== READER (MOBILE-FIRST) ===== */
-#reader{
-display:none;
-position:fixed;
-inset:0;
-background:var(–paper);
-flex-direction:column;
-z-index:100;
-}
-
-.reader-header{
-background:var(–green);
-padding:12px 16px;
-display:flex;
-align-items:center;
-justify-content:space-between;
-flex-shrink:0;
-}
-
-.reader-title{
-font-family:‘Cinzel’,serif;
-font-size:0.6rem;
-letter-spacing:0.3em;
-color:var(–gold);
-text-transform:uppercase;
-}
-
-.header-btn{
-background:transparent;
-border:1px solid rgba(201,168,76,0.4);
-color:var(–gold);
-font-family:‘Cinzel’,serif;
-font-size:0.6rem;
-letter-spacing:0.1em;
-padding:5px 12px;
-border-radius:3px;
-cursor:pointer;
-}
-
-.reader-body{
-flex:1;
-overflow-y:auto;
-padding:32px 24px 20px;
--webkit-overflow-scrolling:touch;
-}
-
-.reader-body .page-html{
-max-width:640px;
-margin:0 auto;
-color:var(–ink);
-font-size:1.05rem;
-line-height:1.85;
-}
-
-.reader-body .page-html h2{
-font-family:‘Cinzel Decorative’,serif;
-font-size:clamp(1.4rem,6vw,2.2rem);
-color:var(–green);
-text-align:center;
-margin:24px 0 8px;
-}
-
-.reader-body .page-html .chnum{
-font-family:‘Cinzel’,serif;
-font-size:0.7rem;
-letter-spacing:0.4em;
-color:rgba(26,18,8,0.4);
-text-align:center;
-display:block;
-margin-bottom:8px;
-}
-
-.reader-body .page-html .chyears{
-font-style:italic;
-color:rgba(26,18,8,0.35);
-text-align:center;
-display:block;
-font-size:0.85rem;
-margin-bottom:8px;
-}
-
-.reader-body .page-html .chorn{
-text-align:center;
-color:rgba(26,18,8,0.15);
-font-size:1.4rem;
-margin:12px 0 24px;
-display:block;
-}
-
-.reader-body .page-html h3{
-font-family:‘Cinzel’,serif;
-font-size:0.75rem;
-letter-spacing:0.08em;
-color:var(–ink);
-margin:24px 0 10px;
-padding-bottom:6px;
-border-bottom:1px solid rgba(26,18,8,0.12);
-}
-
-.reader-body .page-html p{
-margin-bottom:12px;
-text-align:justify;
-hyphens:auto;
-}
-
-.reader-body .page-html .ded{
-text-align:center;
-font-style:italic;
-color:rgba(26,18,8,0.45);
-margin:40px 0;
-}
-
-.reader-body .page-html .final-block{
-text-align:center;
-padding:40px 0;
-}
-
-.reader-body .page-html .final-block .fin-orn{font-size:2rem;color:var(–green);display:block;margin-bottom:16px;}
-.reader-body .page-html .final-block .fin-title{font-family:‘Cinzel Decorative’,serif;font-size:1.6rem;color:var(–green);display:block;margin-bottom:12px;}
-.reader-body .page-html .final-block .fin-sub{font-style:italic;color:rgba(26,18,8,0.45);font-size:0.9rem;}
-
-.reader-footer{
-background:var(–paper2);
-border-top:1px solid rgba(26,18,8,0.1);
-padding:10px 20px;
-display:flex;
-align-items:center;
-justify-content:space-between;
-flex-shrink:0;
-}
-
-.foot-btn{
-background:var(–green);
-border:none;
-color:var(–gold);
-width:44px;
-height:44px;
-border-radius:50%;
-font-size:1.1rem;
-cursor:pointer;
-display:flex;
-align-items:center;
-justify-content:center;
-transition:opacity 0.2s;
-}
-
+#reader{display:none;position:fixed;inset:0;background:var(--paper);flex-direction:column;z-index:100;}
+.reader-header{background:var(--green);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.reader-title{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.3em;color:var(--gold);text-transform:uppercase;}
+.header-btn{background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.1em;padding:5px 12px;border-radius:3px;cursor:pointer;}
+.reader-body{flex:1;overflow-y:auto;padding:32px 24px 20px;-webkit-overflow-scrolling:touch;}
+.reader-body .pc{max-width:640px;margin:0 auto;color:var(--ink);font-size:1.05rem;line-height:1.85;}
+.reader-body .pc h2{font-family:'Cinzel Decorative',serif;font-size:clamp(1.4rem,6vw,2.2rem);color:var(--green);text-align:center;margin:24px 0 8px;}
+.reader-body .pc .chnum{font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.4em;color:rgba(26,18,8,0.4);text-align:center;display:block;margin-bottom:8px;}
+.reader-body .pc .chyears{font-style:italic;color:rgba(26,18,8,0.35);text-align:center;display:block;font-size:0.85rem;margin-bottom:8px;}
+.reader-body .pc .chorn{text-align:center;color:rgba(26,18,8,0.15);font-size:1.4rem;margin:12px 0 24px;display:block;}
+.reader-body .pc h3{font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.08em;color:var(--ink);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid rgba(26,18,8,0.12);}
+.reader-body .pc p{margin-bottom:12px;text-align:justify;hyphens:auto;}
+.reader-body .pc .ded{text-align:center;font-style:italic;color:rgba(26,18,8,0.45);margin:40px 0;}
+.reader-body .pc .fin-orn{font-size:2rem;color:var(--green);display:block;text-align:center;margin-bottom:16px;}
+.reader-body .pc .fin-title{font-family:'Cinzel Decorative',serif;font-size:1.6rem;color:var(--green);display:block;text-align:center;margin-bottom:12px;}
+.reader-body .pc .fin-sub{font-style:italic;color:rgba(26,18,8,0.45);font-size:0.9rem;text-align:center;display:block;}
+.reader-footer{background:var(--paper2);border-top:1px solid rgba(26,18,8,0.1);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+.foot-btn{background:var(--green);border:none;color:var(--gold);width:44px;height:44px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;}
 .foot-btn:disabled{opacity:0.25;cursor:default;}
-
-#page-num{
-font-family:‘Cinzel’,serif;
-font-size:0.62rem;
-letter-spacing:0.2em;
-color:rgba(26,18,8,0.45);
-}
-
-/* ===== DESKTOP BOOK VIEW ===== */
-#book-screen{
-display:none;
-position:fixed;
-inset:0;
-background:var(–bg);
-align-items:center;
-justify-content:center;
-flex-direction:column;
-z-index:100;
-}
-
-.book-ui{
-position:relative;
-width:min(800px, 90vw);
-height:min(520px, 70vh);
-}
-
-.book-spread{
-width:100%;
-height:100%;
-display:flex;
-border-radius:4px 4px 4px 4px;
-box-shadow:0 20px 80px rgba(0,0,0,0.35);
-overflow:hidden;
-position:relative;
-}
-
-.pg{
-width:50%;
-height:100%;
-background:var(–paper);
-padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);
-overflow:hidden;
-position:relative;
-display:flex;
-flex-direction:column;
-}
-
+#page-num{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.2em;color:rgba(26,18,8,0.45);}
+#book-screen{display:none;position:fixed;inset:0;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;z-index:100;}
+.book-ui{position:relative;width:min(800px,90vw);height:min(520px,70vh);}
+.book-spread{width:100%;height:100%;display:flex;border-radius:4px;box-shadow:0 20px 80px rgba(0,0,0,0.35);overflow:hidden;position:relative;}
+.pg{width:50%;height:100%;background:var(--paper);padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);overflow:hidden;position:relative;display:flex;flex-direction:column;}
 .pg-left{box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);}
 .pg-right{box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);}
-
-.spine-bar{
-width:20px;
-background:linear-gradient(90deg,#060f0a,#0f2219,#060f0a);
-flex-shrink:0;
-box-shadow:0 0 20px rgba(0,0,0,0.4);
-}
-
-/* Page content styles for desktop */
-.pg .pc{
-height:100%;
-color:var(–ink);
-font-size:clamp(0.7rem,1.3vw,0.88rem);
-line-height:1.75;
-overflow:hidden;
-}
-
-.pg .pc h3{
-font-family:‘Cinzel’,serif;
-font-size:clamp(0.55rem,0.9vw,0.7rem);
-letter-spacing:0.08em;
-margin-bottom:10px;
-padding-bottom:5px;
-border-bottom:1px solid rgba(26,18,8,0.12);
-color:var(–ink);
-}
-
-.pg .pc p{margin-bottom:7px;text-align:justify;hyphens:auto;}
-
-.pg .pc .ch-pg{
-height:100%;
-display:flex;flex-direction:column;
-align-items:center;justify-content:center;
-text-align:center;
-}
-
-.pg .pc .ch-pg .chnum{font-family:‘Cinzel’,serif;font-size:0.6rem;letter-spacing:0.4em;color:rgba(26,18,8,0.35);margin-bottom:10px;}
-.pg .pc .ch-pg h2{font-family:‘Cinzel Decorative’,serif;font-size:clamp(1.2rem,3vw,2rem);color:var(–green);margin-bottom:8px;}
-.pg .pc .ch-pg .chyears{font-style:italic;color:rgba(26,18,8,0.35);font-size:0.78rem;}
-.pg .pc .ch-pg .chorn{font-size:1.3rem;color:rgba(26,18,8,0.12);margin-top:14px;}
-
+.spine-bar{width:20px;background:linear-gradient(90deg,#060f0a,#0f2219,#060f0a);flex-shrink:0;box-shadow:0 0 20px rgba(0,0,0,0.4);}
+.pg .pc{height:100%;color:var(--ink);font-size:clamp(0.68rem,1.2vw,0.85rem);line-height:1.72;overflow:hidden;}
+.pg .pc h3{font-family:'Cinzel',serif;font-size:clamp(0.52rem,0.85vw,0.68rem);letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(26,18,8,0.12);color:var(--ink);}
+.pg .pc p{margin-bottom:6px;text-align:justify;hyphens:auto;}
+.pg .pc .ch-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+.pg .pc .ch-pg .chnum{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.4em;color:rgba(26,18,8,0.35);margin-bottom:10px;}
+.pg .pc .ch-pg h2{font-family:'Cinzel Decorative',serif;font-size:clamp(1.1rem,2.5vw,1.8rem);color:var(--green);margin-bottom:8px;}
+.pg .pc .ch-pg .chyears{font-style:italic;color:rgba(26,18,8,0.35);font-size:0.72rem;}
+.pg .pc .ch-pg .chorn{font-size:1.2rem;color:rgba(26,18,8,0.12);margin-top:14px;}
 .pg .pc .title-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-.pg .pc .title-pg h1{font-family:‘Cinzel Decorative’,serif;font-size:clamp(0.9rem,2vw,1.3rem);color:var(–green);margin-bottom:12px;line-height:1.35;}
-.pg .pc .title-pg .taut{font-family:‘Cinzel’,serif;font-size:0.6rem;letter-spacing:0.3em;color:rgba(26,18,8,0.45);margin-bottom:6px;}
-.pg .pc .title-pg .torn{font-size:1.2rem;color:var(–green);margin:10px 0;}
-.pg .pc .title-pg .tyrs{font-style:italic;color:rgba(26,18,8,0.3);font-size:0.75rem;}
-
+.pg .pc .title-pg h1{font-family:'Cinzel Decorative',serif;font-size:clamp(0.85rem,1.8vw,1.2rem);color:var(--green);margin-bottom:10px;line-height:1.35;}
+.pg .pc .title-pg .taut{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.3em;color:rgba(26,18,8,0.45);margin-bottom:6px;}
+.pg .pc .title-pg .torn{font-size:1.1rem;color:var(--green);margin:8px 0;}
+.pg .pc .title-pg .tyrs{font-style:italic;color:rgba(26,18,8,0.3);font-size:0.7rem;}
 .pg .pc .blank-pg{height:100%;display:flex;align-items:center;justify-content:center;}
 .pg .pc .ded{text-align:center;font-style:italic;color:rgba(26,18,8,0.4);font-size:0.85em;}
-
 .pg .pc .final-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-.pg .pc .final-pg .fin-orn{font-size:1.6rem;color:var(–green);margin-bottom:14px;}
-.pg .pc .final-pg .fin-title{font-family:‘Cinzel Decorative’,serif;font-size:clamp(0.9rem,2vw,1.4rem);color:var(–green);margin-bottom:10px;}
-.pg .pc .final-pg .fin-sub{font-style:italic;color:rgba(26,18,8,0.4);font-size:0.75em;max-width:180px;line-height:1.6;}
-
-.pg-num{position:absolute;bottom:10px;font-family:‘Cinzel’,serif;font-size:0.55rem;color:rgba(26,18,8,0.25);letter-spacing:0.15em;}
+.pg .pc .final-pg .fin-orn{font-size:1.5rem;color:var(--green);margin-bottom:12px;}
+.pg .pc .final-pg .fin-title{font-family:'Cinzel Decorative',serif;font-size:clamp(0.85rem,1.8vw,1.3rem);color:var(--green);margin-bottom:10px;}
+.pg .pc .final-pg .fin-sub{font-style:italic;color:rgba(26,18,8,0.4);font-size:0.72em;max-width:180px;line-height:1.6;}
+.pg-num{position:absolute;bottom:10px;font-family:'Cinzel',serif;font-size:0.52rem;color:rgba(26,18,8,0.25);letter-spacing:0.15em;}
 .pg-num.l{left:clamp(16px,3vw,40px);}
 .pg-num.r{right:clamp(16px,3vw,40px);}
-
-/* Flip animation */
-.flip-container{
-position:absolute;
-top:0;left:50%;
-width:50%;height:100%;
-transform-origin:left center;
-perspective:2000px;
-display:none;
-z-index:50;
-}
-
-.flip-card{
-width:100%;height:100%;
-transform-style:preserve-3d;
-transition:transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000);
-position:relative;
-}
-
-.flip-front,.flip-back{
-position:absolute;inset:0;
-backface-visibility:hidden;
--webkit-backface-visibility:hidden;
-background:var(–paper);
-padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);
-overflow:hidden;
-font-size:clamp(0.7rem,1.3vw,0.88rem);
-line-height:1.75;
-color:var(–ink);
-}
-
-.flip-back{
-transform:rotateY(180deg);
-box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);
-}
-
-.flip-front{
-box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);
-}
-
-.flip-front h3,.flip-back h3{
-font-family:‘Cinzel’,serif;
-font-size:clamp(0.55rem,0.9vw,0.7rem);
-letter-spacing:0.08em;
-margin-bottom:10px;
-padding-bottom:5px;
-border-bottom:1px solid rgba(26,18,8,0.12);
-}
-
-.flip-front p,.flip-back p{margin-bottom:7px;text-align:justify;hyphens:auto;}
-
-/* Curl shadow effect */
-.flip-card.flipping-forward{transform:rotateY(-180deg);}
-.flip-card.flipping-back{transform:rotateY(0deg);}
-
-/* Desktop nav */
-#desk-nav{
-display:flex;
-align-items:center;
-gap:16px;
-margin-top:16px;
-}
-
-.desk-btn{
-background:var(–green);
-border:none;
-color:var(–gold);
-width:40px;height:40px;
-border-radius:50%;
-font-size:1rem;
-cursor:pointer;
-transition:opacity 0.2s;
-}
-
+.flip-container{position:absolute;top:0;left:50%;width:50%;height:100%;transform-origin:left center;perspective:2000px;display:none;z-index:50;}
+.flip-card{width:100%;height:100%;transform-style:preserve-3d;transition:transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000);position:relative;}
+.flip-front,.flip-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);overflow:hidden;font-size:clamp(0.68rem,1.2vw,0.85rem);line-height:1.72;color:var(--ink);}
+.flip-back{transform:rotateY(180deg);box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);}
+.flip-front{box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);}
+.flip-front h3,.flip-back h3{font-family:'Cinzel',serif;font-size:clamp(0.52rem,0.85vw,0.68rem);letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(26,18,8,0.12);}
+.flip-front p,.flip-back p{margin-bottom:6px;text-align:justify;hyphens:auto;}
+#desk-nav{display:flex;align-items:center;gap:16px;margin-top:16px;}
+.desk-btn{background:var(--green);border:none;color:var(--gold);width:40px;height:40px;border-radius:50%;font-size:1rem;cursor:pointer;transition:opacity 0.2s;}
 .desk-btn:disabled{opacity:0.25;cursor:default;}
-
-#desk-num{
-font-family:‘Cinzel’,serif;
-font-size:0.65rem;
-letter-spacing:0.2em;
-color:rgba(26,18,8,0.5);
-min-width:70px;
-text-align:center;
-}
-
-#desk-close{
-position:fixed;
-top:14px;left:14px;
-background:var(–green);
-border:none;
-color:var(–gold);
-font-family:‘Cinzel’,serif;
-font-size:0.6rem;
-letter-spacing:0.15em;
-padding:7px 14px;
-border-radius:3px;
-cursor:pointer;
-}
-
-/* ===== RESPONSIVE ===== */
-/* On mobile show reader directly, hide book */
-@media(max-width:680px){
-.book-mode-btn{display:none !important;}
-}
+#desk-num{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:rgba(26,18,8,0.5);min-width:70px;text-align:center;}
+#desk-close{position:fixed;top:14px;left:14px;background:var(--green);border:none;color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.15em;padding:7px 14px;border-radius:3px;cursor:pointer;}
 </style>
-
 </head>
 <body>
-
-<!-- COVER -->
-
 <div id="cover-screen">
   <div class="book-cover" onclick="openBook()">
     <div class="cover-inner">
@@ -478,16 +100,12 @@ cursor:pointer;
   <div class="open-hint">Open to read</div>
 </div>
 
-<!-- READER (mobile + fallback) -->
-
 <div id="reader">
   <div class="reader-header">
     <span class="reader-title">The Novel of Ryan</span>
     <button class="header-btn" onclick="closeReader()">✕ Close</button>
   </div>
-  <div class="reader-body">
-    <div class="page-html" id="reader-content"></div>
-  </div>
+  <div class="reader-body"><div class="pc" id="rc"></div></div>
   <div class="reader-footer">
     <button class="foot-btn" id="r-prev" onclick="rPrev()">←</button>
     <span id="page-num">1 / 18</span>
@@ -495,15 +113,13 @@ cursor:pointer;
   </div>
 </div>
 
-<!-- DESKTOP BOOK -->
-
 <div id="book-screen">
   <button id="desk-close" onclick="closeBookScreen()">✕ Close</button>
   <div class="book-ui">
     <div class="book-spread">
-      <div class="pg pg-left" id="bl"><div class="pc" id="bl-content"></div></div>
+      <div class="pg pg-left"><div class="pc" id="bl"></div></div>
       <div class="spine-bar"></div>
-      <div class="pg pg-right" id="br"><div class="pc" id="br-content"></div></div>
+      <div class="pg pg-right"><div class="pc" id="br"></div></div>
       <div class="flip-container" id="flip-c">
         <div class="flip-card" id="flip-card">
           <div class="flip-front" id="flip-front"></div>
@@ -514,379 +130,333 @@ cursor:pointer;
   </div>
   <div id="desk-nav">
     <button class="desk-btn" id="d-prev" onclick="dPrev()">←</button>
-    <span id="desk-num">1 / 12</span>
+    <span id="desk-num">1 / 9</span>
     <button class="desk-btn" id="d-next" onclick="dNext()">→</button>
   </div>
 </div>
 
 <script>
-// =============================================
-// CONTENT
-// =============================================
-
-// Reading mode pages (one section per page, fully scrollable)
-const rPages = [
-`<p class="ded">"For the kid who kept building."</p>`,
-
-`<span class="chnum">Chapter One</span>
-<h2>Michigan</h2>
-<span class="chyears">2019 — 2024</span>
-<span class="chorn">❧</span>`,
-
-`<h3>Part One: When Life Was Good</h3>
+const P1=`<h3>Part One: When Life Was Good</h3>
 <p>There was a Chuck E. Cheese on the west side of Michigan that knew his name.</p>
 <p>Not literally. But it felt that way. The lady at the token counter, the guy who fixed the ski-ball machine, the flickering light above booth seven that nobody ever fixed ... they were all familiar. Comfortable. His.</p>
 <p>His dad's name was Alex Sobolak. Big guy. Beard. The kind of hands that looked like they could fix anything, and usually could. He worked at Expert Heating and Cooling and he came home smelling like metal and effort and he was tired, always tired, but when his son looked up at him and asked ... <em>can we go?</em> ... he never said no.</p>
 <p>Not once.</p>
 <p>Even when Samantha yelled. Even when the money was tight. Even when the world outside that Chuck E. Cheese was starting to quietly, slowly, fall apart.</p>
 <p>Inside those doors it was just them. Tokens. Ski-ball. Bad pizza that tasted perfect. A dad and his kid in a bubble they both pretended would last forever.</p>
-<p>It didn't. Nothing does.</p>`,
+<p>It didn't. Nothing does.</p>`;
 
-`<h3>Part Two: What Hides in the Dark</h3>
+const P2=`<h3>Part Two: What Hides in the Dark</h3>
 <p>The year the world changed was 2019.</p>
 <p>It didn't announce itself. It never does. One day you have a house and a dad who goes to work and a mom who tries, and then slowly ... so slowly you almost don't notice ... you don't.</p>
 <p>They got kicked out of the house. Alex lost his job at Expert Heating and Cooling. They moved to Westland, Michigan. The hood, kind of. Not the worst place. Not the best.</p>
+<p>It was fine. For a while it was fine.</p>
 <p>But there was something new in the apartment. A silence that showed up at night. A stillness that wasn't sleep.</p>
 <p>His dad would be standing in the kitchen. Just standing. Eyes open but not there. Like someone had hit pause on a person. Like the man inside had stepped out and left the body running on its own.</p>
 <p><em>He's just tired,</em> his mom would say.</p>
 <p>He was young enough to believe her.</p>
-<p>The word for what was happening was fentanyl. He didn't know that word yet. The addiction doesn't care how hard you try. It gets you anyway. And once it gets you, it starts working on everyone around you too. Quietly. Patiently. Like it has all the time in the world.</p>`,
+<p>The word for what was happening was fentanyl. He didn't know that word yet. He just knew something was wrong with his dad. Something was wrong with his mom too, though she hid it better. She tried so hard to hide it.</p>
+<p>The addiction doesn't care how hard you try. It gets you anyway. And once it gets you, it starts working on everyone around you too. Quietly. Patiently. Like it has all the time in the world.</p>`;
 
-`<h3>Part Three: The Arguments</h3>
+const P3=`<h3>Part Three: The Arguments</h3>
 <p>2021.</p>
 <p>The arguments started as words. Loud words, sharp words, the kind that go through walls and find you in your bedroom at 2am even with a pillow over your head.</p>
 <p>Then they became something else.</p>
 <p><em>They blacked out,</em> people would say later. <em>They don't remember.</em></p>
 <p>He remembered. Kids always remember. They just learn very young not to say so.</p>
 <p>He was in the middle of two people who loved each other and loved him and were losing the war against something that didn't care about any of that. Fentanyl doesn't negotiate. It doesn't take days off. It doesn't look at a kid sitting on the floor of a Westland apartment and feel anything at all.</p>
-<p>He learned to be quiet. To take up less space. To watch. He became very good at reading rooms. At knowing when to disappear. At surviving in the margins of other people's storms.</p>
-<p>Those skills would save him later. He didn't know that yet.</p>`,
+<p>He learned to be quiet. To take up less space. To watch.</p>
+<p>He became very good at reading rooms. At knowing when to disappear. At surviving in the margins of other people's storms.</p>
+<p>Those skills would save him later. He didn't know that yet.</p>`;
 
-`<h3>Part Four: Jenny's House</h3>
+const P4=`<h3>Part Four: Jenny's House</h3>
 <p>2022. 2023.</p>
 <p>The rent stopped getting paid. That's how it ended ... not dramatically, just practically. One morning there was nowhere to go except his grandmother's house.</p>
-<p>Jennifer. Jenny. His mother's mother. She had her own history with the same demons. The addiction ran in that family like a river, deep and old, carving the same channels through every generation.</p>
+<p>Jennifer. Jenny. His mother's mother.</p>
+<p>She had her own history with the same demons. The addiction ran in that family like a river, deep and old, carving the same channels through every generation. His mother had grown up downstream from it. That explained some things. Not all things. Nothing explains all things.</p>
 <p>Jenny's house was loud and crowded and tense and his dad was barely there. Working when he could. Disappearing when he couldn't.</p>
 <p>But sometimes ... sometimes ... Alex Sobolak would show up. And for a few hours he'd be present. Actually present. The real version. The Chuck E. Cheese version.</p>
 <p>And his son would feel it like sunlight after a long winter.</p>
-<p>Those moments were enough to hold onto. He held onto them.</p>`,
+<p>Those moments were enough to hold onto. He held onto them.</p>`;
 
-`<h3>Part Five: Grandma Mary's House</h3>
+const P5=`<h3>Part Five: Grandma Mary's House</h3>
 <p>There are places in a childhood that become anchors. That hold you to the earth when everything else is trying to pull you loose.</p>
 <p>Grandma Mary's house was one of them.</p>
 <p>His great grandmother on his mother's father's side. Real blood. Real family. The kind who bake cookies and mean it. The kind whose house smells like something warm even in winter. The kind of place where you could actually invite your friends over and stay up all night and gossip about everything and nothing ... and feel, for a little while, like a normal kid living a normal life.</p>
-<p>For a while, his parents stayed there too. Barely clean. Trying. They held it together as long as they could the way they always did. Which was never quite long enough.</p>
+<p>Like the world was not what it actually was.</p>
+<p>For a while, his parents stayed there too. Barely clean. Trying. His dad clean when he could manage it, which was not always. They held it together as long as they could the way they always did.</p>
+<p>Which was never quite long enough.</p>
 <p>Eventually they came apart again. Like always. Like gravity pulling something back to earth that was never meant to stay up.</p>
-<p>But he stayed. Grandma Mary kept him. And for a little while, that was enough.</p>`,
+<p>But he stayed. Grandma Mary kept him. And for a little while, that was enough.</p>`;
 
-`<h3>Part Six: The Window</h3>
-<p>Fear has a sound. He learned that at Grandma Mary's house.</p>
-<p>It was the sound of a window sliding open at 1am. At 2am. At 3am on a school night when he was supposed to be asleep. The sound of something heavy coming through ... 200 something pounds of his mother, finding a way in because she always found a way in.</p>
+const P6=`<h3>Part Six: The Window</h3>
+<p>Fear has a sound.</p>
+<p>He learned that at Grandma Mary's house.</p>
+<p>It was the sound of a window sliding open at 1am. At 2am. At 3am on a school night when he was supposed to be asleep, when the rest of the street was dark and quiet and still. The sound of something heavy coming through ... 200 something pounds of his mother, finding a way in because she always found a way in. His window. Someone else's window. It didn't matter. She got in.</p>
 <p>Grandma Mary didn't want her there. The rules were clear. But rules don't stop a mother who has decided she needs to be somewhere. Rules don't stop addiction. Rules don't stop 3am.</p>
 <p>He would lie there in the dark listening. The scrape of the frame. The weight of footsteps crossing the floor. His own heartbeat loud in his ears.</p>
-<p>School the next morning. Pretend everything was fine. He was very good at pretending everything was fine.</p>
-<p>Eventually the police came. His mother argued ... her stuff was inside, she had rights. Before they could press further, his parents were already gone. Back to the car. The one they were living in now.</p>
+<p>School the next morning. Pretend everything was fine.</p>
+<p>He was very good at pretending everything was fine.</p>
+<p>Eventually the police came. His mother argued ... her stuff was inside, she was a legal tenant, she had rights. The cops could smell something wrong in the argument, something that didn't add up, but before they could press further his parents were already gone.</p>
+<p>Back to the car. The one they were living in now.</p>
 <p>His dad in the passenger seat. Quiet. Always quiet.</p>
-<p>It's easier sometimes to be angry than to be sad. Anger is clean. Sadness just sits there in you, heavy, taking up space, with nowhere to go.</p>`,
+<p>He didn't want to see his dad much during that time. Didn't want to look at him. Couldn't figure out what to do with what he saw.</p>
+<p>It's easier sometimes to be angry than to be sad. Anger is clean. Sadness just sits there in you, heavy, taking up space, with nowhere to go.</p>`;
 
-`<h3>Part Seven: The Birthday</h3>
+const P7=`<h3>Part Seven: The Birthday</h3>
 <p>2024.</p>
 <p>He turned another year older.</p>
 <p>He woke up that morning the way you wake up on birthdays when you're a kid ... with that particular feeling in your chest, that specific excitement, the one that says <em>today is mine. Today is for me.</em></p>
-<p>He went to wake his parents up. His mom woke up. His dad didn't.</p>
+<p>He went to wake his parents up.</p>
+<p>His mom woke up.</p>
+<p>His dad didn't.</p>
 <p>Not in the way you fear. He was alive. He was just gone. Somewhere nobody could follow.</p>
-<p>His mom tried. She shook him. Called his name. And then something shifted ... and they were fighting. Violently. The way people fight when they are desperate and scared and have nowhere to put any of it.</p>
+<p>His mom tried. She shook him. Called his name. And then something shifted ... the way things shift when the wrong words get said or the wrong nerve gets hit ... and they were fighting. Violently. The way people fight when they are desperate and scared and have nowhere to put any of it.</p>
 <p>The birthday morning became something else entirely.</p>
-<p>He was lucky, honestly. Most birthdays had been good. This one wasn't. One day he carries not as a pattern but as a single heavy thing.</p>`,
+<p>He was lucky, honestly. Most birthdays had been good. This one wasn't. One morning out of all of them that ate itself. One day he carries not as a pattern but as a single heavy thing.</p>`;
 
-`<span class="chnum">Chapter Two</span>
-<h2>California</h2>
-<span class="chyears">2025 — 2026</span>
-<span class="chorn">❧</span>`,
-
-`<h3>Part Eight: California, The First Time</h3>
-<p>2025. He left Michigan the first time alone.</p>
-<p>Nana Peggy's house. Not his grandmother by blood ... Jenny's aunt, his mother's great-aunt, which made her something like family by a long and winding road. But she took him in like it was simple. The cookies-from-the-store kind of woman, not cookies-from-scratch, but with more warmth and more money than most and a house that felt like neither of those things needed explaining.</p>
-<p>It was just him and Nana Peggy and Uncle Neil at first. Neil was good people. The kind of man who helped with projects, who showed up, who made the house feel like somewhere a person could actually land.</p>
-<p>California was supposed to be the answer. And in some ways, for a while, it was. He arrived with almost nothing and built something anyway. A repair business. Real money. Then more ... always more. He built things because building was the only language he had ever fully trusted. Because when the world gave you nothing, you made something.</p>
+const P8=`<h3>Part Eight: California, The First Time</h3>
+<p>2025.</p>
+<p>He left Michigan the first time alone.</p>
+<p>Nana Peggy's house. Not his grandmother by blood ... Jenny's aunt, his mother's great-aunt, which made her something like family by a long and winding road. But she took him in like it was simple. Like it was obvious. The cookies-from-the-store kind of woman, not cookies-from-scratch, but with more warmth and more money than most and a house that felt like neither of those things needed explaining.</p>
+<p>It was just him and Nana Peggy and Uncle Neil at first. Neil was good people. The kind of man who helped with projects, who showed up, who made the house feel like somewhere a person could actually land. He was grateful for Neil even when he didn't say so.</p>
+<p>California was supposed to be the answer.</p>
+<p>And in some ways, for a while, it was. He arrived with almost nothing and he built something anyway because that is what he does, because he has been building things out of nothing since he was old enough to understand that nobody was going to do it for him.</p>
+<p>A repair business. Real money. Then more ... always more. He built things because building was the only language he had ever fully trusted. Because when the world gave you nothing, you made something. Because the alternative was sitting still and he had never learned how to do that.</p>
 <p><em>Deep Fried Bread Studios.</em> Founded by a kid who refused to stop.</p>
-<p>But California had a weight to it that he hadn't expected. More like the weight of a room that is too quiet after being loud for a long time. The weight of having things but not people. Of eating alone and building alone and lying awake at night with no one to call because it's 3am and everyone is asleep or far away or both.</p>
-<p>Some nights the loneliness sat on his chest like something physical. Like weight. Like weather. California was clean and stable and quiet and some nights the quiet was the loudest thing he'd ever heard.</p>
-<p>But his mother was still in Michigan. So he went back.</p>`,
+<p>He made friends online. He fixed people's computers. He stayed up until 3am breathing life into things that didn't exist yet.</p>
+<p>He was good at survival. He had been practicing his whole life.</p>
+<p>But California had a weight to it that he hadn't expected.</p>
+<p>Not a bad weight. Not exactly. More like the weight of a room that is too quiet after being loud for a long time. The weight of having things but not people. Of eating alone and building alone and lying awake at night with no one to call because it's 3am and everyone is asleep or far away or both.</p>
+<p>His online friends were real. But they lived inside a screen and when the PC broke they disappeared into static and the room got even quieter.</p>
+<p>He thought about his dad every day. He didn't say so.</p>
+<p>He thought about Grandma Mary's house. About staying up all night with friends, gossiping about nothing, feeling like a normal kid. He hadn't felt like a normal kid in a long time.</p>
+<p>He thought about Chuck E. Cheese. About tokens. About a big guy with a beard who always said yes.</p>
+<p>Some nights the loneliness sat on his chest like something physical. Like weight. Like weather. He would lie there in the dark in California ... far from Michigan, far from the car in the parking lot, far from the window scraping open at 3am ... and feel more alone than he ever had in a crowded house full of chaos.</p>
+<p>At least in the chaos there were people.</p>
+<p>California was clean and stable and quiet and some nights the quiet was the loudest thing he'd ever heard.</p>
+<p>But his mother was still in Michigan. So he went back.</p>`;
 
-`<h3>Part Nine: The Second Goodbye</h3>
+const P9=`<h3>Part Nine: The Second Goodbye</h3>
 <p>The day he came back to Michigan to bring his mother to California started at Jenny's place.</p>
-<p>His dad had been out of jail for a while by then. Not clean ... not really. His dad slipped away to the neighbor's house. Said he was going to say goodbye to nana Jenny. He knew. He always knew. He just didn't say so.</p>
-<p>Then they went to the store. His dad turned to him: <em>Go get my phone from the car. I'll pay from there.</em></p>
-<p>He went. He got the phone. He wanted to believe him. That's the thing nobody tells you about loving someone who is sick ... you keep wanting to believe them even when every piece of evidence says not to.</p>
+<p>His dad had been out of jail for a while by then. Not clean ... not really. That day they went to Jenny's and his dad slipped away to the neighbor's house. Said he was going to say goodbye to nana Jenny.</p>
+<p>He knew. He always knew. He just didn't say so.</p>
+<p>Then they went to the store.</p>
+<p>His dad moved through the aisles with a particular kind of casual purpose and his son followed and somewhere in the back of his mind he already understood what was happening. He knew the way you know things you don't want to know. The way the body figures it out before the brain gives it permission.</p>
+<p>His dad turned to him.</p>
+<p><em>Go get my phone from the car. I'll pay from there.</em></p>
+<p>He went. He got the phone.</p>
+<p>He wanted to believe him. That's the thing nobody tells you about loving someone who is sick ... you keep wanting to believe them even when every piece of evidence says not to. You go get the phone because maybe this time it's different. Maybe this time the dad from Chuck E. Cheese has come back and everything is going to be okay.</p>
 <p>He came back. His dad was already at the door, moving fast, putting things in the trunk.</p>
 <p><em>Paid with card,</em> his dad said.</p>
-<p>He looked at his dad. His dad didn't look back. Not the dad he knew. The dad he knew smelled like metal and effort and took him to Chuck E. Cheese and never once said no.</p>
-<p>Some betrayals are too sad to be angry about. You just carry them. Add them to the pile. Keep moving.</p>`,
+<p>He looked at his dad. His dad didn't look back.</p>
+<p>Not the dad he knew. The dad he knew smelled like metal and effort and took him to Chuck E. Cheese even when Samantha yelled and never once said no.</p>
+<p>He didn't say anything. He just got in the car.</p>
+<p>Some betrayals are too sad to be angry about. You just carry them. Add them to the pile. Keep moving.</p>`;
 
-`<h3>Part Ten: Papa Paul's Apartment</h3>
+const P10=`<h3>Part Ten: Papa Paul's Apartment</h3>
 <p>His grandfather on his dad's side. Papa Paul. Upper middle class apartment ... clean carpets, quiet hallways, the kind of building where the elevator worked and nobody was living in their car outside. A different world from every other address in this story.</p>
+<p>The kind of man who tries to talk sense into his son the way fathers do ... directly, firmly, with love underneath the frustration.</p>
 <p>That was the last place he saw his dad before going back to California. This time with his mother.</p>
-<p>His dad sitting there, being talked to, being reasoned with. Someone trying to pull Alex Sobolak back to the surface the way you try to pull someone out of deep water ... with both hands, with everything you have, knowing it might not work.</p>
-<p>His dad didn't come to the airport. Didn't make that drive. That day Alex Sobolak lost both of them. His wife and his son. Gone to California together, leaving him behind.</p>
+<p>Papa Paul's apartment. His dad sitting there, being talked to, being reasoned with. Someone trying to pull Alex Sobolak back to the surface the way you try to pull someone out of deep water ... with both hands, with everything you have, knowing it might not work.</p>
+<p>He said goodbye.</p>
+<p>His dad didn't come to the airport. Didn't make that drive.</p>
+<p>That day Alex Sobolak lost both of them. His wife and his son. Gone to California together, leaving him behind in Michigan with Papa Paul and the quiet of a nice apartment that probably felt like a different kind of empty.</p>
 <p>His dad had been through worse than most people ever know. That doesn't excuse anything. It doesn't undo anything. But it's true.</p>
-<p>He's been leaving without it being enough for a while now.</p>`,
+<p>He carried that too.</p>
+<p>He left without it being enough.</p>
+<p>He's been leaving without it being enough for a while now.</p>`;
 
-`<h3>Part Eleven: California, The Second Time</h3>
-<p>2026. He came back to California with his mother this time. Back to Nana Peggy's house. Back to Uncle Neil and the stability that had started to feel like something he could trust.</p>
-<p>Then his mother moved in. He tried. He really did. But the anger had been accumulating for a long time ... years of windows scraping open at 3am, of a birthday that got swallowed whole, of a life derailed before he was old enough to understand what a life even was.</p>
-<p>Eventually it got to be too much. Just quiet, heavy, done. He moved to Jill and Cody's. It felt more like a home and less like a hotel. More like somewhere a person could actually breathe.</p>
-<p>He still visited Nana Peggy. Some things you don't abandon just because they got complicated. And one of those visits led him back to the loft.</p>
-<p>His mother came upstairs. <em>Why are you being such a jerk.</em></p>
-<p>He tried to stay quiet. He knew how to be quiet. He had spent years learning to be quiet. But she kept going. Again and again, pushing at the thing he was trying to keep closed, until something in him stopped trying to keep it closed.</p>
-<p>He got in her face. The way his father used to. The exact way. The same energy. The same ugly weight of it.</p>
+const P11=`<h3>Part Eleven: California, The Second Time</h3>
+<p>2026.</p>
+<p>He came back to California with his mother this time.</p>
+<p>Back to Nana Peggy's house. Back to the clean hallways and Uncle Neil and the stability that had started to feel like something he could trust.</p>
+<p>Then his mother moved in.</p>
+<p>He tried. He really did. He kept his distance. Kept his head down. Built things. Stayed busy. But the anger had been accumulating for a long time ... years of windows scraping open at 3am, of a birthday that got swallowed whole, of a life derailed before he was old enough to understand what a life even was.</p>
+<p>Eventually it got to be too much. Not one dramatic moment. Just the slow accumulation of everything ... being in the same house as her, breathing the same air as her, watching her exist in the same space as the stability he'd finally found. He got mad. Not the loft kind of mad. Just quiet, heavy, done.</p>
+<p>He moved to Jill and Cody's.</p>
+<p>It felt more like a home and less like a hotel. Less like something temporary. More like somewhere a person could actually breathe without measuring every breath.</p>
+<p>He still visited Nana Peggy. Of course he did. Some things you don't abandon just because they got complicated.</p>
+<p>And one of those visits led him back to the loft.</p>
+<p>His mother came upstairs.</p>
+<p><em>Why are you being such a jerk.</em></p>
+<p>He tried to stay quiet. He knew how to be quiet. He had learned that early, in Westland, in Jenny's house, lying still in the dark at Grandma Mary's listening to a window slide open. He had spent years learning to be quiet.</p>
+<p>But she kept going. Again and again, the same way she always did, pushing at the thing he was trying to keep closed, until something in him stopped trying to keep it closed.</p>
+<p>He got in her face.</p>
+<p>The way his father used to.</p>
+<p>The exact way. The same energy. The same ugly weight of it.</p>
 <p>He knew it even while it was happening. Some part of him stepped back and watched and thought ... <em>there he is. That's Alex Sobolak. That's what it looks like from the outside.</em></p>
-<p>His mother pushed him. He pushed her back. Twice as hard. Cody heard it. Came upstairs. Escorted him out.</p>
-<p>He stood outside in the California air and felt something cold settle into him. The recognition of something he hadn't wanted to see. He was not his father. But he had been him, for a moment. That moment lives in him now.</p>`,
+<p>His mother pushed him.</p>
+<p>He pushed her back. Twice as hard.</p>
+<p>Cody heard it. Came upstairs. Escorted him out of the house.</p>
+<p>He stood outside in the California air and felt something cold settle into him. Not shame exactly. Something quieter than that. The recognition of something he hadn't wanted to see.</p>
+<p>He had spent his whole life watching his father lose the war against himself. And in one afternoon in a loft in California he understood for the first time how easy it is. How the thing inside you that you hate most is also the thing most ready to come out when the pressure gets high enough.</p>
+<p>He was not his father.</p>
+<p>But he had been him, for a moment.</p>
+<p>That moment lives in him now. He carries it the way he carries everything ... quietly, without saying so, hoping it means something. Hoping the fact that he saw it means he can choose differently next time.</p>`;
 
-`<h3>Part Twelve: What He Won't Say Out Loud</h3>
-<p>He's been getting angrier. Not the quiet kind of anger he learned in Westland. Something louder. Something his father would recognize.</p>
-<p>When he sees kids his age ... kids who grew up normally, who've never listened for a window sliding open at 3am ... something rises in him that he doesn't have a clean word for. A distaste. Something that wants to be violent and doesn't fully know why.</p>
+const P12=`<h3>Part Twelve: What He Won't Say Out Loud</h3>
+<p>He's been getting angrier.</p>
+<p>Not the quiet kind of anger he learned in Westland. Not the sitting-still-in-the-dark kind. Something louder. Something his father would recognize.</p>
+<p>When he sees kids his age ... kids who grew up normally, who have no idea what any of this feels like, who've never listened for a window sliding open at 3am ... something rises in him that he doesn't have a clean word for. A distaste. Something that wants to be violent and doesn't fully know why.</p>
 <p>He doesn't show his face much near kids his age. It's easier not to.</p>
-<p>He knows he can be disrespectful. Violence has been his most reliable tool for as long as he can remember ... not because he chose it but because it was the language spoken loudest in every house he ever lived in.</p>
+<p>He knows he can be disrespectful. He knows that. He doesn't always know how to stop it in the moment even when he can see it happening. Violence has been his most reliable tool for as long as he can remember ... not because he chose it but because it was the language spoken loudest in every house he ever lived in.</p>
 <p>He is not a victim. He says that clearly and he means it.</p>
-<p>But he is also a kid who watched violence work. Who absorbed it the way you absorb everything you grow up inside of.</p>
-<p>He is sorry for it. That knowing is the beginning of something. He's not sure what yet. But it's there.</p>`,
+<p>But he is also a kid who watched violence work. Who watched it get results. Who absorbed it the way you absorb everything you grow up inside of ... not by choosing it, just by being there long enough for it to become part of how you understand the world.</p>
+<p>He is sorry for it. He says that too and he means that just as much.</p>
+<p>He knows this about himself.</p>
+<p>That knowing is the beginning of something. He's not sure what yet.</p>
+<p>But it's there.</p>`;
 
-`<h3>Part Thirteen: The Question</h3>
-<p>It's late. The motherboard is still RAM training. The stopwatch says 4 minutes 46 seconds per cycle. The MSI monitor sits dark and patient.</p>
-<p>He is a kid and he has built more than most adults he knows and he is sitting in California at the edge of a decision he doesn't know how to make. Whether to stay in the life he built from nothing, with the stability and the loneliness and the things. Or go back to Michigan, to his dad, to his cousins, to the people who knew him before.</p>
-<p>He destroyed a laptop today with his bare fists. He cried because he misses.</p>
+const P13=`<h3>Part Thirteen: The Question</h3>
+<p>It's late.</p>
+<p>The motherboard is still RAM training. The stopwatch says 4 minutes 46 seconds per cycle. The MSI monitor sits dark and patient.</p>
+<p>He is a kid and he has built more than most adults he knows and he is sitting in California at the edge of a decision he doesn't know how to make. Whether to stay in the life he built from nothing, with the stability and the loneliness and the things. Or go back to Michigan, to his dad, to his cousins, to the people who knew him before he became someone who builds games and fixes computers and stays up until 4am wondering what his heart is trying to say.</p>
+<p>He destroyed a laptop today with his bare fists.</p>
+<p>He cried because he misses.</p>
 <p>He is trying to hear something underneath all the noise of everything that happened between 2019 and now. Something quiet and certain. Something that knows the answer.</p>
 <p>But somewhere in Michigan, Alex Sobolak exists. Clean or not clean. Trying or not trying. Still his dad. Still the guy who never once said no to Chuck E. Cheese.</p>
-<p>And somewhere in California, his son is still building. Still surviving. Still trying to figure out the difference between the two.</p>`,
+<p>And somewhere in California, his son is still building.</p>
+<p>Still surviving.</p>
+<p>Still trying to figure out the difference between the two.</p>`;
 
-`<div class="final-block">
-  <span class="fin-orn">❧</span>
-  <span class="fin-title">To Be Continued.</span>
-  <span class="fin-sub">... By someone who has been through enough to know it's not over</span>
-</div>`
+const PFIN=`<span class="fin-orn">❧</span><span class="fin-title">To Be Continued.</span><span class="fin-sub">... By someone who has been through enough to know it's not over</span>`;
+
+const CH1=`<div class="ch-pg"><span class="chnum">Chapter One</span><h2>Michigan</h2><span class="chyears">2019 — 2024</span><span class="chorn">❧</span></div>`;
+const CH2=`<div class="ch-pg"><span class="chnum">Chapter Two</span><h2>California</h2><span class="chyears">2025 — 2026</span><span class="chorn">❧</span></div>`;
+const TITLE=`<div class="title-pg"><span class="torn">❦</span><h1>The Novel<br>of Ryan</h1><p class="taut">Ryan Sobolak</p><span class="torn" style="font-size:0.8rem">·</span><p class="tyrs">2019 — 2026</p></div>`;
+const DED=`<div class="blank-pg"><p class="ded">"For the kid who kept building."</p></div>`;
+const FIN=`<div class="final-pg"><span class="fin-orn">❧</span><span class="fin-title">To Be Continued.</span><p class="fin-sub">... By someone who has been through enough to know it's not over</p></div>`;
+
+// Reading pages (mobile) - full text, one section each, scrollable
+const rPages = [
+  `<p class="ded">"For the kid who kept building."</p>`,
+  `<span class="chnum">Chapter One</span><h2>Michigan</h2><span class="chyears">2019 — 2024</span><span class="chorn">❧</span>`,
+  P1, P2, P3, P4, P5, P6, P7,
+  `<span class="chnum">Chapter Two</span><h2>California</h2><span class="chyears">2025 — 2026</span><span class="chorn">❧</span>`,
+  P8, P9, P10, P11, P12, P13,
+  PFIN
 ];
 
-// Desktop spreads: each spread = [leftHTML, rightHTML]
+// Desktop spreads [left, right] - full text, overflow hidden per page
 const dSpreads = [
-  // 0: dedication + title
-  [
-    `<div class="blank-pg"><p class="ded">"For the kid who kept building."</p></div>`,
-    `<div class="title-pg"><span class="torn">❦</span><h1>The Novel<br>of Ryan</h1><p class="taut">Ryan Sobolak</p><span class="torn" style="font-size:0.8rem">·</span><p class="tyrs">2019 — 2026</p></div>`
-  ],
-  // 1: ch1 header + part1
-  [
-    `<div class="ch-pg"><span class="chnum">Chapter One</span><h2>Michigan</h2><span class="chyears">2019 — 2024</span><span class="chorn">❧</span></div>`,
-    `<h3>Part One: When Life Was Good</h3><p>There was a Chuck E. Cheese on the west side of Michigan that knew his name.</p><p>Not literally. But it felt that way. The lady at the token counter, the guy who fixed the ski-ball machine, the flickering light above booth seven that nobody ever fixed ... they were all familiar. Comfortable. His.</p><p>His dad's name was Alex Sobolak. Big guy. Beard. The kind of hands that looked like they could fix anything, and usually could. He worked at Expert Heating and Cooling and he came home smelling like metal and effort and he was tired, always tired, but when his son looked up at him and asked ... <em>can we go?</em> ... he never said no.</p><p>Not once. Even when Samantha yelled. Even when the money was tight.</p><p>Inside those doors it was just them. Tokens. Ski-ball. Bad pizza that tasted perfect. A dad and his kid in a bubble they both pretended would last forever.</p><p>It didn't. Nothing does.</p><span class="pg-num r">3</span>`
-  ],
-  // 2: part2 + part3
-  [
-    `<h3>Part Two: What Hides in the Dark</h3><p>The year the world changed was 2019.</p><p>It didn't announce itself. It never does. One day you have a house and a dad who goes to work and a mom who tries, and then slowly ... so slowly you almost don't notice ... you don't.</p><p>They got kicked out of the house. Alex lost his job. They moved to Westland, Michigan.</p><p>His dad would be standing in the kitchen. Just standing. Eyes open but not there. Like someone had hit pause on a person.</p><p><em>He's just tired,</em> his mom would say.</p><p>He was young enough to believe her.</p><p>The addiction doesn't care how hard you try. It gets you anyway. And once it gets you, it starts working on everyone around you too. Quietly. Like it has all the time in the world.</p><span class="pg-num l">4</span>`,
-    `<h3>Part Three: The Arguments</h3><p>2021. The arguments started as words. Loud words, sharp words, the kind that go through walls and find you in your bedroom at 2am.</p><p>Then they became something else.</p><p><em>They blacked out,</em> people would say later. <em>They don't remember.</em></p><p>He remembered. Kids always remember. They just learn very young not to say so.</p><p>He learned to be quiet. To take up less space. To watch. He became very good at reading rooms. At knowing when to disappear. At surviving in the margins of other people's storms.</p><p>Those skills would save him later. He didn't know that yet.</p><span class="pg-num r">5</span>`
-  ],
-  // 3: part4 + part5
-  [
-    `<h3>Part Four: Jenny's House</h3><p>2022. 2023. The rent stopped getting paid. That's how it ended ... not dramatically, just practically. One morning there was nowhere to go except his grandmother's house.</p><p>Jennifer. Jenny. His mother's mother. She had her own history with the same demons. The addiction ran in that family like a river, deep and old.</p><p>Jenny's house was loud and crowded and tense. But sometimes ... sometimes ... Alex Sobolak would show up. And for a few hours he'd be present. Actually present. The Chuck E. Cheese version.</p><p>And his son would feel it like sunlight after a long winter.</p><p>Those moments were enough to hold onto. He held onto them.</p><span class="pg-num l">6</span>`,
-    `<h3>Part Five: Grandma Mary's House</h3><p>There are places in a childhood that become anchors. That hold you to the earth when everything else is trying to pull you loose.</p><p>Grandma Mary's house was one of them. His great grandmother on his mother's father's side. Real blood. Real family. The kind who bake cookies and mean it.</p><p>The kind of place where you could actually invite your friends over and stay up all night and gossip about everything and nothing ... and feel, for a little while, like a normal kid living a normal life.</p><p>For a while, his parents stayed there too. They held it together as long as they could. Which was never quite long enough.</p><p>But he stayed. Grandma Mary kept him.</p><span class="pg-num r">7</span>`
-  ],
-  // 4: part6 + part7
-  [
-    `<h3>Part Six: The Window</h3><p>Fear has a sound. He learned that at Grandma Mary's house.</p><p>It was the sound of a window sliding open at 1am. At 2am. At 3am on a school night when he was supposed to be asleep. The sound of something heavy coming through ... 200 something pounds of his mother, finding a way in because she always found a way in.</p><p>He would lie there in the dark listening. The scrape of the frame. The weight of footsteps crossing the floor. His own heartbeat loud in his ears.</p><p>School the next morning. Pretend everything was fine. He was very good at pretending everything was fine.</p><p>Eventually the police came. Before they could press further, his parents were already gone. Back to the car. The one they were living in now.</p><span class="pg-num l">8</span>`,
-    `<h3>Part Seven: The Birthday</h3><p>2024. He turned another year older.</p><p>He woke up that morning the way you wake up on birthdays when you're a kid ... with that particular feeling in your chest, the one that says <em>today is mine. Today is for me.</em></p><p>He went to wake his parents up. His mom woke up. His dad didn't.</p><p>Not in the way you fear. He was alive. He was just gone. Somewhere nobody could follow.</p><p>And then something shifted ... and they were fighting. Violently. The way people fight when they are desperate and scared and have nowhere to put any of it.</p><p>The birthday morning became something else entirely.</p><p>He was lucky, honestly. Most birthdays had been good. This one wasn't. One day he carries not as a pattern but as a single heavy thing.</p><span class="pg-num r">9</span>`
-  ],
-  // 5: ch2 + part8
-  [
-    `<div class="ch-pg"><span class="chnum">Chapter Two</span><h2>California</h2><span class="chyears">2025 — 2026</span><span class="chorn">❧</span></div>`,
-    `<h3>Part Eight: California, The First Time</h3><p>2025. He left Michigan the first time alone.</p><p>Nana Peggy's house. Not his grandmother by blood ... Jenny's aunt, his mother's great-aunt. But she took him in like it was simple. Uncle Neil was good people. The kind of man who helped with projects, who showed up.</p><p>California was supposed to be the answer. And in some ways, for a while, it was. He arrived with almost nothing and built something anyway. A repair business. Real money. Then more.</p><p>He built things because building was the only language he had ever fully trusted.</p><p><em>Deep Fried Bread Studios.</em> Founded by a kid who refused to stop.</p><p>But California had a weight to it that he hadn't expected. The weight of having things but not people. Some nights the quiet was the loudest thing he'd ever heard.</p><span class="pg-num r">11</span>`
-  ],
-  // 6: part9 + part10
-  [
-    `<h3>Part Nine: The Second Goodbye</h3><p>The day he came back to Michigan to bring his mother to California started at Jenny's place.</p><p>His dad slipped away to the neighbor's house. Said he was going to say goodbye to nana Jenny. He knew. He always knew. He just didn't say so.</p><p>Then they went to the store. His dad turned to him: <em>Go get my phone from the car. I'll pay from there.</em></p><p>He went. He got the phone. He wanted to believe him.</p><p>He came back. His dad was already at the door, moving fast.</p><p><em>Paid with card,</em> his dad said. He looked at his dad. His dad didn't look back.</p><p>Some betrayals are too sad to be angry about.</p><span class="pg-num l">12</span>`,
-    `<h3>Part Ten: Papa Paul's Apartment</h3><p>His grandfather on his dad's side. Papa Paul. Upper middle class apartment ... clean carpets, quiet hallways, the kind of building where the elevator worked and nobody was living in their car outside. A different world from every other address in this story.</p><p>That was the last place he saw his dad before going back to California. This time with his mother.</p><p>His dad didn't come to the airport. Didn't make that drive.</p><p>That day Alex Sobolak lost both of them. His wife and his son. Gone to California together, leaving him behind.</p><p>He's been leaving without it being enough for a while now.</p><span class="pg-num r">13</span>`
-  ],
-  // 7: part11 + part12
-  [
-    `<h3>Part Eleven: California, The Second Time</h3><p>2026. He came back to California with his mother this time. Back to Nana Peggy's house. Back to Uncle Neil and the stability that had started to feel like something he could trust.</p><p>Then his mother moved in. Eventually it got to be too much. He moved to Jill and Cody's. It felt more like a home. More like somewhere a person could actually breathe.</p><p>One visit led him back to the loft. His mother came upstairs. <em>Why are you being such a jerk.</em></p><p>He got in her face. The way his father used to. The exact way. He knew it even while it was happening. Some part of him stepped back and watched and thought ... <em>there he is. That's Alex Sobolak.</em></p><p>He was not his father. But he had been him, for a moment.</p><span class="pg-num l">14</span>`,
-    `<h3>Part Twelve: What He Won't Say Out Loud</h3><p>He's been getting angrier. Something louder. Something his father would recognize.</p><p>When he sees kids his age ... kids who grew up normally, who've never listened for a window sliding open at 3am ... something rises in him that he doesn't have a clean word for.</p><p>He doesn't show his face much near kids his age. It's easier not to.</p><p>Violence has been his most reliable tool for as long as he can remember ... not because he chose it but because it was the language spoken loudest in every house he ever lived in.</p><p>He is not a victim. He says that clearly and he means it.</p><p>But he is also a kid who watched violence work. He is sorry for it. That knowing is the beginning of something. He's not sure what yet. But it's there.</p><span class="pg-num r">15</span>`
-  ],
-  // 8: part13 + end
-  [
-    `<h3>Part Thirteen: The Question</h3><p>It's late. The motherboard is still RAM training. The stopwatch says 4 minutes 46 seconds per cycle. The MSI monitor sits dark and patient.</p><p>He is a kid and he has built more than most adults he knows and he is sitting in California at the edge of a decision he doesn't know how to make.</p><p>He destroyed a laptop today with his bare fists. He cried because he misses.</p><p>But somewhere in Michigan, Alex Sobolak exists. Clean or not clean. Still his dad. Still the guy who never once said no to Chuck E. Cheese.</p><p>And somewhere in California, his son is still building. Still surviving. Still trying to figure out the difference between the two.</p><span class="pg-num l">16</span>`,
-    `<div class="final-pg"><span class="fin-orn">❧</span><span class="fin-title">To Be Continued.</span><p class="fin-sub">... By someone who has been through enough to know it's not over</p></div>`
-  ]
+  [DED, TITLE],
+  [CH1, P1],
+  [P2, P3],
+  [P4, P5],
+  [P6, P7],
+  [CH2, P8],
+  [P9, P10],
+  [P11, P12],
+  [P13, FIN]
 ];
 
-// =============================================
-// STATE
-// =============================================
-let rPage = 0;
-let dSpread = 0;
-let flipping = false;
-const isMobile = () => window.innerWidth <= 680;
+let rPage=0, dSpread=0, flipping=false;
+const isMobile=()=>window.innerWidth<=680;
 
-// =============================================
-// OPEN BOOK
-// =============================================
-function openBook() {
-  document.getElementById('cover-screen').style.display = 'none';
-  if (isMobile()) {
-    openReader();
-  } else {
-    openBookScreen();
+function openBook(){
+  document.getElementById('cover-screen').style.display='none';
+  isMobile() ? openReader() : openBookScreen();
+}
+
+function openReader(){
+  document.getElementById('reader').style.display='flex';
+  rPage=0; showRPage();
+}
+
+function closeReader(){
+  document.getElementById('reader').style.display='none';
+  document.getElementById('cover-screen').style.display='flex';
+}
+
+function showRPage(){
+  document.getElementById('rc').innerHTML=rPages[rPage];
+  document.querySelector('.reader-body').scrollTop=0;
+  document.getElementById('page-num').textContent=`${rPage+1} / ${rPages.length}`;
+  document.getElementById('r-prev').disabled=rPage===0;
+  document.getElementById('r-next').disabled=rPage===rPages.length-1;
+}
+
+function rNext(){if(rPage<rPages.length-1){rPage++;showRPage();}}
+function rPrev(){if(rPage>0){rPage--;showRPage();}}
+
+function openBookScreen(){
+  document.getElementById('book-screen').style.display='flex';
+  dSpread=0; renderDS();
+}
+
+function closeBookScreen(){
+  document.getElementById('book-screen').style.display='none';
+  document.getElementById('cover-screen').style.display='flex';
+}
+
+function renderDS(){
+  document.getElementById('bl').innerHTML=dSpreads[dSpread][0];
+  document.getElementById('br').innerHTML=dSpreads[dSpread][1];
+  document.getElementById('desk-num').textContent=`${dSpread+1} / ${dSpreads.length}`;
+  document.getElementById('d-prev').disabled=dSpread===0;
+  document.getElementById('d-next').disabled=dSpread===dSpreads.length-1;
+}
+
+function dNext(){
+  if(flipping||dSpread>=dSpreads.length-1)return;
+  flipping=true;
+  const fc=document.getElementById('flip-c');
+  const card=document.getElementById('flip-card');
+  document.getElementById('flip-front').innerHTML=dSpreads[dSpread][1];
+  const ns=dSpread+1;
+  document.getElementById('flip-back').innerHTML=dSpreads[ns][0];
+  document.getElementById('br').innerHTML=dSpreads[ns][1];
+  fc.style.display='block';
+  card.style.transition='none';
+  card.style.transform='rotateY(0deg)';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    card.style.transition='transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000)';
+    card.style.transform='rotateY(-180deg)';
+  }));
+  setTimeout(()=>{
+    dSpread=ns;fc.style.display='none';renderDS();flipping=false;
+  },720);
+}
+
+function dPrev(){
+  if(flipping||dSpread<=0)return;
+  flipping=true;
+  const fc=document.getElementById('flip-c');
+  const card=document.getElementById('flip-card');
+  const ps=dSpread-1;
+  document.getElementById('flip-back').innerHTML=dSpreads[dSpread][0];
+  document.getElementById('flip-front').innerHTML=dSpreads[ps][1];
+  document.getElementById('bl').innerHTML=dSpreads[ps][0];
+  fc.style.display='block';
+  card.style.transition='none';
+  card.style.transform='rotateY(-180deg)';
+  requestAnimationFrame(()=>requestAnimationFrame(()=>{
+    card.style.transition='transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000)';
+    card.style.transform='rotateY(0deg)';
+  }));
+  setTimeout(()=>{
+    dSpread=ps;fc.style.display='none';renderDS();flipping=false;
+  },720);
+}
+
+document.addEventListener('keydown',e=>{
+  if(document.getElementById('book-screen').style.display==='flex'){
+    if(e.key==='ArrowRight')dNext();
+    if(e.key==='ArrowLeft')dPrev();
   }
-}
-
-// =============================================
-// READER (MOBILE)
-// =============================================
-function openReader() {
-  const el = document.getElementById('reader');
-  el.style.display = 'flex';
-  rPage = 0;
-  showRPage();
-}
-
-function closeReader() {
-  document.getElementById('reader').style.display = 'none';
-  document.getElementById('cover-screen').style.display = 'flex';
-}
-
-function showRPage() {
-  document.getElementById('reader-content').innerHTML = rPages[rPage];
-  document.querySelector('.reader-body').scrollTop = 0;
-  document.getElementById('page-num').textContent = `${rPage+1} / ${rPages.length}`;
-  document.getElementById('r-prev').disabled = rPage === 0;
-  document.getElementById('r-next').disabled = rPage === rPages.length-1;
-}
-
-function rNext() { if(rPage < rPages.length-1){rPage++;showRPage();} }
-function rPrev() { if(rPage > 0){rPage--;showRPage();} }
-
-// =============================================
-// DESKTOP BOOK
-// =============================================
-function openBookScreen() {
-  const el = document.getElementById('book-screen');
-  el.style.display = 'flex';
-  dSpread = 0;
-  renderSpread();
-}
-
-function closeBookScreen() {
-  document.getElementById('book-screen').style.display = 'none';
-  document.getElementById('cover-screen').style.display = 'flex';
-}
-
-function renderSpread() {
-  const [l, r] = dSpreads[dSpread];
-  document.getElementById('bl-content').innerHTML = l;
-  document.getElementById('br-content').innerHTML = r;
-  document.getElementById('desk-num').textContent = `${dSpread+1} / ${dSpreads.length}`;
-  document.getElementById('d-prev').disabled = dSpread === 0;
-  document.getElementById('d-next').disabled = dSpread === dSpreads.length-1;
-}
-
-function dNext() {
-  if (flipping || dSpread >= dSpreads.length-1) return;
-  flipping = true;
-
-  const fc = document.getElementById('flip-c');
-  const card = document.getElementById('flip-card');
-  const front = document.getElementById('flip-front');
-  const back = document.getElementById('flip-back');
-
-  // Front shows current right page
-  front.innerHTML = dSpreads[dSpread][1];
-  // Back shows next left page
-  const nextSpread = dSpread + 1;
-  back.innerHTML = dSpreads[nextSpread][0];
-  // Update right page to next right (hidden behind flip)
-  document.getElementById('br-content').innerHTML = dSpreads[nextSpread][1];
-
-  fc.style.display = 'block';
-  card.style.transition = 'none';
-  card.style.transform = 'rotateY(0deg)';
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      card.style.transition = 'transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000)';
-      card.style.transform = 'rotateY(-180deg)';
-    });
-  });
-
-  setTimeout(() => {
-    dSpread = nextSpread;
-    fc.style.display = 'none';
-    document.getElementById('bl-content').innerHTML = dSpreads[dSpread][0];
-    document.getElementById('br-content').innerHTML = dSpreads[dSpread][1];
-    document.getElementById('desk-num').textContent = `${dSpread+1} / ${dSpreads.length}`;
-    document.getElementById('d-prev').disabled = dSpread === 0;
-    document.getElementById('d-next').disabled = dSpread === dSpreads.length-1;
-    flipping = false;
-  }, 720);
-}
-
-function dPrev() {
-  if (flipping || dSpread <= 0) return;
-  flipping = true;
-
-  const fc = document.getElementById('flip-c');
-  const card = document.getElementById('flip-card');
-  const front = document.getElementById('flip-front');
-  const back = document.getElementById('flip-back');
-
-  // Back shows current left page
-  back.innerHTML = dSpreads[dSpread][0];
-  // Front shows prev right page
-  const prevSpread = dSpread - 1;
-  front.innerHTML = dSpreads[prevSpread][1];
-  document.getElementById('bl-content').innerHTML = dSpreads[prevSpread][0];
-
-  fc.style.display = 'block';
-  card.style.transition = 'none';
-  card.style.transform = 'rotateY(-180deg)';
-
-  requestAnimationFrame(() => {
-    requestAnimationFrame(() => {
-      card.style.transition = 'transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000)';
-      card.style.transform = 'rotateY(0deg)';
-    });
-  });
-
-  setTimeout(() => {
-    dSpread = prevSpread;
-    fc.style.display = 'none';
-    document.getElementById('bl-content').innerHTML = dSpreads[dSpread][0];
-    document.getElementById('br-content').innerHTML = dSpreads[dSpread][1];
-    document.getElementById('desk-num').textContent = `${dSpread+1} / ${dSpreads.length}`;
-    document.getElementById('d-prev').disabled = dSpread === 0;
-    document.getElementById('d-next').disabled = dSpread === dSpreads.length-1;
-    flipping = false;
-  }, 720);
-}
-
-// Keyboard nav
-document.addEventListener('keydown', e => {
-  if (document.getElementById('book-screen').style.display === 'flex') {
-    if (e.key === 'ArrowRight') dNext();
-    if (e.key === 'ArrowLeft') dPrev();
-  }
-  if (document.getElementById('reader').style.display === 'flex') {
-    if (e.key === 'ArrowRight') rNext();
-    if (e.key === 'ArrowLeft') rPrev();
+  if(document.getElementById('reader').style.display==='flex'){
+    if(e.key==='ArrowRight')rNext();
+    if(e.key==='ArrowLeft')rPrev();
   }
 });
 
-// Click pages on desktop
-document.getElementById('br')?.addEventListener('click', () => { if(!flipping) dNext(); });
-document.getElementById('bl')?.addEventListener('click', () => { if(!flipping) dPrev(); });
+document.getElementById('br').addEventListener('click',()=>{if(!flipping)dNext();});
+document.getElementById('bl').addEventListener('click',()=>{if(!flipping)dPrev();});
 
-// Handle resize
-window.addEventListener('resize', () => {
-  if (isMobile() && document.getElementById('book-screen').style.display === 'flex') {
+window.addEventListener('resize',()=>{
+  if(isMobile()&&document.getElementById('book-screen').style.display==='flex'){
     closeBookScreen();
-    document.getElementById('cover-screen').style.display = 'none';
+    document.getElementById('cover-screen').style.display='none';
     openReader();
   }
 });
