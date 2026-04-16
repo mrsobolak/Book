@@ -43,14 +43,10 @@
         cursor:pointer;
         z-index:2000;
         box-shadow:0 4px 15px rgba(0,0,0,0.25);
-        transition:all 0.2s ease;
     }
-    #print-btn:hover{
-        background:#1a3a2a;
-        transform:translateY(-2px);
-    }
+    #print-btn:hover{background:#1a3a2a; transform:translateY(-2px);}
 
-    /* READER (Mobile) */
+    /* READER */
     #reader{display:none;position:fixed;inset:0;background:var(--paper);flex-direction:column;z-index:100;}
     .reader-header{background:var(--green);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
     .reader-title{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.3em;color:var(--gold);text-transform:uppercase;}
@@ -99,70 +95,51 @@
     .pg .pc .final-pg .fin-orn{font-size:1.5rem;color:var(--green);margin-bottom:12px;}
     .pg .pc .final-pg .fin-title{font-family:'Cinzel Decorative',serif;font-size:clamp(0.85rem,1.8vw,1.3rem);color:var(--green);margin-bottom:10px;}
     .pg .pc .final-pg .fin-sub{font-style:italic;color:rgba(26,18,8,0.4);font-size:0.72em;max-width:180px;line-height:1.6;}
-    .pg-num{position:absolute;bottom:10px;font-family:'Cinzel',serif;font-size:0.52rem;color:rgba(26,18,8,0.25);letter-spacing:0.15em;}
-    .pg-num.l{left:clamp(16px,3vw,40px);}
-    .pg-num.r{right:clamp(16px,3vw,40px);}
-    .flip-container{position:absolute;top:0;left:50%;width:50%;height:100%;transform-origin:left center;perspective:2000px;display:none;z-index:50;}
-    .flip-card{width:100%;height:100%;transform-style:preserve-3d;transition:transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000);position:relative;}
-    .flip-front,.flip-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);overflow:hidden;font-size:clamp(0.68rem,1.2vw,0.85rem);line-height:1.72;color:var(--ink);}
-    .flip-back{transform:rotateY(180deg);box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);}
-    .flip-front{box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);}
-    .flip-front h3,.flip-back h3{font-family:'Cinzel',serif;font-size:clamp(0.52rem,0.85vw,0.68rem);letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(26,18,8,0.12);}
-    .flip-front p,.flip-back p{margin-bottom:6px;text-align:justify;hyphens:auto;}
     #desk-nav{display:flex;align-items:center;gap:16px;margin-top:16px;}
     .desk-btn{background:var(--green);border:none;color:var(--gold);width:40px;height:40px;border-radius:50%;font-size:1rem;cursor:pointer;transition:opacity 0.2s;}
     .desk-btn:disabled{opacity:0.25;cursor:default;}
     #desk-num{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:rgba(26,18,8,0.5);min-width:70px;text-align:center;}
     #desk-close{position:fixed;top:14px;left:14px;background:var(--green);border:none;color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.15em;padding:7px 14px;border-radius:3px;cursor:pointer;}
 
-    /* PRINT STYLES - This makes it print beautifully */
+    /* PRINT STYLES - Fixed to show all pages correctly */
     @media print {
-        body, #reader, .reader-body, .pc { background: white !important; color: #1a1208 !important; }
-        
-        #cover-screen, #book-screen, #print-btn, .reader-header, .reader-footer, 
-        .foot-btn, #desk-nav, .flip-container, .spine-bar, #desk-close {
+        body * { visibility: hidden; }
+        #reader, #reader * { visibility: visible; }
+        #reader {
+            position: absolute;
+            left: 0; top: 0;
+            width: 100%;
+            height: auto;
+            background: white !important;
+            display: block !important;
+        }
+        .reader-header, .reader-footer, #print-btn {
             display: none !important;
         }
-        
-        #reader {
-            display: block !important;
-            position: static !important;
-            height: auto !important;
-            width: 100% !important;
-        }
-        
         .reader-body {
-            padding: 0 !important;
+            padding: 30px 40px !important;
             overflow: visible !important;
         }
-        
         .pc {
             max-width: 100% !important;
             font-size: 11.5pt !important;
             line-height: 1.75 !important;
-            margin-bottom: 45px !important;
+            margin-bottom: 55px !important;
             page-break-inside: avoid;
         }
-        
         .pc h2, .pc h3 {
             page-break-after: avoid;
-            margin-top: 50px;
+            margin-top: 60px !important;
         }
-        
-        .pc .ded, .pc .fin-orn, .pc .fin-title {
-            page-break-before: avoid;
-        }
-        
         @page {
             size: letter;
-            margin: 0.9in 0.75in;
+            margin: 0.85in 0.75in;
         }
     }
 </style>
 </head>
 <body>
 
-    <!-- PRINT BUTTON -->
     <button id="print-btn" onclick="printBook()">🖨️ Print Book</button>
 
     <!-- COVER -->
@@ -179,7 +156,7 @@
       <div class="open-hint">Open to read</div>
     </div>
 
-    <!-- MOBILE READER -->
+    <!-- READER -->
     <div id="reader">
       <div class="reader-header">
         <span class="reader-title">The Novel of Ryan</span>
@@ -193,7 +170,7 @@
       </div>
     </div>
 
-    <!-- DESKTOP BOOK VIEW -->
+    <!-- DESKTOP BOOK -->
     <div id="book-screen">
       <button id="desk-close" onclick="closeBookScreen()">✕ Close</button>
       <div class="book-ui">
@@ -238,7 +215,6 @@ const P2=`<h3>Part Two: What Hides in the Dark</h3>
 <p>The word for what was happening was fentanyl. He didn't know that word yet. He just knew something was wrong with his dad. Something was wrong with his mom too, though she hid it better. She tried so hard to hide it.</p>
 <p>The addiction doesn't care how hard you try. It gets you anyway. And once it gets you, it starts working on everyone around you too. Quietly. Patiently. Like it has all the time in the world.</p>`;
 
-// (All your other constants P3 through P13, PFIN, CH1, CH2, TITLE, DED, FIN are kept exactly as you had them)
 const P3=`<h3>Part Three: The Arguments</h3>
 <p>2021.</p>
 <p>The arguments started as words. Loud words, sharp words, the kind that go through walls and find you in your bedroom at 2am even with a pillow over your head.</p>
@@ -409,7 +385,7 @@ const TITLE=`<div class="title-pg"><span class="torn">❦</span><h1>The Novel<br
 const DED=`<div class="blank-pg"><p class="ded">"For the kid who kept building."</p></div>`;
 const FIN=`<div class="final-pg"><span class="fin-orn">❧</span><span class="fin-title">To Be Continued.</span><p class="fin-sub">... By someone who has been through enough to know it's not over</p></div>`;
 
-// Reading pages (mobile)
+// Reading pages for mobile reader
 const rPages = [
   `<p class="ded">"For the kid who kept building."</p>`,
   `<span class="chnum">Chapter One</span><h2>Michigan</h2><span class="chyears">2019 — 2024</span><span class="chorn">❧</span>`,
@@ -435,20 +411,14 @@ const dSpreads = [
 let rPage=0, dSpread=0, flipping=false;
 const isMobile=()=>window.innerWidth<=680;
 
-// New: Print function
 function printBook() {
     if (document.getElementById('book-screen').style.display === 'flex') {
         closeBookScreen();
-        setTimeout(() => {
-            openReader();
-            setTimeout(() => window.print(), 400);
-        }, 150);
-    } else if (document.getElementById('reader').style.display === 'flex') {
-        window.print();
-    } else {
-        openReader();
-        setTimeout(() => window.print(), 400);
     }
+    if (document.getElementById('reader').style.display !== 'flex') {
+        openReader();
+    }
+    setTimeout(() => window.print(), 300);
 }
 
 function openBook(){
