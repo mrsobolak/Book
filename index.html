@@ -1,5 +1,4 @@
 <!DOCTYPE html>
-
 <html lang="en">
 <head>
 <meta charset="UTF-8">
@@ -7,133 +6,215 @@
 <title>The Novel of Ryan</title>
 <link href="https://fonts.googleapis.com/css2?family=EB+Garamond:ital,wght@0,400;0,500;1,400&family=Cinzel:wght@400;600&family=Cinzel+Decorative:wght@400;700&display=swap" rel="stylesheet">
 <style>
-*{margin:0;padding:0;box-sizing:border-box;}
-:root{--green:#0f2219;--green-mid:#1a3a2a;--gold:#c9a84c;--paper:#f5f0e8;--paper2:#ece5d0;--ink:#1a1208;--bg:#e8e0cc;}
-body{background:var(--bg);min-height:100vh;font-family:'EB Garamond',serif;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
-#cover-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100vw;height:100vh;}
-.book-cover{width:min(260px,55vw);aspect-ratio:0.7;background:var(--green);border-radius:3px 8px 8px 3px;box-shadow:-6px 0 0 #060f0a,6px 6px 20px rgba(0,0,0,0.4),20px 20px 60px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.3s ease,box-shadow 0.3s ease;position:relative;border:1px solid #2a5a3a;}
-.book-cover::before{content:'';position:absolute;inset:10px;border:1px solid rgba(201,168,76,0.25);pointer-events:none;}
-.book-cover::after{content:'';position:absolute;inset:14px;border:1px solid rgba(201,168,76,0.12);pointer-events:none;}
-.book-cover:hover{transform:translateY(-6px) rotate(-0.5deg);box-shadow:-6px 0 0 #060f0a,8px 14px 30px rgba(0,0,0,0.5),24px 24px 70px rgba(0,0,0,0.35);}
-.cover-inner{text-align:center;z-index:1;padding:20px;}
-.cover-orn{color:var(--gold);font-size:1.2rem;display:block;margin-bottom:14px;}
-.cover-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1rem,4vw,1.3rem);color:var(--gold);line-height:1.35;text-shadow:0 0 20px rgba(201,168,76,0.3);}
-.cover-div{width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:12px auto;}
-.cover-years{font-family:'Cinzel',serif;font-size:0.65rem;color:rgba(201,168,76,0.65);letter-spacing:0.3em;}
-.cover-orn-b{color:var(--gold);font-size:1.2rem;display:block;margin-top:14px;transform:rotate(180deg);}
-.open-hint{margin-top:24px;font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.35em;color:rgba(26,18,8,0.4);text-transform:uppercase;animation:hint 2s ease-in-out infinite;}
-@keyframes hint{0%,100%{opacity:0.4}50%{opacity:0.9}}
-#reader{display:none;position:fixed;inset:0;background:var(--paper);flex-direction:column;z-index:100;}
-.reader-header{background:var(--green);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.reader-title{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.3em;color:var(--gold);text-transform:uppercase;}
-.header-btn{background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.1em;padding:5px 12px;border-radius:3px;cursor:pointer;}
-.reader-body{flex:1;overflow-y:auto;padding:32px 24px 20px;-webkit-overflow-scrolling:touch;}
-.reader-body .pc{max-width:640px;margin:0 auto;color:var(--ink);font-size:1.05rem;line-height:1.85;}
-.reader-body .pc h2{font-family:'Cinzel Decorative',serif;font-size:clamp(1.4rem,6vw,2.2rem);color:var(--green);text-align:center;margin:24px 0 8px;}
-.reader-body .pc .chnum{font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.4em;color:rgba(26,18,8,0.4);text-align:center;display:block;margin-bottom:8px;}
-.reader-body .pc .chyears{font-style:italic;color:rgba(26,18,8,0.35);text-align:center;display:block;font-size:0.85rem;margin-bottom:8px;}
-.reader-body .pc .chorn{text-align:center;color:rgba(26,18,8,0.15);font-size:1.4rem;margin:12px 0 24px;display:block;}
-.reader-body .pc h3{font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.08em;color:var(--ink);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid rgba(26,18,8,0.12);}
-.reader-body .pc p{margin-bottom:12px;text-align:justify;hyphens:auto;}
-.reader-body .pc .ded{text-align:center;font-style:italic;color:rgba(26,18,8,0.45);margin:40px 0;}
-.reader-body .pc .fin-orn{font-size:2rem;color:var(--green);display:block;text-align:center;margin-bottom:16px;}
-.reader-body .pc .fin-title{font-family:'Cinzel Decorative',serif;font-size:1.6rem;color:var(--green);display:block;text-align:center;margin-bottom:12px;}
-.reader-body .pc .fin-sub{font-style:italic;color:rgba(26,18,8,0.45);font-size:0.9rem;text-align:center;display:block;}
-.reader-footer{background:var(--paper2);border-top:1px solid rgba(26,18,8,0.1);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
-.foot-btn{background:var(--green);border:none;color:var(--gold);width:44px;height:44px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;}
-.foot-btn:disabled{opacity:0.25;cursor:default;}
-#page-num{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.2em;color:rgba(26,18,8,0.45);}
-#book-screen{display:none;position:fixed;inset:0;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;z-index:100;}
-.book-ui{position:relative;width:min(800px,90vw);height:min(520px,70vh);}
-.book-spread{width:100%;height:100%;display:flex;border-radius:4px;box-shadow:0 20px 80px rgba(0,0,0,0.35);overflow:hidden;position:relative;}
-.pg{width:50%;height:100%;background:var(--paper);padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);overflow:hidden;position:relative;display:flex;flex-direction:column;}
-.pg-left{box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);}
-.pg-right{box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);}
-.spine-bar{width:20px;background:linear-gradient(90deg,#060f0a,#0f2219,#060f0a);flex-shrink:0;box-shadow:0 0 20px rgba(0,0,0,0.4);}
-.pg .pc{height:100%;color:var(--ink);font-size:clamp(0.68rem,1.2vw,0.85rem);line-height:1.72;overflow:hidden;}
-.pg .pc h3{font-family:'Cinzel',serif;font-size:clamp(0.52rem,0.85vw,0.68rem);letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(26,18,8,0.12);color:var(--ink);}
-.pg .pc p{margin-bottom:6px;text-align:justify;hyphens:auto;}
-.pg .pc .ch-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-.pg .pc .ch-pg .chnum{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.4em;color:rgba(26,18,8,0.35);margin-bottom:10px;}
-.pg .pc .ch-pg h2{font-family:'Cinzel Decorative',serif;font-size:clamp(1.1rem,2.5vw,1.8rem);color:var(--green);margin-bottom:8px;}
-.pg .pc .ch-pg .chyears{font-style:italic;color:rgba(26,18,8,0.35);font-size:0.72rem;}
-.pg .pc .ch-pg .chorn{font-size:1.2rem;color:rgba(26,18,8,0.12);margin-top:14px;}
-.pg .pc .title-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-.pg .pc .title-pg h1{font-family:'Cinzel Decorative',serif;font-size:clamp(0.85rem,1.8vw,1.2rem);color:var(--green);margin-bottom:10px;line-height:1.35;}
-.pg .pc .title-pg .taut{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.3em;color:rgba(26,18,8,0.45);margin-bottom:6px;}
-.pg .pc .title-pg .torn{font-size:1.1rem;color:var(--green);margin:8px 0;}
-.pg .pc .title-pg .tyrs{font-style:italic;color:rgba(26,18,8,0.3);font-size:0.7rem;}
-.pg .pc .blank-pg{height:100%;display:flex;align-items:center;justify-content:center;}
-.pg .pc .ded{text-align:center;font-style:italic;color:rgba(26,18,8,0.4);font-size:0.85em;}
-.pg .pc .final-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
-.pg .pc .final-pg .fin-orn{font-size:1.5rem;color:var(--green);margin-bottom:12px;}
-.pg .pc .final-pg .fin-title{font-family:'Cinzel Decorative',serif;font-size:clamp(0.85rem,1.8vw,1.3rem);color:var(--green);margin-bottom:10px;}
-.pg .pc .final-pg .fin-sub{font-style:italic;color:rgba(26,18,8,0.4);font-size:0.72em;max-width:180px;line-height:1.6;}
-.pg-num{position:absolute;bottom:10px;font-family:'Cinzel',serif;font-size:0.52rem;color:rgba(26,18,8,0.25);letter-spacing:0.15em;}
-.pg-num.l{left:clamp(16px,3vw,40px);}
-.pg-num.r{right:clamp(16px,3vw,40px);}
-.flip-container{position:absolute;top:0;left:50%;width:50%;height:100%;transform-origin:left center;perspective:2000px;display:none;z-index:50;}
-.flip-card{width:100%;height:100%;transform-style:preserve-3d;transition:transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000);position:relative;}
-.flip-front,.flip-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);overflow:hidden;font-size:clamp(0.68rem,1.2vw,0.85rem);line-height:1.72;color:var(--ink);}
-.flip-back{transform:rotateY(180deg);box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);}
-.flip-front{box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);}
-.flip-front h3,.flip-back h3{font-family:'Cinzel',serif;font-size:clamp(0.52rem,0.85vw,0.68rem);letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(26,18,8,0.12);}
-.flip-front p,.flip-back p{margin-bottom:6px;text-align:justify;hyphens:auto;}
-#desk-nav{display:flex;align-items:center;gap:16px;margin-top:16px;}
-.desk-btn{background:var(--green);border:none;color:var(--gold);width:40px;height:40px;border-radius:50%;font-size:1rem;cursor:pointer;transition:opacity 0.2s;}
-.desk-btn:disabled{opacity:0.25;cursor:default;}
-#desk-num{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:rgba(26,18,8,0.5);min-width:70px;text-align:center;}
-#desk-close{position:fixed;top:14px;left:14px;background:var(--green);border:none;color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.15em;padding:7px 14px;border-radius:3px;cursor:pointer;}
+    :root{
+        --green:#0f2219;--green-mid:#1a3a2a;--gold:#c9a84c;--paper:#f5f0e8;--paper2:#ece5d0;--ink:#1a1208;--bg:#e8e0cc;
+    }
+    *{margin:0;padding:0;box-sizing:border-box;}
+    body{background:var(--bg);min-height:100vh;font-family:'EB Garamond',serif;display:flex;flex-direction:column;align-items:center;justify-content:center;overflow:hidden;}
+
+    /* COVER */
+    #cover-screen{display:flex;flex-direction:column;align-items:center;justify-content:center;width:100vw;height:100vh;}
+    .book-cover{width:min(260px,55vw);aspect-ratio:0.7;background:var(--green);border-radius:3px 8px 8px 3px;box-shadow:-6px 0 0 #060f0a,6px 6px 20px rgba(0,0,0,0.4),20px 20px 60px rgba(0,0,0,0.3);display:flex;align-items:center;justify-content:center;cursor:pointer;transition:transform 0.3s ease,box-shadow 0.3s ease;position:relative;border:1px solid #2a5a3a;}
+    .book-cover::before{content:'';position:absolute;inset:10px;border:1px solid rgba(201,168,76,0.25);pointer-events:none;}
+    .book-cover::after{content:'';position:absolute;inset:14px;border:1px solid rgba(201,168,76,0.12);pointer-events:none;}
+    .book-cover:hover{transform:translateY(-6px) rotate(-0.5deg);box-shadow:-6px 0 0 #060f0a,8px 14px 30px rgba(0,0,0,0.5),24px 24px 70px rgba(0,0,0,0.35);}
+    .cover-inner{text-align:center;z-index:1;padding:20px;}
+    .cover-orn{color:var(--gold);font-size:1.2rem;display:block;margin-bottom:14px;}
+    .cover-title{font-family:'Cinzel Decorative',serif;font-size:clamp(1rem,4vw,1.3rem);color:var(--gold);line-height:1.35;text-shadow:0 0 20px rgba(201,168,76,0.3);}
+    .cover-div{width:50px;height:1px;background:linear-gradient(90deg,transparent,var(--gold),transparent);margin:12px auto;}
+    .cover-years{font-family:'Cinzel',serif;font-size:0.65rem;color:rgba(201,168,76,0.65);letter-spacing:0.3em;}
+    .cover-orn-b{color:var(--gold);font-size:1.2rem;display:block;margin-top:14px;transform:rotate(180deg);}
+    .open-hint{margin-top:24px;font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.35em;color:rgba(26,18,8,0.4);text-transform:uppercase;animation:hint 2s ease-in-out infinite;}
+    @keyframes hint{0%,100%{opacity:0.4}50%{opacity:0.9}}
+
+    /* PRINT BUTTON */
+    #print-btn{
+        position:fixed;
+        top:20px;
+        right:20px;
+        background:var(--green);
+        color:var(--gold);
+        border:none;
+        padding:12px 20px;
+        border-radius:4px;
+        font-family:'Cinzel',serif;
+        font-size:0.8rem;
+        letter-spacing:0.08em;
+        cursor:pointer;
+        z-index:2000;
+        box-shadow:0 4px 15px rgba(0,0,0,0.25);
+        transition:all 0.2s ease;
+    }
+    #print-btn:hover{
+        background:#1a3a2a;
+        transform:translateY(-2px);
+    }
+
+    /* READER (Mobile) */
+    #reader{display:none;position:fixed;inset:0;background:var(--paper);flex-direction:column;z-index:100;}
+    .reader-header{background:var(--green);padding:12px 16px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+    .reader-title{font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.3em;color:var(--gold);text-transform:uppercase;}
+    .header-btn{background:transparent;border:1px solid rgba(201,168,76,0.4);color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.1em;padding:5px 12px;border-radius:3px;cursor:pointer;}
+    .reader-body{flex:1;overflow-y:auto;padding:32px 24px 20px;-webkit-overflow-scrolling:touch;}
+    .reader-body .pc{max-width:640px;margin:0 auto;color:var(--ink);font-size:1.05rem;line-height:1.85;}
+    .reader-body .pc h2{font-family:'Cinzel Decorative',serif;font-size:clamp(1.4rem,6vw,2.2rem);color:var(--green);text-align:center;margin:24px 0 8px;}
+    .reader-body .pc .chnum{font-family:'Cinzel',serif;font-size:0.7rem;letter-spacing:0.4em;color:rgba(26,18,8,0.4);text-align:center;display:block;margin-bottom:8px;}
+    .reader-body .pc .chyears{font-style:italic;color:rgba(26,18,8,0.35);text-align:center;display:block;font-size:0.85rem;margin-bottom:8px;}
+    .reader-body .pc .chorn{text-align:center;color:rgba(26,18,8,0.15);font-size:1.4rem;margin:12px 0 24px;display:block;}
+    .reader-body .pc h3{font-family:'Cinzel',serif;font-size:0.78rem;letter-spacing:0.08em;color:var(--ink);margin:0 0 12px;padding-bottom:6px;border-bottom:1px solid rgba(26,18,8,0.12);}
+    .reader-body .pc p{margin-bottom:12px;text-align:justify;hyphens:auto;}
+    .reader-body .pc .ded{text-align:center;font-style:italic;color:rgba(26,18,8,0.45);margin:40px 0;}
+    .reader-body .pc .fin-orn{font-size:2rem;color:var(--green);display:block;text-align:center;margin-bottom:16px;}
+    .reader-body .pc .fin-title{font-family:'Cinzel Decorative',serif;font-size:1.6rem;color:var(--green);display:block;text-align:center;margin-bottom:12px;}
+    .reader-body .pc .fin-sub{font-style:italic;color:rgba(26,18,8,0.45);font-size:0.9rem;text-align:center;display:block;}
+    .reader-footer{background:var(--paper2);border-top:1px solid rgba(26,18,8,0.1);padding:10px 20px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;}
+    .foot-btn{background:var(--green);border:none;color:var(--gold);width:44px;height:44px;border-radius:50%;font-size:1.1rem;cursor:pointer;display:flex;align-items:center;justify-content:center;transition:opacity 0.2s;}
+    .foot-btn:disabled{opacity:0.25;cursor:default;}
+    #page-num{font-family:'Cinzel',serif;font-size:0.62rem;letter-spacing:0.2em;color:rgba(26,18,8,0.45);}
+
+    /* DESKTOP BOOK VIEW */
+    #book-screen{display:none;position:fixed;inset:0;background:var(--bg);align-items:center;justify-content:center;flex-direction:column;z-index:100;}
+    .book-ui{position:relative;width:min(800px,90vw);height:min(520px,70vh);}
+    .book-spread{width:100%;height:100%;display:flex;border-radius:4px;box-shadow:0 20px 80px rgba(0,0,0,0.35);overflow:hidden;position:relative;}
+    .pg{width:50%;height:100%;background:var(--paper);padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);overflow:hidden;position:relative;display:flex;flex-direction:column;}
+    .pg-left{box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);}
+    .pg-right{box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);}
+    .spine-bar{width:20px;background:linear-gradient(90deg,#060f0a,#0f2219,#060f0a);flex-shrink:0;box-shadow:0 0 20px rgba(0,0,0,0.4);}
+    .pg .pc{height:100%;color:var(--ink);font-size:clamp(0.68rem,1.2vw,0.85rem);line-height:1.72;overflow:hidden;}
+    .pg .pc h3{font-family:'Cinzel',serif;font-size:clamp(0.52rem,0.85vw,0.68rem);letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(26,18,8,0.12);color:var(--ink);}
+    .pg .pc p{margin-bottom:6px;text-align:justify;hyphens:auto;}
+    .pg .pc .ch-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+    .pg .pc .ch-pg .chnum{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.4em;color:rgba(26,18,8,0.35);margin-bottom:10px;}
+    .pg .pc .ch-pg h2{font-family:'Cinzel Decorative',serif;font-size:clamp(1.1rem,2.5vw,1.8rem);color:var(--green);margin-bottom:8px;}
+    .pg .pc .ch-pg .chyears{font-style:italic;color:rgba(26,18,8,0.35);font-size:0.72rem;}
+    .pg .pc .ch-pg .chorn{font-size:1.2rem;color:rgba(26,18,8,0.12);margin-top:14px;}
+    .pg .pc .title-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+    .pg .pc .title-pg h1{font-family:'Cinzel Decorative',serif;font-size:clamp(0.85rem,1.8vw,1.2rem);color:var(--green);margin-bottom:10px;line-height:1.35;}
+    .pg .pc .title-pg .taut{font-family:'Cinzel',serif;font-size:0.58rem;letter-spacing:0.3em;color:rgba(26,18,8,0.45);margin-bottom:6px;}
+    .pg .pc .title-pg .torn{font-size:1.1rem;color:var(--green);margin:8px 0;}
+    .pg .pc .title-pg .tyrs{font-style:italic;color:rgba(26,18,8,0.3);font-size:0.7rem;}
+    .pg .pc .blank-pg{height:100%;display:flex;align-items:center;justify-content:center;}
+    .pg .pc .ded{text-align:center;font-style:italic;color:rgba(26,18,8,0.4);font-size:0.85em;}
+    .pg .pc .final-pg{height:100%;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;}
+    .pg .pc .final-pg .fin-orn{font-size:1.5rem;color:var(--green);margin-bottom:12px;}
+    .pg .pc .final-pg .fin-title{font-family:'Cinzel Decorative',serif;font-size:clamp(0.85rem,1.8vw,1.3rem);color:var(--green);margin-bottom:10px;}
+    .pg .pc .final-pg .fin-sub{font-style:italic;color:rgba(26,18,8,0.4);font-size:0.72em;max-width:180px;line-height:1.6;}
+    .pg-num{position:absolute;bottom:10px;font-family:'Cinzel',serif;font-size:0.52rem;color:rgba(26,18,8,0.25);letter-spacing:0.15em;}
+    .pg-num.l{left:clamp(16px,3vw,40px);}
+    .pg-num.r{right:clamp(16px,3vw,40px);}
+    .flip-container{position:absolute;top:0;left:50%;width:50%;height:100%;transform-origin:left center;perspective:2000px;display:none;z-index:50;}
+    .flip-card{width:100%;height:100%;transform-style:preserve-3d;transition:transform 0.7s cubic-bezier(0.645,0.045,0.355,1.000);position:relative;}
+    .flip-front,.flip-back{position:absolute;inset:0;backface-visibility:hidden;-webkit-backface-visibility:hidden;background:var(--paper);padding:clamp(16px,3vw,36px) clamp(16px,3vw,40px);overflow:hidden;font-size:clamp(0.68rem,1.2vw,0.85rem);line-height:1.72;color:var(--ink);}
+    .flip-back{transform:rotateY(180deg);box-shadow:inset -4px 0 12px rgba(0,0,0,0.07);}
+    .flip-front{box-shadow:inset 4px 0 12px rgba(0,0,0,0.07);}
+    .flip-front h3,.flip-back h3{font-family:'Cinzel',serif;font-size:clamp(0.52rem,0.85vw,0.68rem);letter-spacing:0.08em;margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid rgba(26,18,8,0.12);}
+    .flip-front p,.flip-back p{margin-bottom:6px;text-align:justify;hyphens:auto;}
+    #desk-nav{display:flex;align-items:center;gap:16px;margin-top:16px;}
+    .desk-btn{background:var(--green);border:none;color:var(--gold);width:40px;height:40px;border-radius:50%;font-size:1rem;cursor:pointer;transition:opacity 0.2s;}
+    .desk-btn:disabled{opacity:0.25;cursor:default;}
+    #desk-num{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:rgba(26,18,8,0.5);min-width:70px;text-align:center;}
+    #desk-close{position:fixed;top:14px;left:14px;background:var(--green);border:none;color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.15em;padding:7px 14px;border-radius:3px;cursor:pointer;}
+
+    /* PRINT STYLES - This makes it print beautifully */
+    @media print {
+        body, #reader, .reader-body, .pc { background: white !important; color: #1a1208 !important; }
+        
+        #cover-screen, #book-screen, #print-btn, .reader-header, .reader-footer, 
+        .foot-btn, #desk-nav, .flip-container, .spine-bar, #desk-close {
+            display: none !important;
+        }
+        
+        #reader {
+            display: block !important;
+            position: static !important;
+            height: auto !important;
+            width: 100% !important;
+        }
+        
+        .reader-body {
+            padding: 0 !important;
+            overflow: visible !important;
+        }
+        
+        .pc {
+            max-width: 100% !important;
+            font-size: 11.5pt !important;
+            line-height: 1.75 !important;
+            margin-bottom: 45px !important;
+            page-break-inside: avoid;
+        }
+        
+        .pc h2, .pc h3 {
+            page-break-after: avoid;
+            margin-top: 50px;
+        }
+        
+        .pc .ded, .pc .fin-orn, .pc .fin-title {
+            page-break-before: avoid;
+        }
+        
+        @page {
+            size: letter;
+            margin: 0.9in 0.75in;
+        }
+    }
 </style>
 </head>
 <body>
-<div id="cover-screen">
-  <div class="book-cover" onclick="openBook()">
-    <div class="cover-inner">
-      <span class="cover-orn">❧</span>
-      <div class="cover-title">The Novel<br>of Ryan</div>
-      <div class="cover-div"></div>
-      <div class="cover-years">2019 · 2026</div>
-      <span class="cover-orn-b">❧</span>
-    </div>
-  </div>
-  <div class="open-hint">Open to read</div>
-</div>
 
-<div id="reader">
-  <div class="reader-header">
-    <span class="reader-title">The Novel of Ryan</span>
-    <button class="header-btn" onclick="closeReader()">✕ Close</button>
-  </div>
-  <div class="reader-body"><div class="pc" id="rc"></div></div>
-  <div class="reader-footer">
-    <button class="foot-btn" id="r-prev" onclick="rPrev()">←</button>
-    <span id="page-num">1 / 18</span>
-    <button class="foot-btn" id="r-next" onclick="rNext()">→</button>
-  </div>
-</div>
+    <!-- PRINT BUTTON -->
+    <button id="print-btn" onclick="printBook()">🖨️ Print Book</button>
 
-<div id="book-screen">
-  <button id="desk-close" onclick="closeBookScreen()">✕ Close</button>
-  <div class="book-ui">
-    <div class="book-spread">
-      <div class="pg pg-left"><div class="pc" id="bl"></div></div>
-      <div class="spine-bar"></div>
-      <div class="pg pg-right"><div class="pc" id="br"></div></div>
-      <div class="flip-container" id="flip-c">
-        <div class="flip-card" id="flip-card">
-          <div class="flip-front" id="flip-front"></div>
-          <div class="flip-back" id="flip-back"></div>
+    <!-- COVER -->
+    <div id="cover-screen">
+      <div class="book-cover" onclick="openBook()">
+        <div class="cover-inner">
+          <span class="cover-orn">❧</span>
+          <div class="cover-title">The Novel<br>of Ryan</div>
+          <div class="cover-div"></div>
+          <div class="cover-years">2019 · 2026</div>
+          <span class="cover-orn-b">❧</span>
         </div>
       </div>
+      <div class="open-hint">Open to read</div>
     </div>
-  </div>
-  <div id="desk-nav">
-    <button class="desk-btn" id="d-prev" onclick="dPrev()">←</button>
-    <span id="desk-num">1 / 9</span>
-    <button class="desk-btn" id="d-next" onclick="dNext()">→</button>
-  </div>
-</div>
+
+    <!-- MOBILE READER -->
+    <div id="reader">
+      <div class="reader-header">
+        <span class="reader-title">The Novel of Ryan</span>
+        <button class="header-btn" onclick="closeReader()">✕ Close</button>
+      </div>
+      <div class="reader-body"><div class="pc" id="rc"></div></div>
+      <div class="reader-footer">
+        <button class="foot-btn" id="r-prev" onclick="rPrev()">←</button>
+        <span id="page-num">1 / 18</span>
+        <button class="foot-btn" id="r-next" onclick="rNext()">→</button>
+      </div>
+    </div>
+
+    <!-- DESKTOP BOOK VIEW -->
+    <div id="book-screen">
+      <button id="desk-close" onclick="closeBookScreen()">✕ Close</button>
+      <div class="book-ui">
+        <div class="book-spread">
+          <div class="pg pg-left"><div class="pc" id="bl"></div></div>
+          <div class="spine-bar"></div>
+          <div class="pg pg-right"><div class="pc" id="br"></div></div>
+          <div class="flip-container" id="flip-c">
+            <div class="flip-card" id="flip-card">
+              <div class="flip-front" id="flip-front"></div>
+              <div class="flip-back" id="flip-back"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div id="desk-nav">
+        <button class="desk-btn" id="d-prev" onclick="dPrev()">←</button>
+        <span id="desk-num">1 / 9</span>
+        <button class="desk-btn" id="d-next" onclick="dNext()">→</button>
+      </div>
+    </div>
 
 <script>
 const P1=`<h3>Part One: When Life Was Good</h3>
@@ -157,6 +238,7 @@ const P2=`<h3>Part Two: What Hides in the Dark</h3>
 <p>The word for what was happening was fentanyl. He didn't know that word yet. He just knew something was wrong with his dad. Something was wrong with his mom too, though she hid it better. She tried so hard to hide it.</p>
 <p>The addiction doesn't care how hard you try. It gets you anyway. And once it gets you, it starts working on everyone around you too. Quietly. Patiently. Like it has all the time in the world.</p>`;
 
+// (All your other constants P3 through P13, PFIN, CH1, CH2, TITLE, DED, FIN are kept exactly as you had them)
 const P3=`<h3>Part Three: The Arguments</h3>
 <p>2021.</p>
 <p>The arguments started as words. Loud words, sharp words, the kind that go through walls and find you in your bedroom at 2am even with a pillow over your head.</p>
@@ -327,7 +409,7 @@ const TITLE=`<div class="title-pg"><span class="torn">❦</span><h1>The Novel<br
 const DED=`<div class="blank-pg"><p class="ded">"For the kid who kept building."</p></div>`;
 const FIN=`<div class="final-pg"><span class="fin-orn">❧</span><span class="fin-title">To Be Continued.</span><p class="fin-sub">... By someone who has been through enough to know it's not over</p></div>`;
 
-// Reading pages (mobile) - full text, one section each, scrollable
+// Reading pages (mobile)
 const rPages = [
   `<p class="ded">"For the kid who kept building."</p>`,
   `<span class="chnum">Chapter One</span><h2>Michigan</h2><span class="chyears">2019 — 2024</span><span class="chorn">❧</span>`,
@@ -337,7 +419,7 @@ const rPages = [
   PFIN
 ];
 
-// Desktop spreads [left, right] - full text, overflow hidden per page
+// Desktop spreads
 const dSpreads = [
   [DED, TITLE],
   [CH1, P1],
@@ -352,6 +434,22 @@ const dSpreads = [
 
 let rPage=0, dSpread=0, flipping=false;
 const isMobile=()=>window.innerWidth<=680;
+
+// New: Print function
+function printBook() {
+    if (document.getElementById('book-screen').style.display === 'flex') {
+        closeBookScreen();
+        setTimeout(() => {
+            openReader();
+            setTimeout(() => window.print(), 400);
+        }, 150);
+    } else if (document.getElementById('reader').style.display === 'flex') {
+        window.print();
+    } else {
+        openReader();
+        setTimeout(() => window.print(), 400);
+    }
+}
 
 function openBook(){
   document.getElementById('cover-screen').style.display='none';
