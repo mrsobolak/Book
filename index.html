@@ -27,8 +27,8 @@
     .open-hint{margin-top:24px;font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.35em;color:rgba(26,18,8,0.4);text-transform:uppercase;animation:hint 2s ease-in-out infinite;}
     @keyframes hint{0%,100%{opacity:0.4}50%{opacity:0.9}}
 
-    /* PRINT BUTTON */
-    #print-btn{
+    /* DOWNLOAD BUTTON */
+    #download-btn{
         position:fixed;
         top:20px;
         right:20px;
@@ -44,7 +44,7 @@
         z-index:2000;
         box-shadow:0 4px 15px rgba(0,0,0,0.25);
     }
-    #print-btn:hover{background:#1a3a2a; transform:translateY(-2px);}
+    #download-btn:hover{background:#1a3a2a; transform:translateY(-2px);}
 
     /* READER */
     #reader{display:none;position:fixed;inset:0;background:var(--paper);flex-direction:column;z-index:100;}
@@ -101,7 +101,7 @@
     #desk-num{font-family:'Cinzel',serif;font-size:0.65rem;letter-spacing:0.2em;color:rgba(26,18,8,0.5);min-width:70px;text-align:center;}
     #desk-close{position:fixed;top:14px;left:14px;background:var(--green);border:none;color:var(--gold);font-family:'Cinzel',serif;font-size:0.6rem;letter-spacing:0.15em;padding:7px 14px;border-radius:3px;cursor:pointer;}
 
-    /* PRINT STYLES - Fixed to show all pages correctly */
+    /* PRINT / PDF STYLES */
     @media print {
         body * { visibility: hidden; }
         #reader, #reader * { visibility: visible; }
@@ -111,25 +111,23 @@
             width: 100%;
             height: auto;
             background: white !important;
-            display: block !important;
         }
-        .reader-header, .reader-footer, #print-btn {
+        .reader-header, .reader-footer, #download-btn {
             display: none !important;
         }
         .reader-body {
-            padding: 30px 40px !important;
+            padding: 40px 50px !important;
             overflow: visible !important;
         }
         .pc {
-            max-width: 100% !important;
             font-size: 11.5pt !important;
-            line-height: 1.75 !important;
+            line-height: 1.8 !important;
             margin-bottom: 55px !important;
             page-break-inside: avoid;
         }
         .pc h2, .pc h3 {
-            page-break-after: avoid;
             margin-top: 60px !important;
+            page-break-after: avoid;
         }
         @page {
             size: letter;
@@ -140,7 +138,7 @@
 </head>
 <body>
 
-    <button id="print-btn" onclick="printBook()">🖨️ Print Book</button>
+    <button id="download-btn" onclick="downloadAsPDF()">📄 Download as PDF</button>
 
     <!-- COVER -->
     <div id="cover-screen">
@@ -170,7 +168,7 @@
       </div>
     </div>
 
-    <!-- DESKTOP BOOK -->
+    <!-- DESKTOP BOOK VIEW -->
     <div id="book-screen">
       <button id="desk-close" onclick="closeBookScreen()">✕ Close</button>
       <div class="book-ui">
@@ -385,7 +383,7 @@ const TITLE=`<div class="title-pg"><span class="torn">❦</span><h1>The Novel<br
 const DED=`<div class="blank-pg"><p class="ded">"For the kid who kept building."</p></div>`;
 const FIN=`<div class="final-pg"><span class="fin-orn">❧</span><span class="fin-title">To Be Continued.</span><p class="fin-sub">... By someone who has been through enough to know it's not over</p></div>`;
 
-// Reading pages for mobile reader
+// Reading pages (mobile)
 const rPages = [
   `<p class="ded">"For the kid who kept building."</p>`,
   `<span class="chnum">Chapter One</span><h2>Michigan</h2><span class="chyears">2019 — 2024</span><span class="chorn">❧</span>`,
@@ -411,14 +409,16 @@ const dSpreads = [
 let rPage=0, dSpread=0, flipping=false;
 const isMobile=()=>window.innerWidth<=680;
 
-function printBook() {
+function downloadAsPDF() {
     if (document.getElementById('book-screen').style.display === 'flex') {
         closeBookScreen();
     }
     if (document.getElementById('reader').style.display !== 'flex') {
         openReader();
     }
-    setTimeout(() => window.print(), 300);
+    setTimeout(() => {
+        window.print();   // Opens print dialog → choose "Save as PDF"
+    }, 400);
 }
 
 function openBook(){
