@@ -69,14 +69,9 @@ bm_loft(shirt, [
     (V((0.0, -0.054, 1.500)), 0.118, 0.086),     # traps
     (V((0.0, -0.054, 1.540)), 0.072, 0.064),     # collar
 ], seg=40, up=UPY)
-# anatomy under the shirt: pectorals, clavicles, trapezius, shoulder blades, a little belly
+# only the trapezius shapes the neck base; everything else stays a clean TF2 silhouette
 for s in (1, -1):
-    bm_ellipsoid(shirt, (s * 0.082, -0.112, 1.325), 0.082, 0.042, 0.066, seg=28, rings=14)             # pec (subtle)
-    bm_rod(shirt, (s * 0.025, -0.112, 1.470), (s * 0.190, -0.088, 1.452), 0.010, seg=12, rounded=True)  # clavicle
     bm_ellipsoid(shirt, (s * 0.105, -0.030, 1.492), 0.092, 0.070, 0.048, seg=28, rings=12)             # trap
-    bm_ellipsoid(shirt, (s * 0.095, 0.055, 1.355), 0.072, 0.036, 0.092, seg=28, rings=12)              # shoulder blade
-    bm_ellipsoid(shirt, (s * 0.045, 0.040, 1.120), 0.070, 0.045, 0.110, seg=24, rings=12)              # lower back
-bm_ellipsoid(shirt, (0.0, -0.050, 1.055), 0.105, 0.062, 0.085, seg=28, rings=14)                        # belly
 # cloth folds: tuck folds above the belt, armpit folds, pull toward the pointing shoulder
 for s, sh, el in ((1, SH_L, EL_L), (-1, SH_R, EL_R)):
     bm_ellipsoid(shirt, sh + V((s * 0.004, 0, 0.006)), 0.068, 0.066, 0.074, seg=32, rings=16)          # deltoid cap
@@ -132,18 +127,9 @@ def hand_shells(bm, wrist, F, U, curls, thumb_curl, sign, scale=1.0):
 
 def arm_shells(bm, sh, el, wr):
     bm_loft(bm, [(lerp(sh, el, 0.30), 0.058, 0.056), (lerp(sh, el, 0.65), 0.054, 0.052), (el, 0.052, 0.050)], seg=28, up=UPY)
-    bm_ellipsoid(bm, el, 0.054, 0.052, 0.056, seg=24, rings=12)
-    bm_loft(bm, [(el, 0.053, 0.051), (lerp(el, wr, 0.30), 0.060, 0.054), (lerp(el, wr, 0.65), 0.050, 0.044),
+    bm_ellipsoid(bm, el, 0.051, 0.049, 0.053, seg=24, rings=12)
+    bm_loft(bm, [(el, 0.052, 0.050), (lerp(el, wr, 0.30), 0.055, 0.050), (lerp(el, wr, 0.65), 0.048, 0.043),
                  (wr, 0.040, 0.034)], seg=28, up=UPY)
-    d = (V(el) - V(sh)).normalized(); fwd = V((0, -1, 0)) - d * d.y
-    fwd = fwd.normalized() if fwd.length > 1e-6 else V((0, -1, 0))
-    c = lerp(sh, el, 0.52) + fwd * 0.012
-    bm_ellipsoid(bm, c, 0.040, 0.040, 0.075, seg=22, rings=10)                                          # biceps (subtle)
-    c = lerp(sh, el, 0.55) - fwd * 0.010
-    bm_ellipsoid(bm, c, 0.038, 0.038, 0.070, seg=22, rings=10)                                          # triceps
-    d2 = (V(wr) - V(el)).normalized()
-    c = lerp(el, wr, 0.30) + V((0, 0, 0)) ; bm_ellipsoid(bm, c, 0.062, 0.058, 0.060, seg=22, rings=10)  # flexor mass
-    bm_ellipsoid(bm, lerp(el, wr, 0.95) + V((0, 0, 0)), 0.044, 0.038, 0.030, seg=18, rings=8)          # wrist bone
 
 
 # left arm + hand: skin, pointing (index straight, others curled, thumb up)
@@ -174,9 +160,6 @@ for hip, kn, an in ((HIP_L, KN_L, AN_L), (HIP_R, KN_R, AN_R)):
     bm_ellipsoid(pants, kn + V((0, -0.008, 0)), 0.068, 0.072, 0.074, seg=24, rings=12)
     bm_loft(pants, [(kn, 0.064, 0.068), (lerp(kn, an, 0.35), 0.066, 0.072), (lerp(kn, an, 0.75), 0.052, 0.056),
                     (an + V((0, 0, 0.14)), 0.048, 0.052)], seg=32, up=UPY)
-    bm_ellipsoid(pants, lerp(hip, kn, 0.45) + V((0, -0.040, 0)), 0.070, 0.050, 0.150, seg=24, rings=12)  # quad
-    bm_ellipsoid(pants, kn + V((0, -0.052, 0.010)), 0.042, 0.030, 0.048, seg=20, rings=10)                # kneecap
-    bm_ellipsoid(pants, lerp(kn, an, 0.32) + V((0, 0.022, 0)), 0.052, 0.045, 0.110, seg=24, rings=12)     # calf
 mk("Pants", pants, "Pants", subsurf=1, fuse=0.006, fsmooth=(0.5, 8), decimate=0.5, smooth=60)
 
 # ================================================================== BOOTS: big TF2 feet, fused per boot
