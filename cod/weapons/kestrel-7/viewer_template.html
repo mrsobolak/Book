@@ -1,0 +1,551 @@
+<title>KESTREL-7 Gunsmith</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Saira:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: gunsmith bench. Attachment slots | 3D stage | stats, camo strip under the stage. One dark world on purpose. */
+  :root {
+    --bg: #0b0d0e;
+    --panel: #121517;
+    --panel-2: #181c1f;
+    --line: #262c30;
+    --fg: #e8ebe9;
+    --muted: #87908c;
+    --accent: #e3c14b;
+    --good: #7ccf68;
+    --bad: #e0574b;
+    --f-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --f-body: "Saira", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  [hidden] { display: none !important; }
+  body { font-family: var(--f-body); font-size: 14px; line-height: 1.5; padding: 0 16px; }
+  .wrap { max-width: 1480px; margin: 0 auto; padding-block: 18px 48px; display: grid; gap: 16px; }
+
+  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px;
+    border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .crumb { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .crumb b { color: var(--accent); font-weight: 700; }
+  h1 { margin: 2px 0 0; font-family: var(--f-display); font-weight: 800; font-size: clamp(34px, 5vw, 60px); line-height: .95;
+    letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+  h1 small { display: block; font-size: 15px; font-weight: 600; letter-spacing: .28em; color: var(--muted); margin-top: 6px; }
+  .level { display: flex; align-items: center; gap: 10px; font-family: var(--f-display); letter-spacing: .12em; text-transform: uppercase; color: var(--muted); }
+  .level .xp { width: 140px; height: 4px; background: var(--line); position: relative; }
+  .level .xp::after { content: ""; position: absolute; inset: 0 38% 0 0; background: var(--accent); }
+  .level b { color: var(--fg); font-size: 22px; font-weight: 800; }
+
+  .bench { display: grid; grid-template-columns: 290px minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  @media (max-width: 1180px) { .bench { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .stage-col { grid-column: 1 / -1; order: -1; } }
+  @media (max-width: 700px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+  .panel h2 { margin: 0; padding: 10px 14px; font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+  .panel h2 span { color: var(--accent); }
+
+  .slot { padding: 10px 14px 12px; border-bottom: 1px solid var(--line); }
+  .slot:last-child { border-bottom: 0; }
+  .slot-label { font-family: var(--f-display); font-size: 12px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--muted);
+    display: flex; justify-content: space-between; }
+  .opts { display: grid; gap: 4px; margin-top: 6px; }
+  .opt { display: flex; align-items: center; justify-content: space-between; gap: 8px; width: 100%; text-align: left; cursor: pointer;
+    font-family: var(--f-display); font-weight: 600; font-size: 15px; letter-spacing: .04em; text-transform: uppercase;
+    color: var(--fg); background: var(--panel-2); border: 1px solid transparent; padding: 7px 10px; }
+  .opt:hover { border-color: #3a4247; }
+  .opt[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .opt:focus-visible, .chip:focus-visible, .camo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .opt .tag { font-family: var(--f-mono); font-size: 11px; color: var(--muted); letter-spacing: 0; text-transform: none; white-space: nowrap; }
+  .pc { margin: 8px 0 0; padding: 0; list-style: none; font-size: 12.5px; display: grid; gap: 2px; }
+  .pc li::before { display: inline-block; width: 14px; font-weight: 700; }
+  .pc .p { color: var(--good); } .pc .p::before { content: "+"; }
+  .pc .c { color: var(--bad); }  .pc .c::before { content: "−"; }
+
+  .stage-col { min-width: 0; display: grid; gap: 10px; }
+  .stage { position: relative; height: clamp(420px, 62vh, 760px); max-width: 100%; overflow: hidden; border: 1px solid var(--line);
+    background:
+      radial-gradient(55% 45% at 50% 45%, #3a4247 0%, #1a1f22 50%, #07090a 100%); }
+  @media (max-width: 700px) { .stage { height: auto; aspect-ratio: 4 / 3.4; } }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .stage canvas:active { cursor: grabbing; }
+  .stage .scan { position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.012) 3px 4px),
+                radial-gradient(120% 100% at 50% 50%, transparent 60%, rgba(0,0,0,.55) 100%); }
+  .stage .corner { position: absolute; font-family: var(--f-mono); font-size: 11px; color: var(--muted); pointer-events: none; letter-spacing: .04em; }
+  .stage .tl { top: 10px; left: 12px; } .stage .bl { bottom: 10px; left: 12px; } .stage .br { bottom: 10px; right: 12px; text-align: right; }
+  @media (max-width: 560px) { .stage .tl, .stage .br { display: none; } }
+  .stage .tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .stage .status { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); letter-spacing: .3em;
+    text-transform: uppercase; color: var(--muted); }
+  .chip { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+    color: var(--fg); background: rgba(12,14,15,.8); border: 1px solid var(--line); padding: 5px 10px; white-space: nowrap; }
+  .chip:hover { border-color: #3a4247; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+  .camos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .camos > span { font-family: var(--f-display); font-size: 12px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+  .camo { display: flex; align-items: center; gap: 8px; cursor: pointer; background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+    padding: 5px 10px 5px 5px; font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
+  .camo i { width: 26px; height: 26px; display: block; border: 1px solid #0008; }
+  .camo[aria-pressed="true"] { border-color: var(--accent); }
+
+  .stat { padding: 9px 14px; border-bottom: 1px solid var(--line); }
+  .stat-top { display: flex; justify-content: space-between; font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; }
+  .stat-top output { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .stat-top output .d.p { color: var(--good); } .stat-top output .d.c { color: var(--bad); }
+  .bar { position: relative; height: 6px; background: #1f2427; margin-top: 6px; }
+  .bar i { position: absolute; top: 0; bottom: 0; left: 0; transition: width .35s ease, left .35s ease; }
+  .bar .base { background: #d9dcda; }
+  .bar .gain { background: var(--good); }
+  .bar .loss { background: repeating-linear-gradient(135deg, var(--bad) 0 3px, #5a2420 3px 6px); }
+  dl.spec { margin: 0; padding: 10px 14px 14px; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+  dl.spec dt { color: var(--muted); font-family: var(--f-display); letter-spacing: .14em; text-transform: uppercase; font-size: 12px; padding-top: 2px; }
+  dl.spec dd { margin: 0; font-family: var(--f-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; text-align: right; }
+
+  section.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .note { min-width: 0; }
+  .note h3 { margin: 0 0 6px; font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+  .note p, .note li { color: #c9cfcc; max-width: 65ch; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note code { font-family: var(--f-mono); font-size: 12px; background: var(--panel-2); padding: 1px 5px; }
+  footer { color: var(--muted); font-family: var(--f-display); letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+  @media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="crumb">Loadout › Primary › <b>Gunsmith</b></div>
+      <h1>KESTREL-7<small>Assault rifle · Kestrel Arms</small></h1>
+    </div>
+    <div class="level">Weapon level <b>38</b><span class="xp" aria-hidden="true"></span></div>
+  </header>
+
+  <div class="bench">
+    <aside class="panel" aria-label="Attachments">
+      <h2>Attachments <span id="att-count">0 / 4</span></h2>
+      <div id="slots"></div>
+    </aside>
+
+    <div class="stage-col">
+      <div class="stage" id="stage">
+        <div class="scan"></div>
+        <div class="status" id="status">Loading weapon…</div>
+        <div class="corner tl" id="readout">KST-7 · 5.56×45 · —</div>
+        <div class="tools">
+          <button class="chip" id="spin" aria-pressed="false">Turntable</button>
+          <button class="chip" id="reset">Reset view</button>
+          <button class="chip" id="stock">Stock build</button>
+        </div>
+        <div class="corner bl">Drag to rotate · scroll to zoom · right-drag to pan</div>
+        <div class="corner br" id="tris">—</div>
+      </div>
+      <div class="camos" role="group" aria-label="Camo">
+        <span>Camo</span>
+        <div id="camos" style="display:contents"></div>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Weapon stats">
+      <h2>Stats <span>vs stock</span></h2>
+      <div id="stats"></div>
+      <dl class="spec" id="spec"></dl>
+    </aside>
+  </div>
+
+  <section class="notes" aria-label="Build notes">
+    <div class="note">
+      <h3>Zero references</h3>
+      <p>No images went into this. Every dimension was typed as numbers, working from how a modern 5.56 carbine is put together: MIL-STD-1913 rail at 10.01 mm pitch, 7.4 mm M-LOK slots, a 14-inch barrel, a curved 30-round magazine.</p>
+    </div>
+    <div class="note">
+      <h3>Hard-surface pipeline</h3>
+      <ul>
+        <li>Each part is a profile prism or a lathe. Pockets, ports, slots and sockets are exact boolean cuts.</li>
+        <li>Angle-limited bevels (0.4–2.5 mm) with hardened normals catch highlights the way machined edges do.</li>
+        <li>Cycles bakes ambient occlusion into the vertices. Convexity and concavity are stored next to it.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Materials</h3>
+      <ul>
+        <li>Physically based shading, lit by an HDR studio environment with ACES tone mapping and soft shadows.</li>
+        <li>Cerakote chips back to bare aluminium on convex edges. Grime collects in recesses.</li>
+        <li>Stippled grip, cast polymer, phosphate steel, an anti-reflection-coated lens and an illuminated reticle.</li>
+      </ul>
+    </div>
+  </section>
+  <footer>Original design · built by <code>build_rifle.py</code> in Blender 4.0 · rendered with three.js</footer>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script id="glb" type="application/octet-stream">__GLB_BASE64__</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+
+// ------------------------------------------------------------------ data
+const BASE = { Accuracy: 64, Damage: 61, Range: 57, 'Fire rate': 72, Mobility: 66, Handling: 63 };
+const SLOTS = [
+  { key: 'muzzle', label: 'Muzzle', focus: [0.9, 0.2, 0.75], opts: [
+    { id: 'att_muzzle_comp', name: 'Tri-Port Compensator', tag: 'stock', kg: 0.08 },
+    { id: 'att_muzzle_suppressor', name: 'Hushline 6 Suppressor', tag: '+144 mm', kg: 0.52,
+      d: { Range: 7, Accuracy: 2, Mobility: -5, Handling: -6 }, pros: ['Sound suppression', 'Damage range'], cons: ['Aim down sight speed', 'Movement speed'] },
+  ] },
+  { key: 'optic', label: 'Optic', focus: [-0.85, 0.5, 0.75], opts: [
+    { id: 'att_optic_irons', name: 'Flip-Up Irons', tag: 'stock', kg: 0.06 },
+    { id: 'att_optic_reddot', name: 'Ember Micro Dot', tag: '1×', kg: 0.21,
+      d: { Accuracy: 5, Handling: -2 }, pros: ['Clean sight picture'], cons: ['Aim down sight speed'] },
+    { id: 'att_optic_holo', name: 'Halo Holographic', tag: '1×', kg: 0.32,
+      d: { Accuracy: 7, Handling: -4, Mobility: -1 }, pros: ['Wide window', 'Ring reticle'], cons: ['Aim down sight speed'] },
+  ] },
+  { key: 'under', label: 'Underbarrel', focus: [0.25, -0.45, 1], opts: [
+    { id: null, name: 'None', tag: 'stock', kg: 0 },
+    { id: 'att_under_vgrip', name: 'Talon Vertical Grip', tag: 'M-LOK', kg: 0.09,
+      d: { Accuracy: 6, Mobility: -3, Handling: -3 }, pros: ['Vertical recoil control'], cons: ['Aim down sight speed'] },
+    { id: 'att_under_agrip', name: 'Wedge Angled Grip', tag: 'M-LOK', kg: 0.06,
+      d: { Handling: 4, Accuracy: 3, Mobility: -2 }, pros: ['Aim down sight speed', 'Recoil control'], cons: ['Sprint to fire time'] },
+  ] },
+  { key: 'mag', label: 'Magazine', focus: [0.15, -0.2, 1], opts: [
+    { id: 'att_mag_30', name: '30 Round Mag', tag: 'stock', kg: 0.49, rounds: 30 },
+    { id: 'att_mag_40', name: '40 Round Mag', tag: '+10 rds', kg: 0.64, rounds: 40,
+      d: { Mobility: -5, Handling: -7 }, pros: ['Magazine capacity'], cons: ['Reload speed', 'Aim down sight speed'] },
+  ] },
+];
+const STOCK = { muzzle: 0, optic: 0, under: 0, mag: 0 };
+let pick = { muzzle: 1, optic: 2, under: 1, mag: 0 };
+
+const CAMOS = [
+  { name: 'Graphite', mode: 0, paint: '#232629', poly: '#1e2022', sw: 'linear-gradient(135deg,#3a3e42,#1d1f22)' },
+  { name: 'Desert Tan', mode: 0, paint: '#8c7558', poly: '#7c6951', sw: 'linear-gradient(135deg,#a38a69,#6e5c45)' },
+  { name: 'Ranger Green', mode: 0, paint: '#4b503d', poly: '#43473a', sw: 'linear-gradient(135deg,#5c624b,#383c2f)' },
+  { name: 'Woodland', mode: 1, paint: '#5d5b3e', poly: '#5d5b3e', sw: 'radial-gradient(circle at 30% 30%,#3e4a2f 0 28%,transparent 30%),radial-gradient(circle at 70% 65%,#6b5237 0 25%,transparent 27%),radial-gradient(circle at 65% 25%,#1e201c 0 14%,transparent 16%),#5d5b3e' },
+  { name: 'Gold', mode: 2, paint: '#ffcc66', poly: '#ffcc66', sw: 'linear-gradient(135deg,#fff0b0,#d9a43a 55%,#8a6220)' },
+];
+
+// ------------------------------------------------------------------ renderer
+const stage = document.getElementById('stage');
+const statusEl = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.03).texture;
+
+const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 30);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 0.25; controls.maxDistance = 4;
+
+const key = new THREE.DirectionalLight('#fff4e6', 2.6);
+key.position.set(-0.9, 1.6, 1.3);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+Object.assign(key.shadow.camera, { left: -0.7, right: 0.7, top: 0.7, bottom: -0.7, near: 0.1, far: 5 });
+key.shadow.bias = -0.0002; key.shadow.normalBias = 0.0012; key.shadow.radius = 3;
+scene.add(key);
+const rim = new THREE.DirectionalLight('#c9dcff', 1.6); rim.position.set(0.6, 1.4, -1.8); scene.add(rim);
+const kick = new THREE.DirectionalLight('#ffd7a8', 0.9); kick.position.set(1.5, -0.4, 1.0); scene.add(kick);
+scene.add(new THREE.HemisphereLight('#b7c4cf', '#1a1411', 0.35));
+
+// ------------------------------------------------------------------ shading
+const U = {
+  uCamoMode: { value: 0 }, uPaint: { value: new THREE.Color() }, uPoly: { value: new THREE.Color() },
+  uW1: { value: new THREE.Color('#3e4a2f') }, uW2: { value: new THREE.Color('#6b5237') }, uW3: { value: new THREE.Color('#1e201c') },
+};
+const NOISE = /* glsl */`
+  float h3(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+  float vnoise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
+    return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x), mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x), mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y), f.z); }
+  float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++){ s += a*vnoise(p); p = p*2.03 + 7.1; a *= 0.5; } return s; }
+  vec3 bumpN(vec3 surf_pos, vec3 n, float h, float fd){
+    vec2 dH = vec2(dFdx(h), dFdy(h));
+    vec3 sx = normalize(dFdx(surf_pos)), sy = normalize(dFdy(surf_pos));
+    vec3 r1 = cross(sy, n), r2 = cross(n, sx);
+    float det = dot(sx, r1) * fd;
+    vec3 g = sign(det) * (dH.x * r1 + dH.y * r2);
+    return normalize(abs(det) * n - g);
+  }
+  // amplitude fade so sub-pixel noise does not sparkle
+  float nfade(float freq){ return 1.0 - smoothstep(0.35, 1.2, freq * length(fwidth(vObj))); }
+`;
+
+// kind: 0 paint, 1 polymer, 2 grip, 3 steel, 4 bright steel, 5 rubber, 6 optic body, 7 suppressor
+function patch(mat, kind) {
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 aData;\nvarying vec3 vObj;\nvarying vec4 vData;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position;\nvData = aData;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vObj; varying vec4 vData;
+        uniform float uCamoMode; uniform vec3 uPaint, uPoly, uW1, uW2, uW3;
+        ${NOISE}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        const float KIND = ${kind.toFixed(1)};
+        float ao = mix(1.0, vData.r, 0.92), edge = vData.g, cav = vData.b;
+        float chips = fbm(vObj * 240.0) * nfade(240.0) + 0.5 * (1.0 - nfade(240.0));
+        float wear = smoothstep(0.78, 0.96, edge + (chips - 0.5) * 0.6) * 0.8;
+        float metalX = metalness, roughX = roughness;
+        bool camo = KIND < 1.5 || (KIND == 2.0 && uCamoMode == 2.0) || (KIND == 6.0 && uCamoMode == 2.0);
+        if (camo) {
+          vec3 c = KIND == 1.0 ? uPoly : uPaint;
+          if (uCamoMode == 1.0) {
+            vec3 p = vObj * 17.0; float w = 0.012;
+            c = mix(c, uW1, smoothstep(0.49 - w, 0.49 + w, fbm(p)));
+            c = mix(c, uW2, smoothstep(0.54 - w, 0.54 + w, fbm(p * 1.25 + vec3(5.2, 1.3, 7.7))));
+            c = mix(c, uW3, smoothstep(0.60 - w, 0.60 + w, fbm(p * 1.6 + vec3(2.1, 9.4, 3.3))));
+          }
+          diffuseColor.rgb = c;
+          if (uCamoMode == 2.0) { metalX = 1.0; roughX = 0.2 + 0.08 * fbm(vObj * 90.0); wear = 0.0; }
+          else if (KIND == 1.0) { roughX = 0.58; wear *= 0.25; }
+          else { roughX = 0.6; metalX = 0.04; }
+        }
+        if (KIND == 0.0 || KIND == 6.0) {             // cerakote / anodising chips to bare aluminium
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.36, 0.37, 0.39), wear * 0.8);
+          metalX = mix(metalX, 1.0, wear); roughX = mix(roughX, 0.3, wear);
+        } else if (KIND == 1.0) {
+          diffuseColor.rgb *= 1.0 + 0.5 * wear;
+        } else if (KIND == 3.0 || KIND == 4.0) {        // phosphate steel polishes on edges
+          diffuseColor.rgb *= 1.0 + 1.1 * wear; roughX = mix(roughX, 0.22, wear);
+        }
+        diffuseColor.rgb *= 1.0 - 0.45 * cav;          // grime in recesses
+        roughX = clamp(roughX * (0.86 + 0.28 * fbm(vObj * 140.0)) + 0.12 * cav, 0.04, 1.0);
+      `)
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = roughX;')
+      .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalX;')
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          float f = KIND == 2.0 ? 2400.0 : KIND == 1.0 ? 1800.0 : KIND == 5.0 ? 900.0 : 1500.0;
+          float amp = KIND == 2.0 ? 0.9 : KIND == 1.0 ? 0.12 : KIND == 5.0 ? 0.2 : KIND == 7.0 ? 0.08 : KIND == 3.0 ? 0.05 : 0.03;
+          if (camo && uCamoMode == 2.0) amp *= 0.3;
+          float h = vnoise(vObj * f) * amp * nfade(f);
+          normal = bumpN(-vViewPosition, normal, h, faceDirection);
+        }`)
+      .replace('#include <aomap_fragment>', `#include <aomap_fragment>
+        reflectedLight.indirectDiffuse *= ao;
+        reflectedLight.indirectSpecular *= mix(1.0, ao * ao, 0.9);
+        reflectedLight.directDiffuse *= mix(1.0, ao, 0.35);`);
+  };
+  mat.customProgramCacheKey = () => 'kst' + kind;
+  return mat;
+}
+const P = (o) => new THREE.MeshPhysicalMaterial(o);
+const MATS = {
+  Paint:       patch(P({ color: '#2e3135', roughness: 0.6, metalness: 0.04, envMapIntensity: 0.55 }), 0),
+  Polymer:     patch(P({ color: '#26282b', roughness: 0.58, metalness: 0.0, envMapIntensity: 0.5 }), 1),
+  Grip:        patch(P({ color: '#1b1c1e', roughness: 0.82, metalness: 0.0, envMapIntensity: 0.45 }), 2),
+  Steel:       patch(P({ color: '#46494d', roughness: 0.4, metalness: 1.0, envMapIntensity: 1.0 }), 3),
+  BrightSteel: patch(P({ color: '#c2c6ca', roughness: 0.2, metalness: 1.0, envMapIntensity: 1.1 }), 4),
+  Rubber:      patch(P({ color: '#131313', roughness: 0.95, metalness: 0.0 }), 5),
+  Optic:       patch(P({ color: '#16171a', roughness: 0.42, metalness: 0.2, envMapIntensity: 0.6 }), 6),
+  Suppressor:  patch(P({ color: '#2f2d2b', roughness: 0.72, metalness: 0.1 }), 7),
+  Marking:     patch(P({ color: '#d8d6cd', roughness: 0.6, metalness: 0.0 }), 5),
+  Glass: new THREE.MeshPhysicalMaterial({ color: '#c8def0', roughness: 0.03, metalness: 0, transparent: true, opacity: 0.16,
+    iridescence: 1, iridescenceIOR: 1.35, iridescenceThicknessRange: [220, 560], envMapIntensity: 2.4, depthWrite: false }),
+  Reticle: new THREE.MeshBasicMaterial({ color: '#ff2b1c', toneMapped: false }),
+};
+
+// ------------------------------------------------------------------ model
+const pivot = new THREE.Group(); scene.add(pivot);
+const groups = {};
+let homeRadius = 0.5;
+const shadowFloor = new THREE.Mesh(new THREE.PlaneGeometry(4, 4), new THREE.ShadowMaterial({ opacity: 0.45 }));
+shadowFloor.rotation.x = -Math.PI / 2; shadowFloor.receiveShadow = true; scene.add(shadowFloor);
+
+const bin = atob(document.getElementById('glb').textContent.trim());
+const bytes = new Uint8Array(bin.length);
+for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+new GLTFLoader().parse(bytes.buffer, '', (gltf) => {
+  const root = gltf.scene;
+  let tris = 0;
+  root.traverse((o) => {
+    if (!o.isMesh) return;
+    const name = (o.material.name || '').replace(/\.\d+$/, '');
+    o.material = MATS[name] || MATS.Paint;
+    const g = o.geometry;
+    if (g.attributes.color) g.setAttribute('aData', g.attributes.color);
+    else g.setAttribute('aData', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 4).fill(1), 4));
+    g.deleteAttribute('color');
+    o.castShadow = name !== 'Glass' && name !== 'Reticle';
+    o.receiveShadow = name !== 'Reticle';
+    tris += (g.index ? g.index.count : g.attributes.position.count) / 3;
+  });
+  root.children.forEach((c) => { groups[c.name] = c; });
+  const box = new THREE.Box3().setFromObject(groups.base);
+  const c = box.getCenter(new THREE.Vector3());
+  root.position.sub(c);
+  homeRadius = box.getSize(new THREE.Vector3()).length() / 2;
+  pivot.add(root);
+  shadowFloor.position.y = box.min.y - c.y - 0.09;
+  document.getElementById('tris').textContent = `${Math.round(tris).toLocaleString('en-US')} tris · PBR`;
+  statusEl.hidden = true;
+  buildUI();
+  applyCamo(0);
+  apply(false);
+  home(true);
+  window.__ready = true;
+  window.__api = { flyTo, THREE, groups, pivot, apply, applyCamo, setPick: (k, i) => { pick[k] = i; apply(false); } };
+}, (err) => { statusEl.textContent = 'Could not load the model: ' + err.message; });
+
+// ------------------------------------------------------------------ camera
+const tween = { t: 1, dur: 0.9, p0: new THREE.Vector3(), p1: new THREE.Vector3(), t0: new THREE.Vector3(), t1: new THREE.Vector3() };
+function fitDist(r) {
+  const v = THREE.MathUtils.degToRad(camera.fov / 2);
+  return r / Math.tan(Math.min(v, Math.atan(Math.tan(v) * camera.aspect)));
+}
+function flyTo(target, dir, dist, instant) {
+  tween.p0.copy(camera.position); tween.t0.copy(controls.target);
+  tween.t1.copy(target);
+  tween.p1.copy(target).add(new THREE.Vector3(...dir).normalize().multiplyScalar(dist));
+  tween.t = instant ? 1 : 0;
+  if (instant) { camera.position.copy(tween.p1); controls.target.copy(tween.t1); }
+}
+function visibleBox() {
+  const saved = pivot.rotation.y; pivot.rotation.y = 0; pivot.updateMatrixWorld(true);
+  const b = new THREE.Box3();
+  Object.values(groups).forEach((g) => { if (g.visible) b.expandByObject(g); });
+  pivot.rotation.y = saved; pivot.updateMatrixWorld(true);
+  return b;
+}
+function home(instant) {
+  setSpin(false);
+  const b = visibleBox();
+  const c = b.getCenter(new THREE.Vector3());
+  const r = b.getSize(new THREE.Vector3()).x / 2;
+  flyTo(c, [0.3, 0.18, 1], fitDist(r) * (camera.aspect < 1.4 ? 1.02 : 0.84), instant);
+}
+function focusOn(obj, dir) {
+  setSpin(false);
+  const b = new THREE.Box3().setFromObject(obj);
+  const s = b.getBoundingSphere(new THREE.Sphere());
+  flyTo(s.center, dir, Math.max(fitDist(Math.max(s.radius, 0.06)) * 1.6, 0.3));
+}
+
+// ------------------------------------------------------------------ UI
+const $ = (id) => document.getElementById(id);
+function buildUI() {
+  const slots = $('slots');
+  slots.innerHTML = '';
+  for (const s of SLOTS) {
+    const el = document.createElement('div');
+    el.className = 'slot';
+    el.innerHTML = `<div class="slot-label">${s.label}<span id="sl-${s.key}"></span></div><div class="opts"></div><ul class="pc" id="pc-${s.key}"></ul>`;
+    const opts = el.querySelector('.opts');
+    s.opts.forEach((o, i) => {
+      const b = document.createElement('button');
+      b.className = 'opt'; b.id = `opt-${s.key}-${i}`;
+      b.innerHTML = `<span>${o.name}</span><span class="tag">${o.tag}</span>`;
+      b.addEventListener('click', () => { pick[s.key] = i; apply(true, s); });
+      opts.append(b);
+    });
+    slots.append(el);
+  }
+  const cam = $('camos');
+  CAMOS.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'camo'; b.id = `camo-${i}`;
+    b.innerHTML = `<i style="background:${c.sw}"></i>${c.name}`;
+    b.addEventListener('click', () => applyCamo(i));
+    cam.append(b);
+  });
+}
+function applyCamo(i) {
+  const c = CAMOS[i];
+  U.uCamoMode.value = c.mode; U.uPaint.value.set(c.paint); U.uPoly.value.set(c.poly);
+  document.querySelectorAll('.camo').forEach((b, j) => b.setAttribute('aria-pressed', String(i === j)));
+}
+function apply(animate, focusSlot) {
+  const total = { ...BASE };
+  let kg = 3.05, rounds = 30, fitted = 0;
+  for (const s of SLOTS) {
+    s.opts.forEach((o, i) => {
+      const on = pick[s.key] === i;
+      if (o.id && groups[o.id]) groups[o.id].visible = on;
+      $(`opt-${s.key}-${i}`).setAttribute('aria-pressed', String(on));
+    });
+    const o = s.opts[pick[s.key]];
+    if (pick[s.key] !== STOCK[s.key]) fitted++;
+    kg += o.kg; if (o.rounds) rounds = o.rounds;
+    for (const [k, v] of Object.entries(o.d || {})) total[k] += v;
+    $(`sl-${s.key}`).textContent = pick[s.key] === STOCK[s.key] ? '' : 'Equipped';
+    $(`pc-${s.key}`).innerHTML = (o.pros || []).map((t) => `<li class="p">${t}</li>`).join('') +
+                                 (o.cons || []).map((t) => `<li class="c">${t}</li>`).join('');
+  }
+  if (groups.buis_folded) groups.buis_folded.visible = pick.optic !== 0;
+  $('att-count').textContent = `${fitted} / 4`;
+
+  const st = $('stats');
+  st.innerHTML = Object.keys(BASE).map((k) => {
+    const b = BASE[k], v = total[k], d = v - b;
+    const lo = Math.min(b, v), hi = Math.max(b, v);
+    const seg = d > 0 ? `<i class="gain" style="left:${lo}%;width:${hi - lo}%"></i>` : d < 0 ? `<i class="loss" style="left:${lo}%;width:${hi - lo}%"></i>` : '';
+    const dt = d ? `<span class="d ${d > 0 ? 'p' : 'c'}">${d > 0 ? '+' : '−'}${Math.abs(d)}</span> ` : '';
+    return `<div class="stat"><div class="stat-top">${k}<output>${dt}${v}</output></div>
+      <div class="bar" role="meter" aria-label="${k}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${v}"><i class="base" style="width:${lo}%"></i>${seg}</div></div>`;
+  }).join('');
+
+  const vis = visibleBox();
+  const len = Math.round(vis.getSize(new THREE.Vector3()).x * 1000);
+  $('spec').innerHTML = [
+    ['Caliber', '5.56×45 mm'], ['Action', 'Short-stroke piston'], ['Rate of fire', '780 rpm'], ['Barrel', '14.0 in'],
+    ['Magazine', `${rounds} rds`], ['Length', `${len} mm`], ['Weight', `${kg.toFixed(2)} kg`],
+  ].map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+  $('readout').textContent = `KST-7 · 5.56×45 · ${rounds}+1 · ${len} mm`;
+  if (animate && focusSlot) {
+    const o = focusSlot.opts[pick[focusSlot.key]];
+    const target = o.id ? groups[o.id] : groups.base;
+    if (target) {
+      pivot.rotation.y = 0;
+      if (o.id) focusOn(target, focusSlot.focus); else home();
+    }
+  }
+}
+let spinning = false;
+function setSpin(on) { spinning = on; $('spin').setAttribute('aria-pressed', String(on)); }
+$('spin').addEventListener('click', () => setSpin(!spinning));
+$('reset').addEventListener('click', () => { pivot.rotation.y = 0; home(); });
+$('stock').addEventListener('click', () => { pick = { ...STOCK }; apply(false); pivot.rotation.y = 0; home(); });
+renderer.domElement.addEventListener('pointerdown', () => { tween.t = 1; setSpin(false); });
+renderer.domElement.addEventListener('wheel', () => { tween.t = 1; }, { passive: true });
+
+// ------------------------------------------------------------------ loop
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+const clock = new THREE.Clock();
+const ease = (t) => 1 - Math.pow(1 - t, 3);
+renderer.setAnimationLoop(() => {
+  const raw = clock.getDelta(), dt = Math.min(raw, 0.05);
+  if (tween.t < 1) {
+    tween.t = Math.min(1, tween.t + raw / tween.dur);
+    const k = ease(tween.t);
+    camera.position.lerpVectors(tween.p0, tween.p1, k);
+    controls.target.lerpVectors(tween.t0, tween.t1, k);
+  }
+  if (spinning && !matchMedia('(prefers-reduced-motion: reduce)').matches) pivot.rotation.y += dt * 0.35;
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>
