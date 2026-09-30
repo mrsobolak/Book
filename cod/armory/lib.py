@@ -247,8 +247,11 @@ def mirror_y(verts):
         v.co.y = -v.co.y
 
 # ------------------------------------------------------------------ objects
-def mk(name, bm, mat, group="base", bev=None, segs=2, bang=30, smooth=35, mats=None, subsurf=0):
-    """subsurf=N adds a Catmull-Clark subdivision (N levels) before any boolean cut; such parts skip densify."""
+def mk(name, bm, mat, group="base", bev=None, segs=2, bang=30, smooth=35, mats=None, subsurf=0,
+       fuse=None, fsmooth=(0.35, 3), decimate=None):
+    """subsurf=N adds a Catmull-Clark subdivision (N levels) before any boolean cut; such parts skip densify.
+    fuse=voxel_size merges every closed shell in bm into ONE continuous surface (voxel remesh), then smooths it:
+    the sculptor's trick for organic characters (limbs into hands, torso into shoulders) with no seams."""
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me); bm.free()
@@ -266,6 +269,15 @@ def mk(name, bm, mat, group="base", bev=None, segs=2, bang=30, smooth=35, mats=N
     if subsurf:
         md = ob.modifiers.new("subsurf", "SUBSURF")
         md.levels = md.render_levels = subsurf
+        ob["nodensify"] = True
+    if fuse:
+        md = ob.modifiers.new("fuse", "REMESH")
+        md.mode, md.voxel_size, md.adaptivity, md.use_smooth_shade = "VOXEL", fuse, 0.0, True
+        md = ob.modifiers.new("fsmooth", "SMOOTH")
+        md.factor, md.iterations = fsmooth
+        if decimate:
+            md = ob.modifiers.new("dec", "DECIMATE")
+            md.ratio = decimate
         ob["nodensify"] = True
     return ob
 

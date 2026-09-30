@@ -39,7 +39,7 @@
 
   .stage { position: relative; min-width: 0; border-radius: 6px; overflow: hidden; border: 2px solid var(--line);
     height: clamp(460px, 74vh, 820px); max-width: 100%;
-    background: radial-gradient(70% 60% at 50% 40%, #463a31 0%, var(--stage) 55%, #141110 100%); transition: background .4s ease; }
+    background: radial-gradient(70% 60% at 50% 42%, #6e655c 0%, #3f3833 55%, #1d1916 100%); transition: background .4s ease; }
   .stage.poster { background: radial-gradient(80% 70% at 50% 35%, #ffffff 0%, #e4e2de 45%, #a9a7a3 100%); }
   @media (max-width: 700px) { .stage { height: auto; aspect-ratio: 3 / 4; } }
   .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
@@ -229,13 +229,13 @@ controls.minDistance = 0.4; controls.maxDistance = 9;
 
 // ---------------------------------------------------------------- TF2-style toon shading
 const L = {
-  uKeyDir:  { value: new THREE.Vector3(-0.5, 0.75, 0.6).normalize() },
-  uKeyCol:  { value: new THREE.Color('#fff0dc') },
-  uFillDir: { value: new THREE.Vector3(0.7, 0.15, -0.55).normalize() },
-  uFillCol: { value: new THREE.Color('#5c7090') },
-  uAmbTop:  { value: new THREE.Color('#646b76') },
-  uAmbBot:  { value: new THREE.Color('#3d2e25') },
-  uRimCol:  { value: new THREE.Color('#d8e4f5') },
+  uKeyDir:  { value: new THREE.Vector3(-0.45, 0.65, 0.65).normalize() },
+  uKeyCol:  { value: new THREE.Color('#fff3e2') },
+  uFillDir: { value: new THREE.Vector3(0.75, 0.10, -0.5).normalize() },
+  uFillCol: { value: new THREE.Color('#7f93b0') },
+  uAmbTop:  { value: new THREE.Color('#9aa3ae') },
+  uAmbBot:  { value: new THREE.Color('#6a5446') },
+  uRimCol:  { value: new THREE.Color('#e4eefc') },
 };
 const NOISE = /* glsl */`
   float h3(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
@@ -267,42 +267,43 @@ const FRAG = /* glsl */`
     vec3 base = uBase * (1.0 + (fbm(vO * 18.0) - 0.5) * uNoise);   // painterly mottling
     vec3 b = lin(base);
     float ndl = dot(N, uKeyDir);
-    float hl = clamp((ndl + uWrap) / (1.0 + uWrap), 0.0, 1.0);
-    float lit = smoothstep(0.18, 0.72, hl * hl * 1.1);
-    vec3 diffuse = mix(lin(uShadow), vec3(1.0), lit);
-    diffuse += vec3(0.16, 0.06, 0.0) * exp(-pow((hl - 0.5) / 0.12, 2.0));
+    float hl = ndl * 0.5 + 0.5;                       // half-Lambert
+    float hl2 = hl * hl;
+    float lit = smoothstep(0.20 - 0.10 * uWrap, 0.62, hl2);
+    vec3 diffuse = mix(lin(uShadow) * 1.15, vec3(1.05), lit);
+    diffuse += vec3(0.18, 0.07, 0.0) * exp(-pow((hl2 - 0.34) / 0.11, 2.0));   // warm band at the terminator
     vec3 amb = mix(lin(uAmbBot), lin(uAmbTop), N.y * 0.5 + 0.5);
     float fill = max(dot(N, uFillDir), 0.0);
-    vec3 col = b * (lin(uKeyCol) * diffuse * mix(0.75, 1.0, ao) + amb * 0.55 * ao + lin(uFillCol) * fill * 0.4 * ao);
+    vec3 col = b * (lin(uKeyCol) * diffuse * mix(0.8, 1.0, ao) + amb * 0.75 * ao + lin(uFillCol) * fill * 0.45 * ao);
     vec3 R = reflect(-uKeyDir, N);
     col += lin(uKeyCol) * pow(max(dot(R, V), 0.0), uPow) * uSpec * (0.3 + 0.7 * lit) * ao;
     float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
     col += lin(uRimCol) * fres * uRim * 0.45 * smoothstep(-0.2, 0.8, N.y) * ao;
-    col = col / (1.0 + col * 0.15);
+    col = col / (1.0 + col * 0.10);
     float a = uAlpha < 1.0 ? uAlpha + fres * 0.5 + pow(max(dot(R, V), 0.0), 60.0) : 1.0;
     gl_FragColor = vec4(pow(col, vec3(1.0 / 2.2)), clamp(a, 0.0, 1.0));
   }`;
-const TEAM = { red: ['#a8362f', '#6a2a28'], blu: ['#4d7394', '#2c3f55'] };
-const TEAM2 = { red: ['#7d2a27', '#3f1614'], blu: ['#365672', '#1c2c3c'] };
+const TEAM = { red: ['#bd4a3e', '#7a2c28'], blu: ['#5a86ad', '#2f4b66'] };
+const TEAM2 = { red: ['#8f3230', '#4e1a18'], blu: ['#3f627f', '#213547'] };
 const MATDEF = {
-  Cheese:      { base: '#f6c64e', shadow: '#c9793a', spec: 0.22, pow: 10, rim: 0.7, noise: 0.10, wrap: 0.35 },
-  Rind:        { base: '#e79a2e', shadow: '#a4541f', spec: 0.35, pow: 14, rim: 0.6, noise: 0.12, wrap: 0.25 },
-  Skin:        { base: '#dc9f7a', shadow: '#94534a', spec: 0.14, pow: 10, rim: 0.75, noise: 0.06, wrap: 0.35 },
+  Cheese:      { base: '#f7cd48', shadow: '#d08a34', spec: 0.22, pow: 10, rim: 0.7, noise: 0.08, wrap: 0.35 },
+  Rind:        { base: '#ec9d35', shadow: '#ab5d22', spec: 0.35, pow: 14, rim: 0.6, noise: 0.10, wrap: 0.25 },
+  Skin:        { base: '#e6a985', shadow: '#a45e4d', spec: 0.14, pow: 10, rim: 0.75, noise: 0.05, wrap: 0.35 },
   Team:        { base: TEAM.red[0], shadow: TEAM.red[1], spec: 0.05, pow: 6, rim: 0.55, noise: 0.16, wrap: 0.2 },
   Wax:         { base: TEAM.red[0], shadow: TEAM.red[1], spec: 0.6, pow: 24, rim: 0.6, noise: 0.04, wrap: 0.2 },
-  Pants:       { base: '#665a47', shadow: '#3b3128', spec: 0.04, pow: 6, rim: 0.45, noise: 0.16, wrap: 0.2 },
-  Boots:       { base: '#553b28', shadow: '#2c1d14', spec: 0.3, pow: 16, rim: 0.5, noise: 0.12, wrap: 0.1 },
-  Glove:       { base: '#3a302a', shadow: '#1d1714', spec: 0.25, pow: 14, rim: 0.5, noise: 0.1, wrap: 0.1 },
-  Leather:     { base: '#7a4b2c', shadow: '#3d2415', spec: 0.3, pow: 14, rim: 0.5, noise: 0.14, wrap: 0.15 },
+  Pants:       { base: '#8f7f62', shadow: '#5a4c39', spec: 0.04, pow: 6, rim: 0.5, noise: 0.14, wrap: 0.3 },
+  Boots:       { base: '#7d5838', shadow: '#43301f', spec: 0.12, pow: 12, rim: 0.55, noise: 0.10, wrap: 0.3 },
+  Glove:       { base: '#6a5747', shadow: '#372a20', spec: 0.15, pow: 12, rim: 0.55, noise: 0.1, wrap: 0.3 },
+  Leather:     { base: '#8a5632', shadow: '#472a18', spec: 0.3, pow: 14, rim: 0.5, noise: 0.12, wrap: 0.2 },
   Brass:       { base: '#e0ad48', shadow: '#7a5220', spec: 1.2, pow: 26, rim: 0.8, noise: 0.05, wrap: 0.0 },
   Steel:       { base: '#aab1b8', shadow: '#4a5058', spec: 1.1, pow: 30, rim: 0.9, noise: 0.08, wrap: 0.0 },
-  Polymer:     { base: '#2d2b29', shadow: '#141312', spec: 0.3, pow: 16, rim: 0.4, noise: 0.05, wrap: 0.1 },
+  Polymer:     { base: '#3a3633', shadow: '#1b1816', spec: 0.3, pow: 16, rim: 0.45, noise: 0.05, wrap: 0.2 },
   Rubber:      { base: '#252120', shadow: '#121010', spec: 0.05, pow: 6, rim: 0.3, noise: 0.08, wrap: 0.1 },
   GooglyWhite: { base: '#f7f4ee', shadow: '#aaa6a0', spec: 0.9, pow: 40, rim: 0.4, noise: 0.0, wrap: 0.3 },
   Pupil:       { base: '#0f0f10', shadow: '#050505', spec: 1.2, pow: 50, rim: 0.3, noise: 0.0, wrap: 0.0 },
   Glass:       { base: '#ffffff', shadow: '#cccccc', spec: 1.6, pow: 80, rim: 0.8, noise: 0.0, wrap: 0.0, alpha: 0.05 },
   Team2:       { base: '#7d2a27', shadow: '#3f1614', spec: 0.08, pow: 8, rim: 0.5, noise: 0.14, wrap: 0.2 },
-  Cloth:       { base: '#d9d0bd', shadow: '#8d8170', spec: 0.06, pow: 6, rim: 0.6, noise: 0.14, wrap: 0.3 },
+  Cloth:       { base: '#e6dcc6', shadow: '#998b76', spec: 0.06, pow: 6, rim: 0.6, noise: 0.10, wrap: 0.3 },
   Mouth:       { base: '#5a1e14', shadow: '#2a0b06', spec: 0.5, pow: 20, rim: 0.2, noise: 0.05, wrap: 0.2 },
   Teeth:       { base: '#f3efe4', shadow: '#a9a196', spec: 0.6, pow: 30, rim: 0.4, noise: 0.0, wrap: 0.3 },
   Wood:        { base: '#8a5a2e', shadow: '#43281a', spec: 0.35, pow: 16, rim: 0.5, noise: 0.18, wrap: 0.15 },
@@ -330,7 +331,7 @@ const OUT_VERT = /* glsl */`
     if (l > 1e-5) clip.xy += (d / l) * uWidth * clip.w * 2.0 / uRes;
     gl_Position = clip;
   }`;
-const outlineU = { uWidth: { value: 2.0 }, uRes: { value: new THREE.Vector2(1, 1) }, uCol: { value: new THREE.Color('#1a120d') } };
+const outlineU = { uWidth: { value: 1.6 }, uRes: { value: new THREE.Vector2(1, 1) }, uCol: { value: new THREE.Color('#2b1a12') } };
 const outlineMat = new THREE.ShaderMaterial({ vertexShader: OUT_VERT, fragmentShader: 'uniform vec3 uCol; void main(){ gl_FragColor = vec4(uCol, 1.0); }',
   uniforms: outlineU, side: THREE.BackSide });
 function addSmoothNormals(geo) {
@@ -397,7 +398,7 @@ const VIEWS = {
   hero:   { pos: [1.55, 1.55, 3.55], target: [0, 1.0, 0], spin: true },
   front:  { pos: [0, 1.15, 4.1], target: [0, 1.0, 0], spin: false },
   side:   { pos: [4.1, 1.15, 0], target: [0, 1.0, 0], spin: false },
-  face:   { pos: [0.35, 1.78, 1.35], target: [0.02, 1.72, 0.0], spin: false },
+  face:   { pos: [0.30, 1.86, 1.30], target: [0.0, 1.80, -0.02], spin: false },
   poster: { pos: [-0.9, 0.55, 2.6], target: [-0.05, 1.12, 0], spin: false },
 };
 const tween = { t: 1, p0: new THREE.Vector3(), p1: new THREE.Vector3(), t0: new THREE.Vector3(), t1: new THREE.Vector3() };
@@ -482,7 +483,7 @@ function resize() {
   renderer.setSize(w, h, false);
   camera.aspect = w / h; camera.updateProjectionMatrix();
   renderer.getDrawingBufferSize(outlineU.uRes.value);
-  outlineU.uWidth.value = 1.8 * renderer.getPixelRatio();
+  outlineU.uWidth.value = 1.5 * renderer.getPixelRatio();
 }
 new ResizeObserver(resize).observe(stage);
 resize();
