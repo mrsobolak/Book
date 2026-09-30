@@ -156,10 +156,8 @@ bm_loft(pants, [(V((0, 0.0, 0.850)), 0.148, 0.108), (V((0, 0.0, 0.905)), 0.156, 
         seg=40, up=UPY)
 for hip, kn, an in ((HIP_L, KN_L, AN_L), (HIP_R, KN_R, AN_R)):
     bm_loft(pants, [(hip + V((0, 0, 0.03)), 0.092, 0.096), (lerp(hip, kn, 0.4), 0.084, 0.088),
-                    (lerp(hip, kn, 0.8), 0.070, 0.074), (kn, 0.064, 0.068)], seg=32, up=UPY)
-    bm_ellipsoid(pants, kn + V((0, -0.008, 0)), 0.068, 0.072, 0.074, seg=24, rings=12)
-    bm_loft(pants, [(kn, 0.064, 0.068), (lerp(kn, an, 0.35), 0.066, 0.072), (lerp(kn, an, 0.75), 0.052, 0.056),
-                    (an + V((0, 0, 0.14)), 0.048, 0.052)], seg=32, up=UPY)
+                    (lerp(hip, kn, 0.8), 0.072, 0.076), (kn, 0.066, 0.070), (lerp(kn, an, 0.25), 0.064, 0.070),
+                    (lerp(kn, an, 0.6), 0.054, 0.058), (an + V((0, 0, 0.14)), 0.048, 0.052)], seg=32, up=UPY)  # one leg, no knee ball
 mk("Pants", pants, "Pants", subsurf=1, fuse=0.006, fsmooth=(0.5, 8), decimate=0.5, smooth=60)
 
 # ================================================================== BOOTS: big TF2 feet, fused per boot
