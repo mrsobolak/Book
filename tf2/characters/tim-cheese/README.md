@@ -1,4 +1,4 @@
-# Tim Cheese v3 (TF2-style character)
+# Tim Cheese v4 (TF2-style character)
 
 An original Team Fortress 2-style character: a lean mercenary built somewhere between the Scout and the
 Demoman, with a Swiss-cheese wedge for a head, two googly eyes, a cocky smirk cut into the cheese, a newsboy
@@ -27,4 +27,7 @@ ambient-occlusion bake goes into vertex colours. The viewer uses a TF2-style lig
 a warm band at the terminator, bright ambient, sky rim light and thin ink outlines.
 
 History: v1 was a Heavy-sized metaball blob with no hands; v2 had fingers but stacked its parts like an action
-figure under dim light; v3 fuses the masses and relights him.
+figure under dim light; v3 fused the masses and relit him; v4 sculpts anatomy into the masses (pectorals,
+clavicles, trapezius, shoulder blades, biceps, quads, calves), adds cloth folds (waist tuck, armpits, behind the
+knees, ankle stacks, boot creases), twists the torso toward the pointing arm and tilts the head, with the
+googly-eye physics now running in each pupil's own tilted plane.

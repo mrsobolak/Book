@@ -69,6 +69,21 @@ bm_loft(shirt, [
     (V((0.0, -0.054, 1.500)), 0.118, 0.086),     # traps
     (V((0.0, -0.054, 1.540)), 0.072, 0.064),     # collar
 ], seg=40, up=UPY)
+# anatomy under the shirt: pectorals, clavicles, trapezius, shoulder blades, a little belly
+for s in (1, -1):
+    bm_ellipsoid(shirt, (s * 0.088, -0.128, 1.325), 0.088, 0.052, 0.072, seg=28, rings=14)             # pec
+    bm_rod(shirt, (s * 0.025, -0.118, 1.470), (s * 0.190, -0.092, 1.452), 0.014, seg=12, rounded=True)  # clavicle
+    bm_ellipsoid(shirt, (s * 0.105, -0.030, 1.492), 0.092, 0.070, 0.048, seg=28, rings=12)             # trap
+    bm_ellipsoid(shirt, (s * 0.095, 0.072, 1.355), 0.072, 0.040, 0.092, seg=28, rings=12)              # shoulder blade
+    bm_ellipsoid(shirt, (s * 0.045, 0.058, 1.120), 0.070, 0.045, 0.110, seg=24, rings=12)              # lower back
+bm_ellipsoid(shirt, (0.0, -0.050, 1.055), 0.105, 0.062, 0.085, seg=28, rings=14)                        # belly
+# cloth folds: tuck folds above the belt, armpit folds, pull toward the pointing shoulder
+for x, y0 in ((-0.115, -0.070), (-0.060, -0.100), (0.010, -0.106), (0.070, -0.098), (0.125, -0.062),
+              (-0.100, 0.075), (0.000, 0.104), (0.095, 0.078)):
+    bm_rod(shirt, (x, y0, 0.940), (x * 0.92, y0 * 0.95, 1.035), 0.0085, seg=10, rounded=True)
+for s, sh in ((1, SH_L), (-1, SH_R)):
+    for k, (dx, dz) in enumerate(((0.10, -0.06), (0.11, -0.10), (0.09, -0.14))):
+        bm_rod(shirt, (s * 0.165, -0.055, 1.395 - 0.02 * k), (s * (0.165 - dx), -0.135, 1.395 + dz), 0.0075, seg=10, rounded=True)
 for s, sh, el in ((1, SH_L, EL_L), (-1, SH_R, EL_R)):
     bm_ellipsoid(shirt, sh + V((s * 0.004, 0, 0.006)), 0.068, 0.066, 0.074, seg=32, rings=16)          # deltoid cap
     bm_loft(shirt, [(sh + V((s * 0.006, 0, -0.004)), 0.070, 0.068), (lerp(sh, el, 0.25), 0.066, 0.064),
@@ -126,6 +141,16 @@ def arm_shells(bm, sh, el, wr):
     bm_ellipsoid(bm, el, 0.054, 0.052, 0.056, seg=24, rings=12)
     bm_loft(bm, [(el, 0.053, 0.051), (lerp(el, wr, 0.30), 0.060, 0.054), (lerp(el, wr, 0.65), 0.050, 0.044),
                  (wr, 0.040, 0.034)], seg=28, up=UPY)
+    d = (V(el) - V(sh)).normalized(); fwd = V((0, -1, 0)) - d * d.y
+    fwd = fwd.normalized() if fwd.length > 1e-6 else V((0, -1, 0))
+    c = lerp(sh, el, 0.52) + fwd * 0.024
+    vs = bm_ellipsoid(bm, c, 0.042, 0.042, 0.075, seg=22, rings=10)                                     # biceps
+    bm_place(bm, [], c, c + d)
+    c = lerp(sh, el, 0.55) - fwd * 0.022
+    bm_ellipsoid(bm, c, 0.040, 0.040, 0.070, seg=22, rings=10)                                          # triceps
+    d2 = (V(wr) - V(el)).normalized()
+    c = lerp(el, wr, 0.30) + V((0, 0, 0)) ; bm_ellipsoid(bm, c, 0.062, 0.058, 0.060, seg=22, rings=10)  # flexor mass
+    bm_ellipsoid(bm, lerp(el, wr, 0.95) + V((0, 0, 0)), 0.044, 0.038, 0.030, seg=18, rings=8)          # wrist bone
 
 
 # left arm + hand: skin, pointing (index straight, others curled, thumb up)
@@ -156,6 +181,16 @@ for hip, kn, an in ((HIP_L, KN_L, AN_L), (HIP_R, KN_R, AN_R)):
     bm_ellipsoid(pants, kn + V((0, -0.008, 0)), 0.068, 0.072, 0.074, seg=24, rings=12)
     bm_loft(pants, [(kn, 0.064, 0.068), (lerp(kn, an, 0.35), 0.066, 0.072), (lerp(kn, an, 0.75), 0.052, 0.056),
                     (an + V((0, 0, 0.14)), 0.048, 0.052)], seg=32, up=UPY)
+    bm_ellipsoid(pants, lerp(hip, kn, 0.45) + V((0, -0.040, 0)), 0.070, 0.050, 0.150, seg=24, rings=12)  # quad
+    bm_ellipsoid(pants, kn + V((0, -0.052, 0.010)), 0.042, 0.030, 0.048, seg=20, rings=10)                # kneecap
+    bm_ellipsoid(pants, lerp(kn, an, 0.32) + V((0, 0.040, 0)), 0.052, 0.045, 0.110, seg=24, rings=12)     # calf
+    for k in range(3):                                                                                    # folds behind the knee
+        c = kn + V((0, 0.062, 0.030 - 0.028 * k))
+        bm_rod(pants, c + V((-0.050, -0.010, 0)), c + V((0.050, -0.010, 0)), 0.0075, seg=10, rounded=True)
+    for k in range(3):                                                                                    # ankle stack
+        z = an.z + 0.30 - 0.030 * k
+        vs = bm_lathe(pants, [(0, 0.044), (0, 0.056), (0.014, 0.058), (0.028, 0.056), (0.028, 0.044)], 32, "Z",
+                      (an.x, an.y, z), closed=True)
 mk("Pants", pants, "Pants", subsurf=1, fuse=0.006, decimate=0.5, smooth=60)
 
 # ================================================================== BOOTS: big TF2 feet, fused per boot
@@ -169,6 +204,9 @@ for s, an in ((1, AN_L), (-1, AN_R)):
                    (foot + V((0, -0.245, -0.010)), 0.050, 0.034)], seg=32, up=(0, 0, 1))
     bm_ellipsoid(boot, foot + V((0, -0.19, 0.002)), 0.064, 0.075, 0.046, seg=28, rings=12)
     bm_ring(boot, an + V((0, 0, 0.16)), an + V((0, 0, 0.30)), 0.40, 0.050, 0.063, 0.034)                 # pant cuff bulge
+    for k in range(2):                                                                                    # creases at the flex
+        c = foot + V((0, -0.075 - 0.022 * k, 0.050 + 0.004 * k))
+        bm_rod(boot, c + V((-0.055, 0, 0)), c + V((0.055, 0, 0)), 0.007, seg=10, rounded=True)
     mk(f"Boot{s}", boot, "Boots", subsurf=1, fuse=0.005, decimate=0.5, smooth=60)
     sole = prism(f"Sole{s}", rrect(-0.074, -0.275, 0.074, 0.090, 0.062, n=6), foot.z - 0.045, 0.030, "Rubber",
                  plane="XY", bev=0.006, segs=2)
@@ -377,7 +415,34 @@ for x in (-0.034, 0.034):
 to_world(bm, vs)
 mk("GraterHandle", bm, "Polymer", smooth=60)
 
+# ================================================================== POSE DEFORM: torso twist + head tilt
+TWIST, YAW, ROLL = -8.0, -7.0, 6.0           # degrees: chest turns toward the pointing arm; head yaws and dips
+PIV = V((0, -0.052, 1.585))
+def head_rot(h):
+    return Matrix.Rotation(math.radians(YAW * h), 3, "Z") @ Matrix.Rotation(math.radians(ROLL * h), 3, "Y")
+def deform(co):
+    t = smoothstep(0.93, 1.30, co.z)
+    a = math.radians(TWIST * t)
+    c, s_ = math.cos(a), math.sin(a)
+    p = V((co.x * c - co.y * s_, co.x * s_ + co.y * c, co.z))
+    h = smoothstep(1.50, 1.585, co.z)
+    if h > 0:
+        p = head_rot(h) @ (p - PIV) + PIV
+    return p
+for ob in lib.scene.objects:
+    if ob.type == "MESH":
+        off = V(ob.location)
+        for v in ob.data.vertices:
+            v.co = deform(V(v.co) + off) - off
+RH = head_rot(1.0) @ Matrix.Rotation(math.radians(TWIST), 3, "Z")
+for e in rig["eyes"]:
+    e["center"] = list(deform(V(e["center"])))
+    e["ax"] = list(RH @ V((1, 0, 0)))          # pupil-plane axes in Blender space
+    e["ay"] = list(RH @ V((0, 0, 1)))
+
 # ------------------------------------------------------------------ export
+def to3(v):
+    return [v[0], v[2], -v[1]]
 with open(os.path.join(OUT, "rig.json"), "w") as f:
-    json.dump({"eyes": [{**e, "center": [e["center"][0], e["center"][2], -e["center"][1]]} for e in rig["eyes"]]}, f)
+    json.dump({"eyes": [{**e, "center": to3(e["center"]), "ax": to3(e["ax"]), "ay": to3(e["ay"])} for e in rig["eyes"]]}, f)
 lib.finalize(os.path.join(OUT, "cheeseman.glb"), bake=BAKE, ao_distance=0.10, samples=32)

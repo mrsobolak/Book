@@ -385,6 +385,7 @@ new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(bytes.buffer, '', (gltf
     const node = root.getObjectByName('pupil_' + e.key);
     if (!node) continue;
     eyes.push({ node, root, c: new THREE.Vector3(...e.center), max: e.radius * 0.93 - e.pupil,
+      ax: new THREE.Vector3(...(e.ax || [1, 0, 0])).normalize(), ay: new THREE.Vector3(...(e.ay || [0, 1, 0])).normalize(),
       o: new THREE.Vector2(e.key === 'L' ? -0.4 : 0.5, e.key === 'L' ? -0.5 : 0.4).multiplyScalar(e.radius * 0.93 - e.pupil),
       v: new THREE.Vector2(), last: null, lastV: new THREE.Vector3(), acc: new THREE.Vector3() });
   }
@@ -458,11 +459,12 @@ function stepEyes(dt) {
     const f = G.clone().sub(e.acc);
     e.root.getWorldQuaternion(q);
     f.applyQuaternion(q.invert());
+    const fx = f.dot(e.ax), fy = f.dot(e.ay);        // force in the pupil's own (tilted) plane
     const sub = 4;
     for (let i = 0; i < sub; i++) {
       const h = dt / sub;
-      e.v.x += (f.x * 0.35 - e.v.x * 3.0) * h;
-      e.v.y += (f.y * 0.35 - e.v.y * 3.0) * h;
+      e.v.x += (fx * 0.35 - e.v.x * 3.0) * h;
+      e.v.y += (fy * 0.35 - e.v.y * 3.0) * h;
       e.o.addScaledVector(e.v, h);
       const r = e.o.length();
       if (r > e.max) {
@@ -473,7 +475,7 @@ function stepEyes(dt) {
         e.v.multiplyScalar(0.985);                         // rim friction
       }
     }
-    e.node.position.set(e.o.x, e.o.y, 0);
+    e.node.position.copy(e.ax).multiplyScalar(e.o.x).addScaledVector(e.ay, e.o.y);
   }
 }
 
