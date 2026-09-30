@@ -71,6 +71,7 @@
           <button class="chip" data-view="blu" aria-pressed="false">BLU base</button>
           <button class="chip" data-view="mid" aria-pressed="false">The bridge</button>
           <button class="chip" data-view="intel" aria-pressed="false">RED intel room</button>
+          <button class="chip" data-view="sewer" aria-pressed="false">RED sewer</button>
           <button class="chip" data-view="walk" aria-pressed="false">Player height</button>
         </div>
         <div class="group"><span>Look</span>
@@ -84,9 +85,9 @@
       <dl>
         <dt>Size</dt><dd>104 × 56 m</dd>
         <dt>Triangles</dt><dd id="tris">—</dd>
-        <dt>Routes</dt><dd>Bridge (mid), canal (low), catwalk (north deck), conveyor yard</dd>
+        <dt>Routes</dt><dd>Covered bridge, sewer (canal → intel), north catwalk, battlement ramps</dd>
         <dt>Spawn to intel</dt><dd>~16 s at Scout speed</dd>
-        <dt>Pickups</dt><dd>2 health, 2 ammo per side</dd>
+        <dt>Pickups</dt><dd>4 health, 4 ammo per side</dd>
       </dl>
       <div class="legend">
         <div><i style="background:#c0463c"></i>RED base, silos and truck (west)</div>
@@ -99,8 +100,8 @@
   </div>
   <section class="notes" aria-label="Design notes">
     <div class="note"><h3>Flow</h3><ul>
-      <li>Spawn is behind the intel room; the resupply cabinet faces the door so defenders re-arm on the way out.</li>
-      <li>Three ways across: the plank bridge (fast, exposed to both sniper decks), the dry canal under it (slow, safe from snipers, blind corners), and the north catwalk deck (height, one ramp).</li>
+      <li>Each fort is a solid block with the rooms cut out: gate → open courtyard → battlement walkway (ramp up the south wall, ledge on the north) → upper floor with sniper windows → stairs down → a ramp spiralling below grade into the intel room at z = −3. Spawn and resupply are on the upper floor.</li>
+      <li>Three ways in: the covered bridge (fast, funnels the fight into its mouths under the battlements), the sewer (canal ramp → grate → tunnel straight into the intel room, slow and wet), and the north catwalk (height, ends at the fort's back door).</li>
       <li>The conveyor yard on the north side and the mid shed on the south side break sightlines so a carrier can dodge.</li>
     </ul></div>
     <div class="note"><h3>TF2 × CoD</h3><ul>
@@ -306,11 +307,12 @@ new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(bytes.buffer, '', (gltf
 const VIEWS = {
   overview: { pos: [60, 55, 95], target: [0, 2, 0], label: 'Overview', spin: true },
   top:      { pos: [0, 150, 0.5], target: [0, 0, 0], label: 'Top-down', spin: false },
-  red:      { pos: [-20, 12, 34], target: [-38, 3, 0], label: 'RED base', spin: false },
-  blu:      { pos: [20, 12, -34], target: [38, 3, 0], label: 'BLU base', spin: false },
-  mid:      { pos: [12, 6, 18], target: [0, 1, 0], label: 'The bridge', spin: false },
-  intel:    { pos: [-38, 2.2, 5], target: [-46, 1.2, 0], label: 'RED intel room', spin: false },
-  walk:     { pos: [-24, 1.7, 0], target: [0, 1.6, 0], label: 'Player height, RED courtyard', spin: false },
+  red:      { pos: [-8, 14, 30], target: [-34, 3, 0], label: 'RED fort: battlements and courtyard', spin: false },
+  blu:      { pos: [8, 14, -30], target: [34, 3, 0], label: 'BLU fort', spin: false },
+  mid:      { pos: [14, 4, 14], target: [0, 1.5, 0], label: 'The covered bridge', spin: false },
+  intel:    { pos: [-39.5, -1.2, 1.5], target: [-47, -2.3, -2.5], label: 'RED intel room (z = -3)', spin: false },
+  sewer:    { pos: [-9, -1.6, -10], target: [-30, -1.8, -10], label: 'RED sewer', spin: false },
+  walk:     { pos: [-10, 1.7, 4], target: [-24, 2.5, 0], label: 'Player height at the RED gate', spin: false },
 };
 const tween = { t: 1, p0: new THREE.Vector3(), p1: new THREE.Vector3(), t0: new THREE.Vector3(), t1: new THREE.Vector3() };
 let spinning = true;
