@@ -37,6 +37,12 @@ MATERIALS = {
     "ShellHull":   ("#9b1d1d", 0.0, 0.45),   # 12 ga plastic hull
     "Tritium":     ("#7dff5a", 0.0, 0.50),   # night-sight inserts
     "Copper":      ("#b36a3a", 1.0, 0.30),   # bullet jackets
+    # ---- character palette (TF2 viewer re-shades these by name)
+    "Cheese":      ("#f2c14e", 0.0, 0.55), "Rind": ("#e0902a", 0.0, 0.45), "Skin": ("#d99a74", 0.0, 0.6),
+    "Team":        ("#b8383b", 0.0, 0.7),  "Team2": ("#7a2a28", 0.0, 0.7), "Pants": ("#7d6d52", 0.0, 0.8),
+    "Boots":       ("#4a3222", 0.0, 0.6),  "Glove": ("#2e2723", 0.0, 0.6), "Leather": ("#6b4428", 0.0, 0.55),
+    "GooglyWhite": ("#f4f1ea", 0.0, 0.3),  "Pupil": ("#111111", 0.0, 0.3), "Wax": ("#b8383b", 0.0, 0.35),
+    "Cloth":       ("#d8cfbd", 0.0, 0.85), "Mouth": ("#5a1e14", 0.0, 0.6), "Teeth": ("#f3efe4", 0.0, 0.4),
 }
 
 def _lin(c):
@@ -181,6 +187,38 @@ def bm_lathe(bm, prof, seg=48, axis="X", c=(0, 0, 0), closed=False, phase=0.0):
                 bm.faces.new([A[i], A[j], B[j], B[i]])
     return new
 
+def bm_loft(bm, stations, seg=32, caps=True, up=(0, 0, 1)):
+    """Elliptical tube lofted through stations: [(center(3), rx, ry), ...] (>= 2).
+    rx lies along the sideways axis (cross(up, spine)), ry along the local up. Returns verts."""
+    cs = [Vector(st[0]) for st in stations]
+    rings = []
+    upv = Vector(up)
+    for i, (c, rx, ry) in enumerate(stations):
+        p, n = cs[max(i - 1, 0)], cs[min(i + 1, len(cs) - 1)]
+        d = (n - p).normalized()
+        side = upv.cross(d)
+        if side.length < 1e-6:
+            side = Vector((1, 0, 0)).cross(d)
+        side.normalize()
+        u = d.cross(side).normalized()
+        rings.append([bm.verts.new(Vector(c) + side * (rx * math.cos(2 * math.pi * k / seg)) + u * (ry * math.sin(2 * math.pi * k / seg)))
+                      for k in range(seg)])
+    for A, B in zip(rings, rings[1:]):
+        for k in range(seg):
+            j = (k + 1) % seg
+            bm.faces.new([A[k], A[j], B[j], B[k]])
+    if caps:
+        bm.faces.new(rings[0][::-1]); bm.faces.new(rings[-1])
+    return [v for r in rings for v in r]
+
+def bm_ellipsoid(bm, c, rx, ry, rz, seg=32, rings=16):
+    """Axis-aligned ellipsoid centred at c."""
+    prof = [(-rz, 0.0)] + [(-rz * math.cos(math.pi * i / rings), math.sin(math.pi * i / rings)) for i in range(1, rings)] + [(rz, 0.0)]
+    vs = bm_lathe(bm, prof, seg, "Z", (0, 0, 0))
+    for v in vs:
+        v.co = Vector((c[0] + v.co.x * rx, c[1] + v.co.y * ry, c[2] + v.co.z))
+    return vs
+
 def bm_box(bm, x0, x1, y0, y1, z0, z1):
     return bm_prism(bm, [(x0, z0), (x1, z0), (x1, z1), (x0, z1)], (y0 + y1) / 2, y1 - y0, "XZ")
 
@@ -209,7 +247,8 @@ def mirror_y(verts):
         v.co.y = -v.co.y
 
 # ------------------------------------------------------------------ objects
-def mk(name, bm, mat, group="base", bev=None, segs=2, bang=30, smooth=35, mats=None):
+def mk(name, bm, mat, group="base", bev=None, segs=2, bang=30, smooth=35, mats=None, subsurf=0):
+    """subsurf=N adds a Catmull-Clark subdivision (N levels) before any boolean cut; such parts skip densify."""
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces)
     me = bpy.data.meshes.new(name)
     bm.to_mesh(me); bm.free()
@@ -224,7 +263,19 @@ def mk(name, bm, mat, group="base", bev=None, segs=2, bang=30, smooth=35, mats=N
     ob["group"] = group
     if bev:
         ob["bev"], ob["segs"], ob["bang"] = bev, segs, bang
+    if subsurf:
+        md = ob.modifiers.new("subsurf", "SUBSURF")
+        md.levels = md.render_levels = subsurf
+        ob["nodensify"] = True
     return ob
+
+def loft(name, stations, mat, group="base", seg=32, caps=True, up=(0, 0, 1), **kw):
+    bm = bmesh.new(); bm_loft(bm, stations, seg, caps, up)
+    return mk(name, bm, mat, group, **kw)
+
+def ellipsoid(name, c, rx, ry, rz, mat, group="base", seg=32, rings=16, **kw):
+    bm = bmesh.new(); bm_ellipsoid(bm, c, rx, ry, rz, seg, rings)
+    return mk(name, bm, mat, group, **kw)
 
 def cut(ob, bm):
     c = mk("cutter", bm, "Steel", group="__cutter")
@@ -350,7 +401,7 @@ def densify(ob, max_len=0.010):
 
 def finalize(out_path, bake=True, ao_distance=0.035, samples=48):
     for o in list(scene.objects):
-        if o.type == "MESH" and o.get("group") != "__cutter":
+        if o.type == "MESH" and o.get("group") != "__cutter" and not o.get("nodensify"):
             densify(o)
     for o in list(scene.objects):
         if o.type == "MESH" and o.get("bev"):
