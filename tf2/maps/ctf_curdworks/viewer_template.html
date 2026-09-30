@@ -1,0 +1,361 @@
+<title>ctf_curdworks</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500&display=swap">
+<style>
+  /* Layout: TF2 map-overview screen. Big stage, map card at right, route notes below. One warm dark world. */
+  :root { --bg: #1d1916; --panel: #26211d; --line: #4d4238; --fg: #ece3d4; --muted: #a7978a; --unique: #ffd35a;
+    --red: #b8383b; --blu: #5885a2;
+    --f-display: "Bowlby One", "Arial Black", Impact, sans-serif; --f-ui: "Barlow Condensed", "Arial Narrow", sans-serif;
+    --f-body: "Barlow", "Segoe UI", Roboto, Helvetica, Arial, sans-serif; color-scheme: dark; }
+  html, body { background: var(--bg); color: var(--fg); }
+  [hidden] { display: none !important; }
+  body { font-family: var(--f-body); font-size: 15px; line-height: 1.5; padding: 0 16px; }
+  .wrap { max-width: 1320px; margin: 0 auto; padding-block: 20px 48px; display: grid; gap: 18px; }
+  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 20px; border-bottom: 2px solid var(--line); padding-bottom: 12px; }
+  .eyebrow { font-family: var(--f-ui); text-transform: uppercase; letter-spacing: .14em; font-weight: 600; font-size: 13px; color: var(--muted); }
+  h1 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: clamp(30px, 5vw, 56px); line-height: 1; color: var(--unique); text-shadow: 0 3px 0 #000a; }
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 18px; align-items: start; }
+  @media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+  .stage { position: relative; min-width: 0; border-radius: 6px; overflow: hidden; border: 2px solid var(--line); height: clamp(420px, 68vh, 780px); max-width: 100%;
+    background: radial-gradient(70% 60% at 50% 30%, #9fb4c4 0%, #6d7f8e 55%, #2a2e32 100%); }
+  @media (max-width: 700px) { .stage { height: auto; aspect-ratio: 4 / 3; } }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .stage .hint { position: absolute; left: 12px; bottom: 10px; font-family: var(--f-ui); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; color: #dbe3ea; text-shadow: 0 1px 2px #0008; pointer-events: none; }
+  .stage .status { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-ui); text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+  .stage .label { position: absolute; top: 12px; left: 12px; font-family: var(--f-display); font-size: 22px; color: #fff; text-shadow: 0 2px 0 #000a; pointer-events: none; }
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; }
+  .group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .group > span { font-family: var(--f-ui); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-right: 4px; }
+  button.chip { font-family: var(--f-ui); font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase; color: var(--fg); background: var(--panel);
+    border: 1px solid var(--line); border-radius: 3px; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+  button.chip:hover { border-color: var(--muted); }
+  button.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  button.chip:focus-visible { outline: 2px solid var(--unique); outline-offset: 2px; }
+  .card { background: #1a1614; border: 2px solid #5c4d40; border-radius: 6px; padding: 18px; min-width: 0; display: grid; gap: 12px; box-shadow: 0 10px 30px #0008; }
+  .card h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 22px; color: var(--unique); }
+  .card .mode { font-family: var(--f-ui); color: var(--muted); font-size: 16px; }
+  .card dl { margin: 0; display: grid; grid-template-columns: auto 1fr; gap: 4px 12px; font-family: var(--f-ui); font-size: 15px; }
+  .card dt { color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; padding-top: 3px; }
+  .card dd { margin: 0; font-variant-numeric: tabular-nums; }
+  .legend { display: grid; gap: 6px; font-family: var(--f-ui); font-size: 15px; }
+  .legend i { display: inline-block; width: 14px; height: 14px; border-radius: 3px; vertical-align: -2px; margin-right: 8px; border: 1px solid #0006; }
+  section.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; border-top: 2px solid var(--line); padding-top: 16px; }
+  .note h3 { margin: 0 0 6px; font-family: var(--f-ui); font-weight: 700; font-size: 17px; text-transform: uppercase; letter-spacing: .1em; color: var(--unique); }
+  .note p, .note li { color: #d9cfc1; max-width: 65ch; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note code { font-size: 13px; background: var(--panel); padding: 1px 5px; border-radius: 3px; }
+  footer { color: var(--muted); font-family: var(--f-ui); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">TF2-style map · Capture the Flag · Xbox One budget</div>
+      <h1>ctf_curdworks</h1>
+    </div>
+    <div class="eyebrow">Curdworks Cheese Co. · 2 bases · 3 routes</div>
+  </header>
+  <div class="main">
+    <div>
+      <div class="stage" id="stage">
+        <div class="status" id="status">Loading map…</div>
+        <div class="label" id="label">Overview</div>
+        <div class="hint">Drag to orbit · scroll to zoom · right-drag to pan</div>
+      </div>
+      <div class="toolbar" role="toolbar" aria-label="Views">
+        <div class="group"><span>View</span>
+          <button class="chip" data-view="overview" aria-pressed="true">Overview</button>
+          <button class="chip" data-view="top" aria-pressed="false">Top-down</button>
+          <button class="chip" data-view="red" aria-pressed="false">RED base</button>
+          <button class="chip" data-view="blu" aria-pressed="false">BLU base</button>
+          <button class="chip" data-view="mid" aria-pressed="false">The bridge</button>
+          <button class="chip" data-view="intel" aria-pressed="false">RED intel room</button>
+          <button class="chip" data-view="walk" aria-pressed="false">Player height</button>
+        </div>
+        <div class="group"><span>Look</span>
+          <button class="chip" id="ink" aria-pressed="true">Ink lines</button>
+          <button class="chip" id="spin" aria-pressed="true">Orbit</button>
+        </div>
+      </div>
+    </div>
+    <aside class="card" aria-label="Map card">
+      <div><h2>CURDWORKS</h2><div class="mode">Capture the Flag · 2 intel · first to 3</div></div>
+      <dl>
+        <dt>Size</dt><dd>104 × 56 m</dd>
+        <dt>Triangles</dt><dd id="tris">—</dd>
+        <dt>Routes</dt><dd>Bridge (mid), canal (low), catwalk (north deck), conveyor yard</dd>
+        <dt>Spawn to intel</dt><dd>~16 s at Scout speed</dd>
+        <dt>Pickups</dt><dd>2 health, 2 ammo per side</dd>
+      </dl>
+      <div class="legend">
+        <div><i style="background:#c0463c"></i>RED base, silos and truck (west)</div>
+        <div><i style="background:#5c8ab0"></i>BLU base, silos and truck (east)</div>
+        <div><i style="background:#ffd35a"></i>Intel pedestal glow · floodlights</div>
+        <div><i style="background:#cdb98f"></i>Sandbag nests (courtyard cover)</div>
+        <div><i style="background:#9b7449"></i>Bridge, catwalk deck, pallets</div>
+      </div>
+    </aside>
+  </div>
+  <section class="notes" aria-label="Design notes">
+    <div class="note"><h3>Flow</h3><ul>
+      <li>Spawn is behind the intel room; the resupply cabinet faces the door so defenders re-arm on the way out.</li>
+      <li>Three ways across: the plank bridge (fast, exposed to both sniper decks), the dry canal under it (slow, safe from snipers, blind corners), and the north catwalk deck (height, one ramp).</li>
+      <li>The conveyor yard on the north side and the mid shed on the south side break sightlines so a carrier can dodge.</li>
+    </ul></div>
+    <div class="note"><h3>TF2 × CoD</h3><ul>
+      <li>TF2: saturated team buildings with a dark stripe, cheese silos, water tower, plank catwalks, oversized signs, a cartoon intel briefcase.</li>
+      <li>CoD: sandbag nests in the courtyards, olive military crates, a stranded troop truck by each base, barbed wire on the perimeter wall, floodlight towers.</li>
+    </ul></div>
+    <div class="note"><h3>Budget</h3><ul>
+      <li>Everything is boxes, revolves and a few booleans; one draw call per material; ambient occlusion baked into vertices so no shadow maps are needed.</li>
+      <li>Under 70k triangles for the whole map. The Xbox One pushed twenty times that per frame in 2013.</li>
+    </ul></div>
+  </section>
+  <footer>Fan concept, not affiliated with Valve or Activision · <code>build_map.py</code> · Blender 4.0 + three.js</footer>
+</div>
+
+<script type="importmap">
+{ "imports": { "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js", "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/" } }
+</script>
+<script id="glb" type="application/octet-stream">__GLB_BASE64__</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+const stage = document.getElementById('stage');
+const statusEl = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+stage.prepend(renderer.domElement);
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog('#7d8f9e', 90, 220);
+const camera = new THREE.PerspectiveCamera(45, 1, 0.1, 600);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08; controls.maxPolarAngle = Math.PI * 0.49;
+// ---------------------------------------------------------------- TF2-style toon shading
+const L = {
+  uKeyDir:  { value: new THREE.Vector3(-0.45, 0.65, 0.65).normalize() },
+  uKeyCol:  { value: new THREE.Color('#fff3e2') },
+  uFillDir: { value: new THREE.Vector3(0.75, 0.10, -0.5).normalize() },
+  uFillCol: { value: new THREE.Color('#7f93b0') },
+  uAmbTop:  { value: new THREE.Color('#9aa3ae') },
+  uAmbBot:  { value: new THREE.Color('#6a5446') },
+  uRimCol:  { value: new THREE.Color('#e4eefc') },
+};
+const NOISE = /* glsl */`
+  float h3(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+  float vnoise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
+    return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x), mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x), mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y), f.z); }
+  float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++){ s += a*vnoise(p); p = p*2.03 + 7.1; a *= 0.5; } return s; }
+`;
+const VERT = /* glsl */`
+  attribute vec4 aData;
+  varying vec3 vN; varying vec3 vW; varying vec3 vO; varying vec4 vData;
+  void main(){
+    vO = position; vData = aData;
+    vec4 w = modelMatrix * vec4(position, 1.0);
+    vW = w.xyz;
+    vN = normalize(mat3(modelMatrix) * normal);
+    gl_Position = projectionMatrix * viewMatrix * w;
+  }`;
+const FRAG = /* glsl */`
+  uniform vec3 uBase, uShadow; uniform float uSpec, uPow, uRim, uNoise, uWrap, uAlpha;
+  uniform vec3 uKeyDir, uKeyCol, uFillDir, uFillCol, uAmbTop, uAmbBot, uRimCol;
+  varying vec3 vN; varying vec3 vW; varying vec3 vO; varying vec4 vData;
+  ${NOISE}
+  vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
+  void main(){
+    vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N;
+    vec3 V = normalize(cameraPosition - vW);
+    float ao = mix(1.0, vData.r, 0.85);
+    vec3 base = uBase * (1.0 + (fbm(vO * 18.0) - 0.5) * uNoise);   // painterly mottling
+    vec3 b = lin(base);
+    float ndl = dot(N, uKeyDir);
+    float hl = ndl * 0.5 + 0.5;                       // half-Lambert
+    float hl2 = hl * hl;
+    float lit = smoothstep(0.20 - 0.10 * uWrap, 0.62, hl2);
+    vec3 diffuse = mix(lin(uShadow) * 1.15, vec3(1.05), lit);
+    diffuse += vec3(0.18, 0.07, 0.0) * exp(-pow((hl2 - 0.34) / 0.11, 2.0));   // warm band at the terminator
+    vec3 amb = mix(lin(uAmbBot), lin(uAmbTop), N.y * 0.5 + 0.5);
+    float fill = max(dot(N, uFillDir), 0.0);
+    vec3 col = b * (lin(uKeyCol) * diffuse * mix(0.8, 1.0, ao) + amb * 0.75 * ao + lin(uFillCol) * fill * 0.45 * ao);
+    vec3 R = reflect(-uKeyDir, N);
+    col += lin(uKeyCol) * pow(max(dot(R, V), 0.0), uPow) * uSpec * (0.3 + 0.7 * lit) * ao;
+    float fres = pow(1.0 - max(dot(N, V), 0.0), 3.0);
+    col += lin(uRimCol) * fres * uRim * 0.45 * smoothstep(-0.2, 0.8, N.y) * ao;
+    col = col / (1.0 + col * 0.10);
+    float a = uAlpha < 1.0 ? uAlpha + fres * 0.5 + pow(max(dot(R, V), 0.0), 60.0) : 1.0;
+    gl_FragColor = vec4(pow(col, vec3(1.0 / 2.2)), clamp(a, 0.0, 1.0));
+  }`;
+const MATDEF = {
+  Cheese:      { base: '#f7cd48', shadow: '#d08a34', spec: 0.22, pow: 10, rim: 0.7, noise: 0.08, wrap: 0.35 },
+  Rind:        { base: '#ec9d35', shadow: '#ab5d22', spec: 0.35, pow: 14, rim: 0.6, noise: 0.10, wrap: 0.25 },
+  Skin:        { base: '#e6a985', shadow: '#a45e4d', spec: 0.14, pow: 10, rim: 0.75, noise: 0.05, wrap: 0.35 },
+  Pants:       { base: '#8f7f62', shadow: '#5a4c39', spec: 0.04, pow: 6, rim: 0.5, noise: 0.14, wrap: 0.3 },
+  Boots:       { base: '#7d5838', shadow: '#43301f', spec: 0.12, pow: 12, rim: 0.55, noise: 0.10, wrap: 0.3 },
+  Glove:       { base: '#6a5747', shadow: '#372a20', spec: 0.15, pow: 12, rim: 0.55, noise: 0.1, wrap: 0.3 },
+  Leather:     { base: '#8a5632', shadow: '#472a18', spec: 0.3, pow: 14, rim: 0.5, noise: 0.12, wrap: 0.2 },
+  Brass:       { base: '#e0ad48', shadow: '#7a5220', spec: 1.2, pow: 26, rim: 0.8, noise: 0.05, wrap: 0.0 },
+  Steel:       { base: '#aab1b8', shadow: '#4a5058', spec: 1.1, pow: 30, rim: 0.9, noise: 0.08, wrap: 0.0 },
+  Polymer:     { base: '#3a3633', shadow: '#1b1816', spec: 0.3, pow: 16, rim: 0.45, noise: 0.05, wrap: 0.2 },
+  Rubber:      { base: '#252120', shadow: '#121010', spec: 0.05, pow: 6, rim: 0.3, noise: 0.08, wrap: 0.1 },
+  GooglyWhite: { base: '#f7f4ee', shadow: '#aaa6a0', spec: 0.9, pow: 40, rim: 0.4, noise: 0.0, wrap: 0.3 },
+  Pupil:       { base: '#0f0f10', shadow: '#050505', spec: 1.2, pow: 50, rim: 0.3, noise: 0.0, wrap: 0.0 },
+  Glass:       { base: '#ffffff', shadow: '#cccccc', spec: 1.6, pow: 80, rim: 0.8, noise: 0.0, wrap: 0.0, alpha: 0.05 },
+  Red:         { base: '#c0463c', shadow: '#78292a', spec: 0.06, pow: 6, rim: 0.5, noise: 0.18, wrap: 0.3 },
+  Blu:         { base: '#5c8ab0', shadow: '#2f4b66', spec: 0.06, pow: 6, rim: 0.5, noise: 0.18, wrap: 0.3 },
+  RedDark:     { base: '#8b2e2c', shadow: '#4b1716', spec: 0.08, pow: 8, rim: 0.5, noise: 0.14, wrap: 0.25 },
+  BluDark:     { base: '#3c5f7c', shadow: '#1f3446', spec: 0.08, pow: 8, rim: 0.5, noise: 0.14, wrap: 0.25 },
+  Concrete:    { base: '#c3bbac', shadow: '#7d7468', spec: 0.04, pow: 6, rim: 0.4, noise: 0.22, wrap: 0.35 },
+  Plank:       { base: '#9b7449', shadow: '#54391f', spec: 0.10, pow: 8, rim: 0.4, noise: 0.24, wrap: 0.3 },
+  Dirt:        { base: '#a58462', shadow: '#5f4a34', spec: 0.02, pow: 4, rim: 0.2, noise: 0.26, wrap: 0.4 },
+  Grass:       { base: '#86974c', shadow: '#4b5828', spec: 0.02, pow: 4, rim: 0.3, noise: 0.28, wrap: 0.4 },
+  Roof:        { base: '#66605b', shadow: '#33302d', spec: 0.10, pow: 8, rim: 0.4, noise: 0.18, wrap: 0.3 },
+  Metal:       { base: '#9a9da0', shadow: '#4c5054', spec: 0.6, pow: 20, rim: 0.7, noise: 0.14, wrap: 0.2 },
+  Sand:        { base: '#cdb98f', shadow: '#7f6f4f', spec: 0.02, pow: 4, rim: 0.3, noise: 0.2, wrap: 0.4 },
+  Water:       { base: '#4f88a0', shadow: '#24444f', spec: 1.2, pow: 40, rim: 0.9, noise: 0.06, wrap: 0.3 },
+  Cross:       { base: '#f0efe9', shadow: '#9a978f', spec: 0.2, pow: 10, rim: 0.4, noise: 0.05, wrap: 0.3 },
+  Tarp:        { base: '#66754c', shadow: '#333d24', spec: 0.05, pow: 6, rim: 0.4, noise: 0.2, wrap: 0.3 },
+  Glow:        { base: '#ffe28a', shadow: '#ffd35a', spec: 0.0, pow: 1, rim: 0.0, noise: 0.0, wrap: 1.0 },
+  Team2:       { base: '#7d2a27', shadow: '#3f1614', spec: 0.08, pow: 8, rim: 0.5, noise: 0.14, wrap: 0.2 },
+  Cloth:       { base: '#e6dcc6', shadow: '#998b76', spec: 0.06, pow: 6, rim: 0.6, noise: 0.10, wrap: 0.3 },
+  Mouth:       { base: '#5a1e14', shadow: '#2a0b06', spec: 0.5, pow: 20, rim: 0.2, noise: 0.05, wrap: 0.2 },
+  Teeth:       { base: '#f3efe4', shadow: '#a9a196', spec: 0.6, pow: 30, rim: 0.4, noise: 0.0, wrap: 0.3 },
+  Wood:        { base: '#8a5a2e', shadow: '#43281a', spec: 0.35, pow: 16, rim: 0.5, noise: 0.18, wrap: 0.15 },
+  Copper:      { base: '#c4783f', shadow: '#5f3418', spec: 1.0, pow: 24, rim: 0.7, noise: 0.06, wrap: 0.0 },
+  Stainless:   { base: '#b9bec4', shadow: '#5a6068', spec: 1.1, pow: 34, rim: 0.9, noise: 0.06, wrap: 0.0 },
+  Marking:     { base: '#e8e2d2', shadow: '#8f887a', spec: 0.2, pow: 10, rim: 0.3, noise: 0.0, wrap: 0.3 },
+};
+const MATS = {};
+for (const [name, m] of Object.entries(MATDEF)) {
+  MATS[name] = new THREE.ShaderMaterial({
+    vertexShader: VERT, fragmentShader: FRAG, transparent: !!m.alpha, depthWrite: !m.alpha,
+    uniforms: { ...L, uBase: { value: new THREE.Color(m.base) }, uShadow: { value: new THREE.Color(m.shadow) },
+      uSpec: { value: m.spec }, uPow: { value: m.pow }, uRim: { value: m.rim }, uNoise: { value: m.noise },
+      uWrap: { value: m.wrap }, uAlpha: { value: m.alpha || 1 } },
+  });
+}
+// ink lines: inverted hull along smoothed normals, constant pixel width
+const OUT_VERT = /* glsl */`
+  attribute vec3 smoothNormal; uniform float uWidth; uniform vec2 uRes;
+  void main(){
+    vec4 clip = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec3 nv = normalize(normalMatrix * smoothNormal);
+    vec2 d = (projectionMatrix * vec4(nv, 0.0)).xy;
+    float l = length(d);
+    if (l > 1e-5) clip.xy += (d / l) * uWidth * clip.w * 2.0 / uRes;
+    gl_Position = clip;
+  }`;
+const outlineU = { uWidth: { value: 1.6 }, uRes: { value: new THREE.Vector2(1, 1) }, uCol: { value: new THREE.Color('#2b1a12') } };
+const outlineMat = new THREE.ShaderMaterial({ vertexShader: OUT_VERT, fragmentShader: 'uniform vec3 uCol; void main(){ gl_FragColor = vec4(uCol, 1.0); }',
+  uniforms: outlineU, side: THREE.BackSide });
+function addSmoothNormals(geo) {
+  const pos = geo.attributes.position, nrm = geo.attributes.normal;
+  const acc = new Map(), keys = new Array(pos.count);
+  for (let i = 0; i < pos.count; i++) {
+    const k = `${pos.getX(i).toFixed(4)},${pos.getY(i).toFixed(4)},${pos.getZ(i).toFixed(4)}`;
+    keys[i] = k;
+    const a = acc.get(k) || [0, 0, 0];
+    a[0] += nrm.getX(i); a[1] += nrm.getY(i); a[2] += nrm.getZ(i);
+    acc.set(k, a);
+  }
+  const out = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const a = acc.get(keys[i]); const l = Math.hypot(...a) || 1;
+    out[i * 3] = a[0] / l; out[i * 3 + 1] = a[1] / l; out[i * 3 + 2] = a[2] / l;
+  }
+  geo.setAttribute('smoothNormal', new THREE.BufferAttribute(out, 3));
+}
+
+// ---------------------------------------------------------------- load
+const pivot = new THREE.Group(); scene.add(pivot);
+const hulls = [];
+const bin = atob(document.getElementById('glb').textContent.trim());
+const bytes = new Uint8Array(bin.length);
+for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+new GLTFLoader().setMeshoptDecoder(MeshoptDecoder).parse(bytes.buffer, '', (gltf) => {
+  const root = gltf.scene;
+  const meshes = [];
+  let tris = 0;
+  root.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  for (const o of meshes) {
+    const name = (o.material.name || '').replace(/\.\d+$/, '');
+    o.material = MATS[name] || MATS.Concrete;
+    const g = o.geometry;
+    if (g.attributes.color) g.setAttribute('aData', g.attributes.color);
+    else g.setAttribute('aData', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 4).fill(1), 4));
+    g.deleteAttribute('color');
+    tris += (g.index ? g.index.count : g.attributes.position.count) / 3;
+    if (name !== 'Glass' && name !== 'Glow') {
+      addSmoothNormals(g);
+      const h = new THREE.Mesh(g, outlineMat); h.renderOrder = -1; o.add(h); hulls.push(h);
+    } else o.renderOrder = 2;
+  }
+  pivot.add(root);
+  document.getElementById('tris').textContent = Math.round(tris).toLocaleString('en-US');
+  statusEl.hidden = true;
+  setView('overview', true);
+  window.__ready = true;
+}, (err) => { statusEl.textContent = 'Could not load the map: ' + err.message; });
+
+// ---------------------------------------------------------------- views (three.js space: x east, y up, z south)
+const VIEWS = {
+  overview: { pos: [60, 55, 95], target: [0, 2, 0], label: 'Overview', spin: true },
+  top:      { pos: [0, 150, 0.5], target: [0, 0, 0], label: 'Top-down', spin: false },
+  red:      { pos: [-20, 12, 34], target: [-38, 3, 0], label: 'RED base', spin: false },
+  blu:      { pos: [20, 12, -34], target: [38, 3, 0], label: 'BLU base', spin: false },
+  mid:      { pos: [12, 6, 18], target: [0, 1, 0], label: 'The bridge', spin: false },
+  intel:    { pos: [-38, 2.2, 5], target: [-46, 1.2, 0], label: 'RED intel room', spin: false },
+  walk:     { pos: [-24, 1.7, 0], target: [0, 1.6, 0], label: 'Player height, RED courtyard', spin: false },
+};
+const tween = { t: 1, p0: new THREE.Vector3(), p1: new THREE.Vector3(), t0: new THREE.Vector3(), t1: new THREE.Vector3() };
+let spinning = true;
+function setSpin(on) { spinning = on; document.getElementById('spin').setAttribute('aria-pressed', String(on)); }
+function setView(name, instant) {
+  const v = VIEWS[name];
+  tween.p0.copy(camera.position); tween.t0.copy(controls.target);
+  tween.t1.set(...v.target); tween.p1.set(...v.pos);
+  tween.t = instant ? 1 : 0;
+  if (instant) { camera.position.copy(tween.p1); controls.target.copy(tween.t1); }
+  pivot.rotation.y = 0;
+  setSpin(v.spin && !matchMedia('(prefers-reduced-motion: reduce)').matches);
+  document.getElementById('label').textContent = v.label;
+  document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+}
+document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+document.getElementById('spin').addEventListener('click', () => setSpin(!spinning));
+document.getElementById('ink').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  hulls.forEach((h) => (h.visible = on));
+});
+renderer.domElement.addEventListener('pointerdown', () => { setSpin(false); tween.t = 1; });
+
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.getDrawingBufferSize(outlineU.uRes.value);
+  outlineU.uWidth.value = 1.3 * renderer.getPixelRatio();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const raw = clock.getDelta(), dt = Math.min(raw, 1 / 30);
+  if (tween.t < 1) {
+    tween.t = Math.min(1, tween.t + raw / 1.2);
+    const k = 1 - Math.pow(1 - tween.t, 3);
+    camera.position.lerpVectors(tween.p0, tween.p1, k);
+    controls.target.lerpVectors(tween.t0, tween.t1, k);
+  }
+  if (spinning) pivot.rotation.y += dt * 0.08;
+  controls.update();
+  renderer.render(scene, camera);
+});
+window.__api = { setView, look: (p, t) => { tween.t = 1; camera.position.set(...p); controls.target.set(...t); pivot.rotation.y = 0; setSpin(false); } };
+</script>
