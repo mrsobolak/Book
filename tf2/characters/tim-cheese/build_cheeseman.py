@@ -71,25 +71,19 @@ bm_loft(shirt, [
 ], seg=40, up=UPY)
 # anatomy under the shirt: pectorals, clavicles, trapezius, shoulder blades, a little belly
 for s in (1, -1):
-    bm_ellipsoid(shirt, (s * 0.088, -0.128, 1.325), 0.088, 0.052, 0.072, seg=28, rings=14)             # pec
-    bm_rod(shirt, (s * 0.025, -0.118, 1.470), (s * 0.190, -0.092, 1.452), 0.014, seg=12, rounded=True)  # clavicle
+    bm_ellipsoid(shirt, (s * 0.082, -0.112, 1.325), 0.082, 0.042, 0.066, seg=28, rings=14)             # pec (subtle)
+    bm_rod(shirt, (s * 0.025, -0.112, 1.470), (s * 0.190, -0.088, 1.452), 0.010, seg=12, rounded=True)  # clavicle
     bm_ellipsoid(shirt, (s * 0.105, -0.030, 1.492), 0.092, 0.070, 0.048, seg=28, rings=12)             # trap
-    bm_ellipsoid(shirt, (s * 0.095, 0.072, 1.355), 0.072, 0.040, 0.092, seg=28, rings=12)              # shoulder blade
-    bm_ellipsoid(shirt, (s * 0.045, 0.058, 1.120), 0.070, 0.045, 0.110, seg=24, rings=12)              # lower back
+    bm_ellipsoid(shirt, (s * 0.095, 0.055, 1.355), 0.072, 0.036, 0.092, seg=28, rings=12)              # shoulder blade
+    bm_ellipsoid(shirt, (s * 0.045, 0.040, 1.120), 0.070, 0.045, 0.110, seg=24, rings=12)              # lower back
 bm_ellipsoid(shirt, (0.0, -0.050, 1.055), 0.105, 0.062, 0.085, seg=28, rings=14)                        # belly
 # cloth folds: tuck folds above the belt, armpit folds, pull toward the pointing shoulder
-for x, y0 in ((-0.115, -0.070), (-0.060, -0.100), (0.010, -0.106), (0.070, -0.098), (0.125, -0.062),
-              (-0.100, 0.075), (0.000, 0.104), (0.095, 0.078)):
-    bm_rod(shirt, (x, y0, 0.940), (x * 0.92, y0 * 0.95, 1.035), 0.0085, seg=10, rounded=True)
-for s, sh in ((1, SH_L), (-1, SH_R)):
-    for k, (dx, dz) in enumerate(((0.10, -0.06), (0.11, -0.10), (0.09, -0.14))):
-        bm_rod(shirt, (s * 0.165, -0.055, 1.395 - 0.02 * k), (s * (0.165 - dx), -0.135, 1.395 + dz), 0.0075, seg=10, rounded=True)
 for s, sh, el in ((1, SH_L, EL_L), (-1, SH_R, EL_R)):
     bm_ellipsoid(shirt, sh + V((s * 0.004, 0, 0.006)), 0.068, 0.066, 0.074, seg=32, rings=16)          # deltoid cap
     bm_loft(shirt, [(sh + V((s * 0.006, 0, -0.004)), 0.070, 0.068), (lerp(sh, el, 0.25), 0.066, 0.064),
                     (lerp(sh, el, 0.44), 0.062, 0.060)], seg=28, up=UPY)                                # short sleeve
     bm_ring(shirt, sh, el, 0.44, 0.050, 0.070, 0.040)                                                    # rolled cuff
-mk("Shirt", shirt, "Team", subsurf=1, fuse=0.006, decimate=0.5, smooth=60)
+mk("Shirt", shirt, "Team", subsurf=1, fuse=0.006, fsmooth=(0.5, 8), decimate=0.5, smooth=60)
 lathe("Collar", [(0, 0.062), (0, 0.092), (0.016, 0.100), (0.034, 0.090), (0.034, 0.062)], "Team2", seg=48, axis="Z",
       c=(0, -0.054, 1.535), closed=True, smooth=60)
 prism("Undershirt", path([("M", -0.052, 1.545), ("L", 0.052, 1.545), ("L", 0.0, 1.462)]), -0.148, 0.012, "Cloth",
@@ -143,11 +137,10 @@ def arm_shells(bm, sh, el, wr):
                  (wr, 0.040, 0.034)], seg=28, up=UPY)
     d = (V(el) - V(sh)).normalized(); fwd = V((0, -1, 0)) - d * d.y
     fwd = fwd.normalized() if fwd.length > 1e-6 else V((0, -1, 0))
-    c = lerp(sh, el, 0.52) + fwd * 0.024
-    vs = bm_ellipsoid(bm, c, 0.042, 0.042, 0.075, seg=22, rings=10)                                     # biceps
-    bm_place(bm, [], c, c + d)
-    c = lerp(sh, el, 0.55) - fwd * 0.022
-    bm_ellipsoid(bm, c, 0.040, 0.040, 0.070, seg=22, rings=10)                                          # triceps
+    c = lerp(sh, el, 0.52) + fwd * 0.012
+    bm_ellipsoid(bm, c, 0.040, 0.040, 0.075, seg=22, rings=10)                                          # biceps (subtle)
+    c = lerp(sh, el, 0.55) - fwd * 0.010
+    bm_ellipsoid(bm, c, 0.038, 0.038, 0.070, seg=22, rings=10)                                          # triceps
     d2 = (V(wr) - V(el)).normalized()
     c = lerp(el, wr, 0.30) + V((0, 0, 0)) ; bm_ellipsoid(bm, c, 0.062, 0.058, 0.060, seg=22, rings=10)  # flexor mass
     bm_ellipsoid(bm, lerp(el, wr, 0.95) + V((0, 0, 0)), 0.044, 0.038, 0.030, seg=18, rings=8)          # wrist bone
@@ -157,13 +150,13 @@ def arm_shells(bm, sh, el, wr):
 arm = bmesh.new()
 arm_shells(arm, SH_L, EL_L, WR_L)
 hand_shells(arm, WR_L, F=(-0.15, -1.0, -0.10), U=(0.30, -0.05, 0.95), curls=(0.04, 0.95, 1.0, 1.05), thumb_curl=0.25, sign=1, scale=1.05)
-mk("ArmL", arm, "Skin", subsurf=1, fuse=0.0045, decimate=0.5, smooth=60)
+mk("ArmL", arm, "Skin", subsurf=1, fuse=0.0045, fsmooth=(0.5, 6), decimate=0.5, smooth=60)
 ring("TapeL1", WR_L - V((0, 0.03, 0)), WR_L + V((0, 0.03, 0)), 0.30, 0.036, 0.043, 0.012, "Cloth")
 ring("TapeL2", WR_L - V((0, 0.03, 0)), WR_L + V((0, 0.03, 0)), 0.62, 0.037, 0.044, 0.012, "Cloth")
 # right arm: skin to the wrist; the hand is a full work glove gripping the grater's bar
 arm = bmesh.new()
 arm_shells(arm, SH_R, EL_R, WR_R)
-mk("ArmR", arm, "Skin", subsurf=1, fuse=0.0045, decimate=0.5, smooth=60)
+mk("ArmR", arm, "Skin", subsurf=1, fuse=0.0045, fsmooth=(0.5, 6), decimate=0.5, smooth=60)
 F_R, U_R = V((0, 0.20, 0.98)).normalized(), V((0, -0.98, 0.20)).normalized()
 glove = bmesh.new()
 hand_shells(glove, WR_R, F=F_R, U=U_R, curls=(1.0, 1.05, 1.05, 1.1), thumb_curl=0.95, sign=-1, scale=1.08)
@@ -183,15 +176,8 @@ for hip, kn, an in ((HIP_L, KN_L, AN_L), (HIP_R, KN_R, AN_R)):
                     (an + V((0, 0, 0.14)), 0.048, 0.052)], seg=32, up=UPY)
     bm_ellipsoid(pants, lerp(hip, kn, 0.45) + V((0, -0.040, 0)), 0.070, 0.050, 0.150, seg=24, rings=12)  # quad
     bm_ellipsoid(pants, kn + V((0, -0.052, 0.010)), 0.042, 0.030, 0.048, seg=20, rings=10)                # kneecap
-    bm_ellipsoid(pants, lerp(kn, an, 0.32) + V((0, 0.040, 0)), 0.052, 0.045, 0.110, seg=24, rings=12)     # calf
-    for k in range(3):                                                                                    # folds behind the knee
-        c = kn + V((0, 0.062, 0.030 - 0.028 * k))
-        bm_rod(pants, c + V((-0.050, -0.010, 0)), c + V((0.050, -0.010, 0)), 0.0075, seg=10, rounded=True)
-    for k in range(3):                                                                                    # ankle stack
-        z = an.z + 0.30 - 0.030 * k
-        vs = bm_lathe(pants, [(0, 0.044), (0, 0.056), (0.014, 0.058), (0.028, 0.056), (0.028, 0.044)], 32, "Z",
-                      (an.x, an.y, z), closed=True)
-mk("Pants", pants, "Pants", subsurf=1, fuse=0.006, decimate=0.5, smooth=60)
+    bm_ellipsoid(pants, lerp(kn, an, 0.32) + V((0, 0.022, 0)), 0.052, 0.045, 0.110, seg=24, rings=12)     # calf
+mk("Pants", pants, "Pants", subsurf=1, fuse=0.006, fsmooth=(0.5, 8), decimate=0.5, smooth=60)
 
 # ================================================================== BOOTS: big TF2 feet, fused per boot
 for s, an in ((1, AN_L), (-1, AN_R)):
@@ -204,10 +190,7 @@ for s, an in ((1, AN_L), (-1, AN_R)):
                    (foot + V((0, -0.245, -0.010)), 0.050, 0.034)], seg=32, up=(0, 0, 1))
     bm_ellipsoid(boot, foot + V((0, -0.19, 0.002)), 0.064, 0.075, 0.046, seg=28, rings=12)
     bm_ring(boot, an + V((0, 0, 0.16)), an + V((0, 0, 0.30)), 0.40, 0.050, 0.063, 0.034)                 # pant cuff bulge
-    for k in range(2):                                                                                    # creases at the flex
-        c = foot + V((0, -0.075 - 0.022 * k, 0.050 + 0.004 * k))
-        bm_rod(boot, c + V((-0.055, 0, 0)), c + V((0.055, 0, 0)), 0.007, seg=10, rounded=True)
-    mk(f"Boot{s}", boot, "Boots", subsurf=1, fuse=0.005, decimate=0.5, smooth=60)
+    mk(f"Boot{s}", boot, "Boots", subsurf=1, fuse=0.005, fsmooth=(0.5, 6), decimate=0.5, smooth=60)
     sole = prism(f"Sole{s}", rrect(-0.074, -0.275, 0.074, 0.090, 0.062, n=6), foot.z - 0.045, 0.030, "Rubber",
                  plane="XY", bev=0.006, segs=2)
     sole.location = (an.x, an.y, 0)
