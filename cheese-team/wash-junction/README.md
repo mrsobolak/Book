@@ -68,6 +68,22 @@ How a build works (see [kit/KIT.md](kit/KIT.md) for the API):
    chipped paint, rust, galvanised steel, timber, board-formed concrete, burlap, wax, cheeses, chrome and more.
 5. The colour, roughness/metal and normal passes are baked in Cycles. Rounded edges come from a Bevel-node normal bake.
 
+## Running it on your own PC (much faster)
+The kit runs anywhere Blender does. A 16-core desktop with a GPU bakes many times faster than the 4-vCPU cloud box this
+was first built on.
+1. Clone or pull the repo and check out the branch.
+2. Install Blender. 4.0 is what the kit was written against. Newer versions are handled with fallbacks.
+3. Install Python 3 and run `pip install numpy pillow`. This writes the PNGs. Set `WJ_PYTHON` if a different Python should do it.
+4. Build everything in parallel with the GPU doing the bakes (OptiX/CUDA/HIP/oneAPI, whatever Cycles finds):
+   ```powershell
+   python kit\build_all.py --blender "C:\Program Files\Blender Foundation\Blender 4.0\blender.exe" --jobs 4 --gpu
+   python kit\build_all.py --jobs 4 --gpu --render      # previews too
+   python kit\build_all.py --jobs 4 semi_cab water_tower # just some scripts
+   ```
+   Single script: `blender -b -P src\semi_cab.py -- --gpu [--render]`. Logs land in `export\_logs\`.
+5. To let Claude drive your live Blender through your local Blender MCP server, run Claude Code on the PC itself
+   (Claude Desktop, or `claude remote-control` in this folder). Local MCP servers only attach to sessions running on that machine.
+
 ## Honest limits
 - The materials are procedural recipes baked to textures, not photoscans. They are tuned to read as worn, sun-faded desert hardware, but
   close-up they won't match a scan's micro-detail.

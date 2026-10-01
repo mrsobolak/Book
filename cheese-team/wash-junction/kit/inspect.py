@@ -1,7 +1,7 @@
 """Four-view contact sheet of an exported GLB (front 3/4, back 3/4, side, top-down) for checking a finished asset.
     blender -b -P kit/inspect.py -- export/Name/SM_Name.glb [out.jpg]
 Writes <glb dir>/_inspect_<Name>.jpg by default (git-ignored)."""
-import bpy, sys, os, math, subprocess
+import bpy, sys, os, math, subprocess, shutil
 from mathutils import Vector
 from bpy_extras.object_utils import world_to_camera_view
 
@@ -24,7 +24,14 @@ for o in objs:
     o.location.z += lift
 lo.z += lift; hi.z += lift
 w = bpy.data.worlds.new("w"); sc.world = w; w.use_nodes = True
-sky = w.node_tree.nodes.new("ShaderNodeTexSky"); sky.sky_type = "NISHITA"; sky.sun_disc = False
+sky = w.node_tree.nodes.new("ShaderNodeTexSky")
+for st in ("NISHITA", "SINGLE_SCATTERING", "MULTIPLE_SCATTERING", "HOSEK_WILKIE"):
+    try:
+        sky.sky_type = st
+        break
+    except TypeError:
+        continue
+sky.sun_disc = False
 sky.sun_elevation = math.radians(38); sky.sun_rotation = math.radians(-60); sky.dust_density = 2.0
 w.node_tree.links.new(sky.outputs[0], w.node_tree.nodes["Background"].inputs[0])
 w.node_tree.nodes["Background"].inputs[1].default_value = 0.22
@@ -67,7 +74,8 @@ for tag, az, el in views:
     sc.render.filepath = f
     bpy.ops.render.render(write_still=True)
     tmp.append(f)
-subprocess.run(["/usr/bin/python3", "-c", """
+PY = os.environ.get("WJ_PYTHON") or next((w for w in (shutil.which(c) for c in ("python3", "python", "py")) if w and "WindowsApps" not in w), "python3")
+subprocess.run([PY, "-c", """
 import sys
 from PIL import Image, ImageDraw
 fs = sys.argv[2:]; W = Image.new('RGB', (1280, 960))

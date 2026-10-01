@@ -22,7 +22,7 @@ Conventions (from the Cheese Team spec):
     FBX: 1 unit = 1 cm, transforms applied, smoothing groups, UCX_ collision, LOD1 as its own FBX.
     GLB: metres, Y-up glTF, OpenGL normal map embedded (web preview).
 """
-import bpy, bmesh, math, os, sys, json, time, random, subprocess, hashlib
+import bpy, bmesh, math, os, sys, json, time, random, subprocess, hashlib, shutil
 import numpy as np
 from mathutils import Vector, Matrix, Euler
 from bpy_extras.object_utils import world_to_camera_view
@@ -45,7 +45,22 @@ NORENDER = "--render" not in ARGV          # no preview renders unless asked (sp
 ONLY = _arg("--only")
 TEX_OVERRIDE = int(_arg("--tex", "0"))
 OUT = os.path.abspath(_arg("--out", os.path.join(ROOT, "export")))
-PYTHON = "/usr/bin/python3"
+GPU = "--gpu" in ARGV                      # bake on the GPU (OptiX/CUDA/HIP/oneAPI/Metal, whatever Cycles finds)
+
+
+def _find_python():
+    """System Python with numpy + Pillow (writes the PNGs). Override with the WJ_PYTHON environment variable."""
+    p = os.environ.get("WJ_PYTHON")
+    if p:
+        return p
+    for c in ("python3", "python", "py"):
+        w = shutil.which(c)
+        if w and "WindowsApps" not in w:
+            return w
+    return "python3"
+
+
+PYTHON = _find_python()
 
 # =================================================================== materials
 class Mat:
@@ -384,11 +399,37 @@ def align_x(p0, p1, roll=0.0, up=(0, 0, 1)):
 
 
 # =================================================================== scene helpers
+def _use_gpu(sc):
+    try:
+        prefs = bpy.context.preferences.addons["cycles"].preferences
+    except Exception:
+        return None
+    for t in ("OPTIX", "CUDA", "HIP", "ONEAPI", "METAL"):
+        try:
+            prefs.compute_device_type = t
+        except Exception:
+            continue
+        try:
+            prefs.get_devices()
+        except Exception:
+            pass
+        devs = [d for d in prefs.devices if d.type == t]
+        if devs:
+            for d in prefs.devices:
+                d.use = d.type == t
+            sc.cycles.device = "GPU"
+            return t
+    return None
+
+
 def _reset():
     bpy.ops.wm.read_factory_settings(use_empty=True)
     sc = bpy.context.scene
     sc.render.engine = "CYCLES"
     sc.cycles.device = "CPU"
+    if GPU:
+        t = _use_gpu(sc)
+        print("[kit] GPU backend:", t or "none found, using CPU")
     sc.unit_settings.system = "METRIC"
     sc.unit_settings.scale_length = 1.0
     return sc
@@ -414,6 +455,15 @@ class Part:
     def move(self, dx=0, dy=0, dz=0):
         self.ob.data.transform(Matrix.Translation((dx, dy, dz)))
         return self
+
+
+def _colorspace(img, name):
+    for n in ((name, "Linear", "Linear Rec.709", "scene_linear") if name.startswith("Linear") else (name,)):
+        try:
+            img.colorspace_settings.name = n
+            return
+        except TypeError:
+            continue
 
 
 def _np_img(img):
@@ -764,8 +814,9 @@ class Asset:
         bmesh.ops.triangulate(bm, faces=bm.faces, quad_method="BEAUTY", ngon_method="BEAUTY")
         bm.to_mesh(me)
         bm.free()
-        me.use_auto_smooth = True
-        me.auto_smooth_angle = math.pi
+        if hasattr(me, "use_auto_smooth"):          # Blender <= 4.0; 4.1+ shades by the sharp-edge flags directly
+            me.use_auto_smooth = True
+            me.auto_smooth_angle = math.pi
         # pivot
         co = np.empty(len(me.vertices) * 3, np.float32)
         me.vertices.foreach_get("co", co)
@@ -921,7 +972,7 @@ class Asset:
         if name in bpy.data.images:
             bpy.data.images.remove(bpy.data.images[name])
         img = bpy.data.images.new(name, res, res, alpha=True, float_buffer=True)
-        img.colorspace_settings.name = "Linear Rec.709" if color else "Non-Color"
+        _colorspace(img, "Linear Rec.709" if color else "Non-Color")
         return img
 
     def _bake(self, ob, kind, img, samples):
@@ -1007,9 +1058,12 @@ class Asset:
         L.new(tb.outputs["Color"], b.inputs["Base Color"])
         if self.alpha:
             L.new(tb.outputs["Alpha"], b.inputs["Alpha"])
-            m.blend_method = "CLIP"
-            m.alpha_threshold = 0.5
-            m.shadow_method = "CLIP"
+            for k, v in (("blend_method", "CLIP"), ("alpha_threshold", 0.5), ("shadow_method", "CLIP"),
+                         ("surface_render_method", "DITHERED")):
+                try:
+                    setattr(m, k, v)
+                except Exception:
+                    pass
         to = nt.nodes.new("ShaderNodeTexImage"); to.image = self._load(imgs["orm"], False)
         sp = nt.nodes.new("ShaderNodeSeparateColor")
         L.new(to.outputs["Color"], sp.inputs[0])
@@ -1079,10 +1133,14 @@ class Asset:
     def _glb(self, ob, path):
         _select([ob], ob)
         self._swap_normal(ob, gl=True)
-        bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True,
-                                  export_yup=True, export_texcoords=True, export_normals=True, export_materials="EXPORT",
-                                  export_image_format="JPEG", export_image_quality=90, export_tangents=False,
-                                  export_extras=False, export_cameras=False, export_lights=False)
+        try:
+            bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True,
+                                      export_yup=True, export_texcoords=True, export_normals=True, export_materials="EXPORT",
+                                      export_image_format="JPEG", export_image_quality=90, export_tangents=False,
+                                      export_extras=False, export_cameras=False, export_lights=False)
+        except TypeError:   # newer exporter renamed options: fall back to the essentials
+            bpy.ops.export_scene.gltf(filepath=path, export_format="GLB", use_selection=True, export_apply=True,
+                                      export_yup=True)
 
     def _export(self, ob):
         d = self.dir
@@ -1170,7 +1228,12 @@ class Asset:
         nt = w.node_tree
         bg = nt.nodes["Background"]
         sky = nt.nodes.new("ShaderNodeTexSky")
-        sky.sky_type = "NISHITA"
+        for st in ("NISHITA", "SINGLE_SCATTERING", "MULTIPLE_SCATTERING", "HOSEK_WILKIE"):
+            try:
+                sky.sky_type = st
+                break
+            except TypeError:
+                continue
         sky.sun_disc = False
         sky.sun_elevation = math.radians(38)
         sky.sun_rotation = math.radians(-60)

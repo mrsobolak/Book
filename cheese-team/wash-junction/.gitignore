@@ -6,3 +6,4 @@ export/**/*_Normal.gl.png
 __pycache__/
 export/**/_inspect*
 export/**/_v_*
+export/_logs/
