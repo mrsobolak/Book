@@ -522,9 +522,9 @@ def _ov(a, b, skip=None):
         return len(pairs)
     n = 0
     for (i, j) in pairs:
-        cb = b.cents[j]
-        if any((cb - c).length < r for (c, r) in skip):
-            continue
+        ca, cb = a.cents[i], b.cents[j]
+        if any((cb - c).length < r or (ca - c).length < r * 0.88 for (c, r) in skip):
+            continue                     # contact hidden inside a hand ball (or rooted in the shoulder)
         n += 1
     return n
 
