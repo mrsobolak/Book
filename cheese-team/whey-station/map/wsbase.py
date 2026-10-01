@@ -40,7 +40,7 @@ def base(K, T):
     K.slab('TF_Floor', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
     K.slab('Conc', 0, -24, 12, -6, -0.3, 0.0, holes=[(1.33, -10, 7.0, -8)])     # south stair hall
     K.slab('Hangar', 10, -6, 24, 20, -0.3, 0.0)                                 # loading yard
-    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.85, 30.0, -13.65)])   # flag room
+    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.8, 30.0, -13.6)])   # flag room
     K.slab('AntiSlip', 30, -24, 36, -6, -0.3, 0.0)                              # packing corridor
     K.slab('TF_Floor', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
     K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, col=False)                   # roof
@@ -105,8 +105,8 @@ def base(K, T):
         K.light(d, -0.8, -13.5 if d > 12 else -11, '#9fd0ff', 0.8, 9)
     K.area('Brine Tunnel', 0, -16, 36, -6, -4, team=T, kind='tunnel')
     # hatch stair from the tunnel up into the flag room
-    P.stairs(30.0, -14.75, PI, 2.0, -4.0, 0.0, kind='steel')                       # clear of the tunnel wall (face at -15.8)
-    P.rail(24.33, -13.55, 29.8, -13.55, 0.0); P.rail(24.33, -15.95, 29.8, -15.95, 0.0)
+    P.stairs(30.0, -14.7, PI, 2.0, -4.0, 0.0, kind='steel')                       # clear of the tunnel wall (face at -15.8)
+    P.rail(24.33, -13.5, 29.8, -13.5, 0.0); P.rail(24.33, -15.95, 29.8, -15.95, 0.0)
     # ---------------- Loading Yard (hub) ----------------
     K.wall2('x', 10, 30, -6, WT, 0, 10, holes=[(14, 18, 0, 3.2)])
     P.opening('x', 14, 18, -6, WT, 0, 3.2, mat=tm('SteelT'))
@@ -171,7 +171,7 @@ def base(K, T):
     K.wall2('x', 24, 36, 15.2, WT, 0, 10, holes=[(33.5, 35.5, 5.8, 9.0)])
     K.box('Plate', 33.5, 5.8, 14.95, 35.5, 6.0, 15.45, col=True, bevel=False)         # floor through the doorway
     P.opening('x', 33.5, 35.5, 15.2, WT, 6.0, 9.0, mat='Steel')
-    P.stairs(34.5, 15.0 - RUN6, -PI / 2, 2.0, 0.0, 6.0, kind='steel')
+    P.stairs(34.5, 14.95 - RUN6, -PI / 2, 2.0, 0.0, 6.0, kind='steel')
     K.box('SteelPlate', 25.0, 0, 12.8, 29.5, 1.05, 14.6, col=True)                 # control desk
     K.box('Glass', 25.2, 1.05, 14.3, 29.3, 1.6, 14.35)
     K.light(29, 9.3, 9, '#fff1d6', 1.0, 12)
