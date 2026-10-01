@@ -800,15 +800,15 @@ reload_smg = keyed([                                                 # let go of
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
 _VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
-_BACK = (-0.131, 0.092, 0.0)                                         # slid 0.16 m back along the tube (body frame)
+_BACK = (-0.164, 0.115, 0.0)                                         # slid 0.20 m back along the tube (body frame)
 reload_launcher = keyed([                                            # RPG-style: slide it back, shove a rocket in the front
     (0.00, {}),
     (0.14, dict(dg=_BACK, lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.30, dict()),
     (0.46, dict(lh=('w', 1060, -60, 0), lel=(1, 0.0, -0.8))),                                  # rocket at the muzzle
-    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.139, 0.097, 0.0), ease=snap)),                   # shove it home
+    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.172, 0.120, 0.0), ease=snap)),                   # shove it home
     (0.62, dict(lh=('w', 1060, -60, 0), dg=_BACK)),
-    (0.68, dict(lh=('w', 1060, -130, 0))),                                                    # drop under the muzzle
+    (0.68, dict(lh=('w', 1040, -95, 0))),                                                     # drop just under the tube
     (0.82, dict(lh=None, dg=(0, 0, 0))),
     (1.00, {}),
 ])
