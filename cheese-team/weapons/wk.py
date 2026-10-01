@@ -632,3 +632,30 @@ def spline(pts, sub=6, closed=False):
             out.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
     out.append(P[-2])
     return out
+
+
+def tape(name, col='#9a9b9c'):
+    """silver duct tape: cloth scrim weave, crinkles, satin sheen, dirty"""
+    g = NT(name)
+    dirt = g.noise(25, 6, 0.6)
+    g.set('Base Color', g.ramp(dirt, 0.3, 0.85, tuple(c * 0.55 for c in srgb(col)), srgb(col)))
+    g.set('Metallic', 0.55)
+    g.set('Roughness', g.math('ADD', 0.38, g.math('MULTIPLY', dirt, 0.2)))
+    wv1 = g.node('ShaderNodeTexWave'); wv1.inputs['Scale'].default_value = 1100.0; wv1.bands_direction = 'X'
+    wv2 = g.node('ShaderNodeTexWave'); wv2.inputs['Scale'].default_value = 1100.0; wv2.bands_direction = 'Z'
+    g.link(g.co, wv1.inputs['Vector']); g.link(g.co, wv2.inputs['Vector'])
+    crink = g.noise(160, 6, 0.75, distort=1.0)
+    h = g.math('ADD', g.math('MULTIPLY', g.math('ADD', wv1.outputs['Fac'], wv2.outputs['Fac']), 0.25), g.math('MULTIPLY', crink, 1.0))
+    g.bump(h, 0.25, 0.0004)
+    return g.m
+
+
+def jagged(bm, u_from, amp_mm=1.2, tilt_deg=3.0, seed=1):
+    """hacksaw-cut end: verts beyond u_from get a tilted, uneven end"""
+    for v in bm.verts:
+        u = -v.co.y / MM
+        if u > u_from:
+            h = v.co.z / MM; x = v.co.x / MM
+            du = math.tan(math.radians(tilt_deg)) * h + amp_mm * noise.noise(Vector((x * 0.4, h * 0.4, seed)))
+            v.co.y -= du * MM
+    return bm

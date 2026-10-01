@@ -313,6 +313,126 @@ def derringer():
 BUILDERS['Derringer'] = derringer
 
 
+# ================================================================== 3. SAWED-OFF PUMP SHOTGUN (Mr. Shotgun, primary)
+def sawedoff():
+    black = wk.steel('M_SgParkerized', base='#1c1d1f', bare='#9a9da1', rough=0.55, wear=1.1, scratch=1.6, edge_gain=11.0, tint_var=0.08)
+    black_dk = wk.steel('M_SgParkDark', base='#141516', bare='#8a8d91', rough=0.5, wear=0.8, scratch=1.0, edge_gain=11.0)
+    bare = wk.steel('M_SgSawCut', base='#8d9095', bare='#c4c6c9', rough=0.42, wear=0.0, scratch=2.0)
+    bolt = wk.steel('M_SgBolt', base='#6d7075', bare='#b5b8bc', rough=0.3, wear=0.5, scratch=1.0)
+    wood = wk.wood('M_SgPumpWood', light='#7a4524', dark='#2b1408', rough=0.5, ring=40.0, axis='Y', wear=1.0)
+    grip_m = wk.plastic('M_SgGripPoly', '#1a1a1b', rough=0.62)
+    duct = wk.tape('M_SgDuctTape')
+
+    # ---- receiver
+    rc = rounded([(0, 21, 7), (163, 23, 3), (170, 19, 2), (170, -18, 2), (161, -24, 3), (8, -24, 3), (0, -17, 7)], n=8)
+    recv = make('Sg_Receiver', profile(rc, -15.5, 15.5), black, bevel=0.0018, seg=5, angle=30)
+    cut(recv, box(W(122, 1.0 + 8.5, -14.0), (0.007, 0.052, 0.017)), 'ejport')           # ejection port (right)
+    cut(recv, box(W(143, -22.0, 0), (0.019, 0.042, 0.008)), 'loadport')                    # loading port (bottom)
+    make('Sg_Bolt', profile(rounded([(98, 2, 2), (146, 2, 2), (146, 17, 2), (98, 17, 2)]), -12.5, -8.5), bolt, bevel=0.0006)
+    sf = rounded([(6, 21.5, 0), (20, 21.5, 0), (19, 26.5, 2), (7, 26.5, 2)])
+    saf = make('Sg_Safety', profile(sf, -5.0, 5.0), black_dk, bevel=0.0006)
+    for k in range(4):
+        gb = box(W(9.5 + k * 2.6, 27.0, 0), (0.0110, 0.0008, 0.0016)); cut(saf, gb, 'ck%d' % k)
+    for (u, v) in ((32, -16), (105, -16), (150, 10)):
+        for sd in (1, -1):
+            make('Sg_Pin', cyl(W(u, v, sd * 15.3), W(u, v, sd * 16.1), 0.0024, n=20), black_dk)
+
+    # ---- trigger housing with integrated guard + trigger
+    th = rounded([(18, -23, 0), (120, -23, 0), (118, -31, 4), (100, -36, 6), (88, -60, 8), (50, -63, 9), (34, -45, 6), (20, -36, 4)], n=8)
+    hole = rounded([(54, -38, 5), (84, -38, 5), (80, -55, 7), (57, -56, 7)], n=8)
+    make('Sg_TriggerHousing', profile(th, -10.5, 10.5, holes=[hole]), black, bevel=0.0016, seg=4, angle=30)
+    tr = rounded([(70, -37, 0), (69, -44, 3), (65, -51, 2), (62.5, -51, 1.5), (65.5, -44, 3), (66, -37, 0)])
+    make('Sg_Trigger', profile(tr, -3.0, 3.0), black_dk, bevel=0.0005)
+
+    # ---- cut-down barrel with a rough hacksaw end
+    BU = 412.0
+    bar = lathe([(11.1, 166.0), (11.1, BU - 3.0), (11.1, BU)], n=64)
+    wk.jagged(bar, BU - 2.5, amp_mm=0.9, tilt_deg=2.5, seed=4)
+    barrel = make('Sg_Barrel', bar, black, bevel=0.0, smooth=True)
+    cut(barrel, cyl(W(300, 0, 0), W(430, 0, 0), 0.0093, n=64), 'bore')
+    ring = lathe([(11.15, BU - 3.2), (11.15, BU + 0.4)], n=64, cap0=False, cap1=False)
+    wk.jagged(ring, BU - 3.5, amp_mm=0.9, tilt_deg=2.5, seed=4)
+    make('Sg_SawBurr', ring, bare, smooth=True)
+    make('Sg_BoreInner', lathe([(9.25, 330.0), (9.25, BU + 1.0)], n=48, cap0=True, cap1=False), black_dk)
+    # ---- magazine tube, cap, barrel clamp
+    MV = -24.5
+    make('Sg_MagTube', lathe([(10.8, 166.0), (10.8, 352.0)], n=48, axis_v=MV), black, bevel=0.0)
+    cap = lathe([(0, 352.0), (12.4, 352.2), (12.8, 353.5), (12.8, 364.0), (12.2, 366.0), (8.0, 367.0), (0, 367.2)], n=48, axis_v=MV)
+    capo = make('Sg_MagCap', cap, black_dk, bevel=0.0004)
+    for k in range(18):
+        a = 2 * PI * k / 18
+        gb = box((0, 0, 0), (0.0012, 0.0080, 0.0016))
+        transform(gb, Matrix.Translation(W(358.0, MV + 12.8 * math.sin(a), 12.8 * math.cos(a))) @ Matrix.Rotation(-a + PI / 2, 4, 'Y'))
+        cut(capo, gb, 'kn%d' % k)
+    cl = rounded([(338, 15.5, 4), (350, 15.5, 4), (350, -38.0, 6), (338, -38.0, 6)])
+    clamp = make('Sg_BarrelClamp', profile(cl, -9.0, 9.0), black, bevel=0.0012)
+    cut(clamp, cyl(W(330, 0, 0), W(360, 0, 0), 0.0111, n=48), 'b'); cut(clamp, cyl(W(330, MV, 0), W(360, MV, 0), 0.0108, n=48), 'm')
+    wk.screw(W(344, -12.0, 9.0), Vector((1, 0, 0)), r=0.0022, mat=black_dk, name='Sg_Screw')
+
+    # ---- wooden pump with grip grooves, action bars back to the receiver
+    def oval(i, k, r, a):
+        return r * (1.0 + 0.16 * math.cos(a) ** 2) * (1.0 - 0.10 * max(0.0, -math.sin(a)))
+    pump = lathe([(11.4, 186.0), (14.5, 188.0), (17.0, 192.0), (18.2, 198.0), (18.2, 286.0), (17.0, 292.0), (14.5, 296.0),
+                  (11.4, 298.0)], n=72, axis_v=MV, shape=oval, cap0=False, cap1=False)
+    pmp = make('Sg_Pump', pump, wood, bevel=0.0, smooth=True)
+    for k in range(9):
+        u = 206.0 + k * 8.5
+        gr = lathe([(16.8, u - 1.4), (25.0, u - 1.4), (25.0, u + 1.4), (16.8, u + 1.4)], n=48, axis_v=MV)
+        cut(pmp, gr, 'gr%d' % k)
+    for sd in (1, -1):
+        make('Sg_ActionBar%d' % sd, profile(rounded([(150, -21.5, 0), (192, -21.5, 0), (192, -16.5, 0), (150, -16.5, 0)]),
+                                            sd * 11.0 - 1.1, sd * 11.0 + 1.1), black_dk, bevel=0.0004)
+
+    # ---- pistol grip only (no stock), silver duct tape wrapped round it
+    rcap = rounded([(-4, 18, 4), (8, 18, 0), (8, -22, 0), (-4, -22, 6)])
+    make('Sg_RearCap', profile(rcap, -14.5, 14.5), black, bevel=0.0026, seg=5)
+    g = Grip((24.0, -30.0), (16.0, -82.0), (-6.0, -132.0),
+             depth=lambda t: (15.0 + 1.5 * math.sin(PI * t), 16.0 + 2.0 * t), width=lambda t: 15.0 + 1.0 * math.sin(PI * t), e=2.6, butt=0.06)
+    R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=44, nth=56)
+    gp = make('Sg_PistolGrip', wk.loft([r[:-1] for r in R], closed=True, cap1=True), grip_m, smooth=True)
+    for k in range(4):                                   # finger grooves on the front strap
+        t = 0.25 + k * 0.17
+        c = g.point(t, 0.0, 1.0, 3.2)
+        cut(gp, sphere(c, 0.0062, seg=24, rings=12, scale=(3.0, 1.0, 1.0)), 'fg%d' % k)
+    tape_wrap('Sg_DuctTape', g, 0.30, 0.66, duct)
+
+    c = g.centre(0.42)
+    PIVOT['SawedOff'] = (c.x, c.y)
+    return 'SawedOff'
+
+
+def tape_wrap(name, g, t0, t1, mat, turns=3, width_t=0.13, pad=0.5, seed=5):
+    """a few overlapping, slightly skewed turns of tape round a lofted grip + a loose torn end flap"""
+    obs = []
+    for k in range(turns):
+        a0 = t0 + (t1 - t0 - width_t) * k / max(1, turns - 1)
+        rings = []
+        N, R = 72, 6
+        for j in range(R + 1):
+            ring = []
+            for i in range(N):
+                th = 2 * PI * i / N
+                tt = a0 + width_t * j / R + 0.025 * math.sin(th + k)          # skewed turns
+                crinkle = 0.25 * noise.noise(Vector((th * 3, tt * 30, seed + k)))
+                ring.append(g.point(min(tt, 0.98), th, 1.0, pad + 0.35 * k + crinkle))
+            rings.append(ring)
+        obs.append(make('%s%d' % (name, k), wk.loft(rings, closed=True), mat, solid=0.0004))
+    # loose end flap on the back
+    tt = t0 + (t1 - t0) * 0.5
+    p0 = g.point(tt, PI + 0.4, 1.0, pad + 0.9)
+    T, D = g.frame2(tt)
+    outw = Vector((0.0, -1.0 * 0, 0.0))
+    pts = [p0 + Vector((0.004 * i, 0.0025 * i * i * 0.3, -0.0015 * i)) for i in range(6)]
+    bm = ribbon(pts, lambda t: 0.012 * (1 - 0.15 * t), lambda t, tan: Vector((0.3, 1.0, 0.0)).normalized())
+    for v in bm.verts:
+        v.co += Vector((0, 0, 0.0007 * noise.noise(v.co * 3000)))
+    obs.append(make(name + 'Flap', bm, mat, solid=0.0004))
+    return obs
+
+
+BUILDERS['SawedOff'] = sawedoff
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
