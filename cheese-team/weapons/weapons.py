@@ -398,36 +398,26 @@ def sawedoff():
     return 'SawedOff'
 
 
-def tape_wrap(name, g, t0, t1, mat, turns=3, width_t=0.13, pad=0.5, seed=5):
-    """a few overlapping, slightly skewed turns of tape round a lofted grip + a loose torn end flap"""
-    obs = []
-    for k in range(turns):
-        a0 = t0 + (t1 - t0 - width_t) * k / max(1, turns - 1)
-        rings = []
-        N, R = 72, 6
-        for j in range(R + 1):
-            ring = []
-            for i in range(N):
-                th = 2 * PI * i / N
-                tt = a0 + width_t * j / R + 0.025 * math.sin(th + k)          # skewed turns
-                crinkle = 0.25 * noise.noise(Vector((th * 3, tt * 30, seed + k)))
-                ring.append(g.point(min(tt, 0.98), th, 1.0, pad + 0.35 * k + crinkle))
-            rings.append(ring)
-        obs.append(make('%s%d' % (name, k), wk.loft(rings, closed=True), mat, solid=0.0004))
-    # loose end flap on the back
-    tt = t0 + (t1 - t0) * 0.5
-    p0 = g.point(tt, PI + 0.4, 1.0, pad + 0.9)
-    T, D = g.frame2(tt)
-    outw = Vector((0.0, -1.0 * 0, 0.0))
-    pts = []
-    for i in range(7):                                   # hangs down the back, lifting off a little at the end
-        tt2 = min(0.97, tt + 0.03 * i)
-        pts.append(g.point(tt2, PI + 0.35, 1.0, pad + 1.0 + 0.25 * i * i * 0.12))
-    bm = ribbon(pts, lambda t: 0.011 * (1 - 0.15 * t), lambda t, tan: (pts[min(6, int(t * 6))] - g.point(tt, PI, 0.0, 0.0)).normalized())
-    for v in bm.verts:
-        v.co += Vector((0, 0, 0.0007 * noise.noise(v.co * 3000)))
-    obs.append(make(name + 'Flap', bm, mat, solid=0.0004))
-    return obs
+def tape_wrap(name, g, t0, t1, mat, turns=2.6, width_t=0.11, pad=0.45, seed=5):
+    """one strip of tape spiralling round a lofted grip (overlapping itself), crinkled, with a lifted torn end"""
+    N = int(64 * turns)
+    span = (t1 - t0 - width_t)
+    rows = 5
+    rings = []
+    for r in range(rows + 1):
+        ring = []
+        for i in range(N + 1):
+            s = i / N
+            th = 2 * PI * turns * s
+            tt = t0 + span * s + width_t * r / rows
+            crinkle = 0.22 * noise.noise(Vector((th * 2.5, tt * 40, seed))) + 0.12 * s       # later turns sit on top
+            lift = 0.0
+            if s > 0.96:                                                                     # torn end lifts off
+                lift = (s - 0.96) / 0.04 * 1.4
+            ring.append(g.point(min(tt, 0.985), th, 1.0, pad + crinkle + lift))
+        rings.append(ring)
+    bm = wk.loft(rings, closed=False)
+    return [make(name, bm, mat, solid=0.0004)]
 
 
 BUILDERS['SawedOff'] = sawedoff

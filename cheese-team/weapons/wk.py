@@ -473,6 +473,10 @@ def rubber(name, col='#18181a', rough=0.8, stipple=1.0):
     g = NT(name)
     g.set('Base Color', g.ramp(g.noise(20, 4), 0.3, 0.8, srgb(col), tuple(min(1, x * 1.35 + 0.004) for x in srgb(col))))
     g.set('Roughness', rough)
+    try:
+        g.set('Specular IOR Level', 0.22)
+    except KeyError:
+        pass
     vo = g.node('ShaderNodeTexVoronoi'); vo.inputs['Scale'].default_value = 900.0
     g.link(g.co, vo.inputs['Vector'])
     g.bump(vo.outputs['Distance'], 0.25 * stipple, 0.0003)
