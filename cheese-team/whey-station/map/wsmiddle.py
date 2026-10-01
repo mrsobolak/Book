@@ -51,11 +51,11 @@ def half(K, T):
         K.box('TF_Conc', x - 0.35, 6.0, 23.4, x + 0.35, 16, 23.8)                    # pilasters
     # end wall (west; rotated -> east), full width z -24..24 (v1 stopped at +-20 and left a slot to the outside)
     K.wall2('z', -24, 24, -30, WT, 0, 16,
-           holes=[(4, 10, 0, 4.5), (18.8, 23.8, 6, 9), (-23.8, -18.8, 6, 9), (-18, -14, 0, 3.2)])
+           holes=[(4, 10, 0, 4.5), (18.8, 23.5, 6, 9), (-23.5, -18.8, 6, 9), (-18, -14, 0, 3.2)])
     P.opening('z', 4, 10, -30, WT, 0, 4.5, mat=P.tm('SteelT'), w=0.18)
     P.opening('z', -18, -14, -30, WT, 0, 3.2, mat='Steel')
-    P.opening('z', 18.8, 23.8, -30, WT, 6, 9, mat='Steel')
-    P.opening('z', -23.8, -18.8, -30, WT, 6, 9, mat='Steel')
+    P.opening('z', 18.8, 23.5, -30, WT, 6, 9, mat='Steel')
+    P.opening('z', -23.5, -18.8, -30, WT, 6, 9, mat='Steel')
     # north catwalk (y 6), full length -- this is the Cheddar high route through the hall
     K.box('Plate', -30, 5.8, 18.8, 30, 6.0, 23.8, col=True, bevel=False)
     K.box('Steel', -30, 5.55, 18.75, 30, 5.8, 18.9)                                 # edge channel
@@ -81,10 +81,10 @@ def half(K, T):
     P.stairs(-4, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')
     P.rail(-5.05, -8, -5.05, 8, 0.0)
     P.rail(-3.0, 8.05, 5.0, 8.05, 0.0)
-    K.box('TF_Hazard', -5.2, 0.0, -8.2, -4.9, 0.08, 8.2)
+    K.box('TF_Hazard', -5.2, 0.0, -8.2, -4.95, 0.08, 8.2)
     K.box('TF_Hazard', -5.0, 0.0, 7.9, 5.0, 0.08, 8.2)
     # cover: vats and a pump skid
-    vat(K, -18, 10.5); vat(K, -18, -10.5); vat(K, -10, -19.5, 2.4)
+    vat(K, -18, 10.5); vat(K, -18, -10.5); vat(K, -10, -13.5, 2.4)
     pump_skid(K, -13, 0)
     K.light(-18, 14.5, 0, '#ffe7c4', 2.4, 34); K.light(-8, 4.5, 21, '#ffd9a8', 1.2, 14); K.light(0, -1.2, 0, '#bfe3ff', 1.0, 12)
 
@@ -98,8 +98,7 @@ def half(K, T):
     K.slab('TF_Ceiling', -40, -4, -30, 10, 5.0, 5.3, col=False)
     K.wall2('x', -40, -30, -4, WT, 0, 10.0, holes=[(-39.5, -37, 0, 3.0)], lower='TF_Tile', band=1.4)
     P.opening('x', -39.5, -37, -4, WT, 0, 3.0, mat='Steel')
-    K.wall('TileW', 'z', -4, 4, -34, WT, 0, 5.0)                                     # the corner that blocks the sightline
-    K.box('TF_Conc', -34, 0, -4, -30, 10, 4, col=True)                                  # solid block behind it
+    K.wall2('z', -4, 4, -34, WT, 0, 10.0, lower='TF_Tile', band=1.4)                   # the corner that blocks the sightline
     K.wall2('x', -40, -30, 10, WT, 0, 10.0, lower='TF_Tile', band=1.4)
     K.light(-37, 4.6, 0, '#ffe0b0', 1.0, 10); K.light(-33, 4.6, 7, '#ffe0b0', 1.0, 10)
     K.area('Main Hallway', -40, -4, -30, 10, 0, team=T)

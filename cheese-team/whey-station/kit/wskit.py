@@ -246,13 +246,13 @@ class Kit:
         # trim strip on both faces, skipping holes that cross the band
         cuts = sorted([(h[0], h[1]) for h in holes if h[2] < yb + 0.06 and h[3] > yb - 0.06])
         segs, a = [], s0
-        for h0, h1 in cuts:
-            if h0 > a: segs.append((a, min(h0, s1)))
-            a = max(a, h1)
+        for h0, h1 in cuts:                       # stop just inside the door/window frame posts (no coplanar end caps)
+            if h0 - 0.05 > a: segs.append((a, min(h0 - 0.05, s1)))
+            a = max(a, h1 + 0.05)
         if a < s1: segs.append((a, s1))
         for a0, a1 in segs:
             for f in (-1, 1):
-                cc0, cc1 = c + f * t / 2, c + f * (t / 2 + 0.035)
+                cc0, cc1 = c + f * t / 2, c + f * (t / 2 + 0.025)
                 if axis == 'x':
                     self.box(trim, a0, yb - 0.05, min(cc0, cc1), a1, yb + 0.05, max(cc0, cc1))
                 else:

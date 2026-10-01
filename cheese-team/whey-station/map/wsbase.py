@@ -41,7 +41,7 @@ def base(K, T):
     K.slab('TF_Floor', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
     K.slab('Conc', 0, -24, 12, -6, -0.3, 0.0, holes=[(1.33, -10, 7.0, -8)])     # south stair hall
     K.slab('Hangar', 10, -6, 24, 20, -0.3, 0.0)                                 # loading yard
-    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -16, 30.0, -14)])   # flag room
+    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -16.1, 30.0, -13.9)])   # flag room
     K.slab('AntiSlip', 30, -24, 36, -6, -0.3, 0.0)                              # packing corridor
     K.slab('TF_Floor', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
     K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, col=False)                   # roof
@@ -107,7 +107,7 @@ def base(K, T):
     K.area('Brine Tunnel', 0, -16, 36, -6, -4, team=T, kind='tunnel')
     # hatch stair from the tunnel up into the flag room
     P.stairs(30.0, -15, PI, 2.0, -4.0, 0.0, kind='steel')
-    P.rail(24.33, -14.0, 29.8, -14.0, 0.0); P.rail(24.33, -16.0, 29.8, -16.0, 0.0)
+    P.rail(24.33, -13.85, 29.8, -13.85, 0.0); P.rail(24.33, -16.15, 29.8, -16.15, 0.0)
     # ---------------- Loading Yard (hub) ----------------
     K.wall2('x', 10, 30, -6, WT, 0, 10, holes=[(14, 18, 0, 3.2)])
     P.opening('x', 14, 18, -6, WT, 0, 3.2, mat=tm('SteelT'))
