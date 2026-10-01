@@ -98,6 +98,7 @@ def finish(outdir):
     os.makedirs(outdir, exist_ok=True); K, S = STATE['K'], STATE['S']
     data = {'map': 'rind_ridge', 'mode': 'payload', 'cols': K.cols, 'lights': K.lights, 'areas': K.areas, 'labels': K.labels,
             'props': K.props, 'track': [[round(v, 3) for v in s['p']] for s in S], 'checkpoints': rrtrack.checkpoints(S),
+            'rollback': [i for i in range(len(S) - 1) if S[i + 1]['p'][1] - S[i]['p'][1] > 0.07],   # sample indices on steep climbs
             'spawns': rrstruct.SPAWNS_OUT}
     with open(os.path.join(outdir, 'rr_data.json'), 'w') as f:
         json.dump(data, f, separators=(',', ':'))

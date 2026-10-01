@@ -145,7 +145,7 @@ def backdrop(K):
     rng = np.random.RandomState(4)
     for _ in range(46):
         a = rng.uniform(0, 2 * np.pi); dist = rng.uniform(330, 760)
-        bx, bz = 0 + dist * np.cos(a), 0 + dist * np.sin(a); br = rng.uniform(30, 90); bh = rng.uniform(40, 140)
+        bx, bz = 0 + dist * np.cos(a), 0 + dist * np.sin(a); br = rng.uniform(30, 90); bh = rng.uniform(30, 85)
         mes = np.maximum(mes, bh * _smooth(br, br * 0.8, np.hypot(Xb - bx, Zb - bz)))
     hb = np.where(nat > 20, nat - 4.0 * _smooth(0, 200, out) + 0.0, nat * (1 - _smooth(0, 40, out)) + far * _smooth(0, 40, out))
     hb = np.maximum(hb, far + mes)

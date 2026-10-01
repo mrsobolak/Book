@@ -2,11 +2,11 @@
 # CHEDDAR (orange) pushes a giant cheese wheel on a rail bogie from their bunker in the south canyon wall, past the
 # ranch (A), through the Hogback cut to the mine yard (B), over the gully trestle to the sawmill (C), round the mesa's
 # west face (D) and up the final switchbacks to the summit, where BLEU defends the Grater from a bunker built into
-# the summit spire. Track heights are derived from the ground (max grade 9 %, never downhill); trestles appear
+# the summit spire. Track heights are derived from the ground (max grade 10 %, never downhill; > 7 % = rollback zone); trestles appear
 # wherever the ground falls away more than 3.5 m under the track.
 MESA = (0.0, 15.0)                # mesa centre (x, z)
-PLATEAU_R, PLATEAU_Y, FOOT_R = 42.0, 60.0, 172.0
-SPIRE = (-6.0, 44.0, 14.0, 34.0)  # summit spire: centre x, z, radius, height above the plateau
+PLATEAU_R, PLATEAU_Y, FOOT_R = 42.0, 72.0, 172.0
+SPIRE = (-6.0, 44.0, 15.0, 46.0)  # summit spire: centre x, z, radius, height above the plateau
 # track control points (x, z, kind); kind applies to the stretch that follows
 TRACK = [
     (-178, -128, 'ground'), (-150, -127, 'ground'), (-112, -121, 'ground'),
@@ -25,7 +25,7 @@ TRACK = [
 ]
 CHECKPOINT_IDX = {'A': 3, 'B': 8, 'C': 13, 'D': 21, 'FINAL': len(TRACK) - 1}
 TEAMS = {'attack': 'C', 'defend': 'B'}
-MAX_GRADE = 0.09
+MAX_GRADE = 0.10
 # flattened pads for buildings: name -> (x0, z0, x1, z1, y or a checkpoint name = track height there, alcove?)
 #  alcove pads are cut straight into a cliff (no blend: the rock rises sheer round the building)
 PADS = {
@@ -33,5 +33,5 @@ PADS = {
     'ranch':         (-96, -102, -74, -86, 'A', False),       # Cheddar forward spawn after A (the barn)
     'mine':          (68, -108, 90, -93, 'B', False),         # Bleu forward spawn until B (mine head house)
     'sawmill':       (104, 48, 124, 66, 'C', False),            # Cheddar forward spawn after C
-    'bleu_spawn':    (-16, 25, 4, 40, 60.0, True),             # Bleu's bunker in the summit spire
+    'bleu_spawn':    (-16, 25, 4, 40, 72.0, True),             # Bleu's bunker in the summit spire
 }
