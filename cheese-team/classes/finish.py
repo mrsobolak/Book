@@ -189,6 +189,27 @@ def final_material(name, imgs):
     return m
 
 
+def action_fcurves(act):
+    if hasattr(act, 'layers') and len(act.layers):
+        return [fc for L in act.layers for st in L.strips for cb in st.channelbags for fc in cb.fcurves]
+    return list(getattr(act, 'fcurves', []))
+
+
+def scale_rig(arm, s):
+    """uniform class height. The imported actions key the armature OBJECT's location/rotation/scale, so the height
+    goes into those keys (every action) as well as the object itself; bone channels are untouched (they ride along)."""
+    arm.scale = arm.scale * s
+    arm.location = arm.location * s
+    if s == 1.0:
+        return
+    for act in bpy.data.actions:
+        for fc in action_fcurves(act):
+            if fc.data_path in ('scale', 'location'):
+                for kp in fc.keyframe_points:
+                    kp.co.y *= s; kp.handle_left.y *= s; kp.handle_right.y *= s
+                fc.update()
+
+
 def skin(ob, arm):
     ob.parent = arm
     ob.matrix_parent_inverse = arm.matrix_world.inverted()
@@ -293,7 +314,7 @@ def finish(cls, export_root, res=2048, logp=None):
         skin(dm, arm)
     # class height: uniform scale of the whole rig (animations scale with it)
     s = classes.SCALE.get(cls, 1.0)
-    arm.scale = (0.01 * s, 0.01 * s, 0.01 * s)
+    scale_rig(arm, s)
     body.name = 'SK_%s_Body' % cls
     arm.data.pose_position = 'POSE'
     bpy.context.view_layer.update()
