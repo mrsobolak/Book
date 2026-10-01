@@ -504,6 +504,157 @@ def machinepistol():
 BUILDERS['MachinePistol'] = machinepistol
 
 
+# ================================================================== stickers on cylinders
+def tube_sticker(name, img, R, u0, a0_deg, w, h, rot_deg=0.0, axis_v=0.0, circle=False, lift=0.35, n=24):
+    """die-cut vinyl sticker wrapped on a cylinder of radius R (mm) around the bore axis; rect or circle"""
+    a0 = math.radians(a0_deg); ro = math.radians(rot_deg)
+    verts = []; uvs = []; faces = []
+    def place(s, t):
+        uu = u0 + s * math.cos(ro) - t * math.sin(ro)
+        arc = s * math.sin(ro) + t * math.cos(ro)
+        a = a0 + arc / R
+        rr = R + lift
+        return W(uu, axis_v + rr * math.sin(a), rr * math.cos(a))
+    if circle:
+        rad = w / 2; NR, NA = 10, 48
+        verts.append(place(0, 0)); uvs.append((0.5, 0.5))
+        for i in range(1, NR + 1):
+            for j in range(NA):
+                ang = 2 * PI * j / NA; r = rad * i / NR
+                s, t = r * math.cos(ang), r * math.sin(ang)
+                verts.append(place(s, t)); uvs.append((0.5 + s / w, 0.5 + t / w))
+        for j in range(NA):
+            faces.append((0, 1 + j, 1 + (j + 1) % NA))
+        for i in range(NR - 1):
+            for j in range(NA):
+                a = 1 + i * NA + j; b = 1 + i * NA + (j + 1) % NA
+                faces.append((a, a + NA, b + NA, b))
+    else:
+        nu, nv = n, max(4, int(n * h / w))
+        for i in range(nu + 1):
+            for j in range(nv + 1):
+                s = (i / nu - 0.5) * w; t = (j / nv - 0.5) * h
+                verts.append(place(s, t)); uvs.append((i / nu, j / nv))
+        for i in range(nu):
+            for j in range(nv):
+                q = i * (nv + 1) + j
+                faces.append((q, q + nv + 1, q + nv + 2, q + 1))
+    bm = wk.bm_from(verts, faces)
+    uvl = bm.loops.layers.uv.new('UVMap'); bm.verts.index_update()
+    for f in bm.faces:
+        for lp in f.loops:
+            lp[uvl].uv = uvs[lp.vert.index]
+    mat = wk.image_mat('M_' + name, img, rough=0.32, bump=0.03)
+    return make(name, bm, mat, solid=0.0003)
+
+
+def chain(name, pts, link_l=22.0, link_w=12.0, wire=2.3, mat=None):
+    """chain of alternating links following a world-space polyline (mm sizes)"""
+    P = wk.spline(pts, 16)
+    # resample at link pitch
+    pitch = (link_l - 2 * wire) * MM
+    samples = [P[0]]; acc = 0.0
+    for a, b in zip(P[:-1], P[1:]):
+        seg = (b - a).length; d = 0.0
+        while acc + (seg - d) >= pitch:
+            step = pitch - acc
+            d += step; acc = 0.0
+            samples.append(a + (b - a) * (d / seg))
+        acc += seg - d
+    out = bmesh.new()
+    for k in range(len(samples) - 1):
+        a, b = samples[k], samples[k + 1]
+        c = (a + b) / 2; t = (b - a).normalized()
+        side = t.cross(Vector((0, 0, 1)))
+        if side.length < 1e-4:
+            side = t.cross(Vector((1, 0, 0)))
+        side.normalize()
+        if k % 2:
+            side = t.cross(side).normalized()
+        L2 = link_l * MM / 2 - wire * MM; W2 = link_w * MM / 2 - wire * MM
+        path = []
+        for i in range(24):                               # stadium loop
+            ang = 2 * PI * i / 24
+            x = math.cos(ang); y = math.sin(ang)
+            px = L2 * (1 if x >= 0 else -1) + W2 * x
+            path.append(c + t * px + side * W2 * y)
+        lk = wk.tube(path, wire * MM, n=8, closed=True)
+        me = bpy.data.meshes.new('tmp'); lk.to_mesh(me); lk.free(); out.from_mesh(me); bpy.data.meshes.remove(me)
+    return make(name, out, mat)
+
+
+# ================================================================== 5. ROCKET LAUNCHER (Boom Boom, primary)
+def rocketlauncher():
+    sprayed = wk.paint('M_RlTube', '#121313', under='#4f5a31', under_metal=0.0, rough=0.62, wear=1.6, scuff=1.5, col_var=0.18)
+    olive = wk.paint('M_RlOlive', '#4b5530', under='#7c7f82', rough=0.55, wear=1.0, scuff=0.8)
+    steel = wk.steel('M_RlSteel', base='#2a2c2f', bare='#a9acb1', rough=0.4, wear=1.2, scratch=1.2, edge_gain=8.0)
+    inner = wk.steel('M_RlInner', base='#0c0c0d', bare='#2b2b2c', rough=0.6, wear=0.0, scratch=0.0, metallic=0.4)
+    rub = wk.rubber('M_RlRubber', '#141415', rough=0.75)
+    chain_m = wk.steel('M_RlChain', base='#5d5f63', bare='#b9bcc0', rough=0.35, wear=1.0, scratch=0.6, edge_gain=10.0)
+    R = 48.0
+    # ---- hollow tube, muzzle band, rear venturi flare
+    make('Rl_Tube', lathe([(R, 0.0), (R, 1000.0), (R - 3.5, 1000.0), (R - 3.5, 0.0), (R, 0.0)], n=96, cap0=False, cap1=False), sprayed)
+    make('Rl_TubeInner', lathe([(R - 3.6, 10.0), (R - 3.6, 998.0)], n=64, cap0=False, cap1=False), inner)
+    mb = lathe([(R - 3.4, 975.0), (R + 4.0, 975.0), (R + 5.0, 978.0), (R + 5.0, 1004.0), (R + 3.5, 1008.0), (R - 3.4, 1008.0),
+                (R - 3.4, 975.0)], n=96, cap0=False, cap1=False)
+    make('Rl_MuzzleBand', mb, steel, bevel=0.0)
+    vf = lathe([(R + 3.0, 22.0), (R + 4.0, 18.0), (R + 4.0, 0.0), (R + 2.0, -10.0), (R + 6.0, -40.0), (R + 18.0, -95.0),
+                (R + 30.0, -128.0), (R + 31.5, -132.0), (R + 29.0, -134.0), (R + 26.0, -128.0), (R + 14.5, -95.0), (R + 2.5, -40.0),
+                (R - 3.4, -10.0), (R - 3.4, 22.0), (R + 3.0, 22.0)], n=96, cap0=False, cap1=False)
+    make('Rl_Venturi', vf, olive)
+    # ---- clamp rings with bolts (grip + sight mounts)
+    for (u, nm) in ((350.0, 'A'), (580.0, 'B')):
+        cr = lathe([(R, u - 14), (R + 3.5, u - 14), (R + 4.2, u - 12), (R + 4.2, u + 12), (R + 3.5, u + 14), (R, u + 14), (R, u - 14)],
+                   n=96, cap0=False, cap1=False)
+        make('Rl_Clamp' + nm, cr, steel)
+        for sd in (1, -1):
+            ear = rounded([(u - 10, -R - 4, 2), (u + 10, -R - 4, 2), (u + 10, -R - 16, 3), (u - 10, -R - 16, 3)])
+            make('Rl_ClampEar' + nm, profile(ear, sd * 5.0 - 3.5, sd * 5.0 + 3.5), steel, bevel=0.0010)
+        make('Rl_ClampBolt' + nm, cyl(W(u, -R - 11, -11), W(u, -R - 11, 11), 0.0032, n=16), steel)
+        for sd in (1, -1):
+            make('Rl_ClampNut' + nm, cyl(W(u, -R - 11, sd * 9.0), W(u, -R - 11, sd * 13.0), 0.0052, n=6), steel)
+    # ---- pistol grip + trigger housing under the tube
+    th = rounded([(330, -R - 2, 0), (420, -R - 2, 0), (418, -R - 14, 4), (404, -R - 18, 4), (396, -R - 46, 8), (360, -R - 48, 8),
+                  (352, -R - 30, 6), (330, -R - 16, 4)], n=6)
+    hole = rounded([(362, -R - 20, 4), (392, -R - 20, 4), (388, -R - 40, 6), (366, -R - 41, 6)], n=6)
+    make('Rl_TriggerHousing', profile(th, -9.0, 9.0, holes=[hole]), steel, bevel=0.0016, seg=4)
+    tr = rounded([(379, -R - 18, 0), (378, -R - 26, 3), (374, -R - 34, 2), (371.5, -R - 34, 1.5), (374.5, -R - 26, 3), (375, -R - 18, 0)])
+    make('Rl_Trigger', profile(tr, -2.8, 2.8), steel, bevel=0.0004)
+    g = Grip((342.0, -R - 12.0), (330.0, -R - 70.0), (306.0, -R - 118.0),
+             depth=lambda t: (17.0 + 2.0 * math.sin(PI * t), 19.0 + 2.0 * t), width=lambda t: 14.0 + 1.0 * math.sin(PI * t), e=2.6, butt=0.06)
+    fg = lambda t, th: 1.0 - 0.07 * max(0.0, math.cos(th)) ** 4 * max(0.0, math.sin(PI * (t - 0.18) / 0.62 * 3.0)) * (0.18 < t < 0.80)
+    Rr = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=48, nth=56, fn=fg)
+    make('Rl_Grip', wk.loft([r[:-1] for r in Rr], closed=True, cap1=True), rub)
+    # ---- flip-up rear leaf sight + front post
+    rb = rounded([(560, R - 2, 0), (600, R - 2, 0), (600, R + 8, 2), (560, R + 8, 2)])
+    make('Rl_SightBase', profile(rb, -9.0, 9.0), steel, bevel=0.0010)
+    leaf = rounded([(586, R + 6, 0), (592, R + 6, 0), (594, R + 44, 3), (584, R + 44, 3)])
+    lo = make('Rl_SightLeaf', profile(leaf, -11.0, 11.0), steel, bevel=0.0006)
+    cut(lo, cyl(W(580, R + 34, 0), W(600, R + 34, 0), 0.0034, n=24), 'aperture')
+    make('Rl_SightHinge', cyl(W(589, R + 7, -10), W(589, R + 7, 10), 0.0028, n=16), steel)
+    fp = rounded([(950, R - 2, 0), (972, R - 2, 0), (968, R + 18, 2), (956, R + 18, 2)])
+    make('Rl_FrontSightBase', profile(fp, -6.0, 6.0), steel, bevel=0.0008)
+    make('Rl_FrontPost', profile(rounded([(959, R + 16, 0), (964, R + 16, 0), (963, R + 40, 1.5), (960, R + 40, 1.5)]), -1.4, 1.4), steel)
+    # ---- band + motorcycle stickers
+    for (nm, img, u, a, ww, hh, rot, circ) in (
+            ('Rl_StGouda', 'st_gouda.png', 720, 25, 130, 65, 0, False), ('Rl_StChoppers', 'st_choppers.png', 250, 35, 92, 92, 0, True),
+            ('Rl_StBrie', 'st_brie.png', 470, -8, 116, 58, 7, False), ('Rl_StThrottle', 'st_throttle.png', 850, 60, 104, 52, -6, False),
+            ('Rl_StFlames', 'st_flames.png', 660, 195, 150, 75, -4, False), ('Rl_St88', 'st_88.png', 905, -25, 70, 70, 0, True),
+            ('Rl_StChoppers2', 'st_choppers.png', 300, 165, 84, 84, 20, True), ('Rl_StBrie2', 'st_brie.png', 820, 150, 104, 52, 172, False),
+            ('Rl_StGouda2', 'st_gouda.png', 150, -35, 100, 50, -10, False)):
+        tube_sticker(nm, img, R, u, a, ww, hh, rot, circle=circ)
+    # ---- loop of chain hanging from the front
+    make('Rl_ChainLug', profile(rounded([(962, R - 6, 2), (984, R - 6, 2), (984, R + 4, 3), (962, R + 4, 3)]), 26.0, 34.0), steel, bevel=0.0008)
+    a1 = W(973, R - 2, 36); a2 = W(940, -R + 10, 46)
+    cpts = [a1, W(975, R - 30, 62), W(968, -R - 40, 70), W(955, -R - 70, 58), W(945, -R - 55, 50), a2]
+    chain('Rl_Chain', cpts, mat=chain_m)
+    PIVOT['RocketLauncher'] = (g.centre(0.45).x, g.centre(0.45).y)
+    return 'RocketLauncher'
+
+
+BUILDERS['RocketLauncher'] = rocketlauncher
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
