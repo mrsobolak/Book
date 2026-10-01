@@ -249,7 +249,7 @@ def R(yaw=0.0, pitch=0.0, roll=0.0):
 
 HOLDS = {
     # one-handed pistol: right hand out front-right, left hand relaxed at the side
-    'pistol': dict(grip=Vector((-0.20, -0.36, 0.70)), rot=dict(yaw=3, pitch=0, roll=0), support=None,
+    'pistol': dict(grip=Vector((-0.25, -0.36, 0.62)), rot=dict(yaw=3, pitch=0, roll=0), support=None,
                    lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
 }
 
@@ -417,22 +417,22 @@ def fire_revolver(rig, t):
 # the side-mounted shoulders keep the hands >= ~0.14 m apart in front of the wedge, so the gun bridges the gap: flick it
 # muzzle-up to dump the shells, the left hand takes it under the barrel while the right hand fetches rounds from the
 # belt and thumbs them into the open cylinder (gun lying on its right side, cylinder up), then a flick shut.
-_HAND = dict(dg=(0.11, 0.09, -0.06), dr=(88, -10, -90))           # grip (-0.09, -0.27, 0.64), muzzle to the left
+_HAND = dict(dg=(0.16, 0.09, -0.02), dr=(88, -10, -90))           # grip (-0.09, -0.27, 0.60), muzzle to the left
 _UNDER = ('w', 232, -10, -50)                                      # left palm under the barrel
 reload_revolver = keyed([
     (0.00, {}),
-    (0.10, dict(dg=(0.06, 0.06, 0.03), dr=(25, 68, -55))),                                   # flick up: dump
-    (0.14, dict(dg=(0.06, 0.06, 0.045), dr=(25, 76, -58), ease=snap)),
-    (0.19, dict(dg=(0.06, 0.06, 0.03), dr=(25, 66, -55))),
+    (0.10, dict(dg=(-0.01, 0.07, 0.03), dr=(10, 68, -40))),                                   # flick up: dump
+    (0.14, dict(dg=(-0.01, 0.07, 0.045), dr=(10, 78, -44), ease=snap)),
+    (0.19, dict(dg=(-0.01, 0.07, 0.03), dr=(10, 66, -40))),
     (0.30, dict(_HAND, lh=_UNDER, lel=(1, -0.5, -0.8))),                                     # into the left palm
     (0.34, dict(rh='grip')),
     (0.44, dict(rh=Vector((-0.30, -0.08, 0.45)), rel=(-1, 0.5, -0.2))),                      # right hand to the belt
     (0.48, dict()),
     (0.58, dict(rh=('w', 18, -12, 72), rel=(-0.6, -0.2, 0.8))),                               # over the cylinder
-    (0.62, dict(rh=('w', 18, -12, 54), dg=(0.11, 0.09, -0.066))),                           # thumb them in
-    (0.66, dict(rh=('w', 18, -12, 70), dg=(0.11, 0.09, -0.06))),
+    (0.62, dict(rh=('w', 18, -12, 54), dg=(0.16, 0.09, -0.026))),                           # thumb them in
+    (0.66, dict(rh=('w', 18, -12, 70), dg=(0.16, 0.09, -0.02))),
     (0.72, dict(rh='grip', rel=(-1, 0.3, -0.7))),                                            # regrip
-    (0.80, dict(dg=(0.08, 0.04, -0.02), dr=(30, 4, 15), lh='rest', lel=(0.4, 1, -0.1), ease=snap)),  # flick shut
+    (0.80, dict(dg=(0.10, 0.05, 0.0), dr=(30, 4, 15), lh='rest', lel=(0.4, 1, -0.1), ease=snap)),  # flick shut
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
