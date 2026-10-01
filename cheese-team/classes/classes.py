@@ -900,22 +900,28 @@ def wrench_outline(L=0.215):
 
 
 def wrench_mesh(F, thick=0.0075, k=1.0):
-    import bmesh
+    """extrude the wrench outline (with the box-end hole) into a solid: robust tessellation + explicit side walls"""
+    from mathutils.geometry import tessellate_polygon
     out, hole = wrench_outline()
     out = [p * k for p in out]; hole = [p * k for p in hole]
-    bm = bmesh.new()
-    def loop(pts, z):
-        vs = [bm.verts.new((p.x, p.y, z)) for p in pts]
-        return vs
-    o0 = loop(out, -thick / 2); h0 = loop(hole, -thick / 2)
-    edges = [bm.edges.new((o0[i], o0[(i + 1) % len(o0)])) for i in range(len(o0))] + \
-            [bm.edges.new((h0[i], h0[(i + 1) % len(h0)])) for i in range(len(h0))]
-    res = bmesh.ops.triangle_fill(bm, use_beauty=True, use_dissolve=False, edges=edges)
-    faces = [f for f in res['geom'] if isinstance(f, bmesh.types.BMFace)]
-    ext = bmesh.ops.extrude_face_region(bm, geom=faces + edges)
-    vs = [v for v in ext['geom'] if isinstance(v, bmesh.types.BMVert)]
-    for v in vs:
-        v.co.z += thick
+    loops = [out, hole]
+    flat = [p for lp in loops for p in lp]
+    tris = tessellate_polygon([[Vector((p.x, p.y, 0.0)) for p in lp] for lp in loops])
+    n = len(flat)
+    verts = [Vector((p.x, p.y, -thick / 2)) for p in flat] + [Vector((p.x, p.y, thick / 2)) for p in flat]
+    faces = []
+    for (a, b, c) in tris:
+        faces.append((a, c, b)); faces.append((a + n, b + n, c + n))
+    base = 0
+    for lp in loops:
+        m = len(lp)
+        for i in range(m):
+            a = base + i; b = base + (i + 1) % m
+            faces.append((a, b, b + n, a + n))
+        base += m
+    bm = A.bm_from(verts, faces)
+    import bmesh
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-7)
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     A.transform(bm, F)
     return bm
