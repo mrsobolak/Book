@@ -587,17 +587,16 @@ reload_snubnose = keyed([
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
-reload_semiauto = keyed([
+reload_semiauto = keyed([                                            # one-handed mag swap off the hip pouch, rack up front
     (0.00, {}),
-    (0.12, dict(dg=(0.195, 0.18, -0.135), dr=(0, 0, -90), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),  # on its side, well left: mag drops
-    (0.16, dict(dg=(0.195, 0.18, -0.123), ease=snap)),
-    (0.30, dict(dg=(0.195, 0.18, -0.135))),
-    (0.46, dict(lh=('w', -30, -196, 0), lel=LEL)),                                            # fresh mag under the well
-    (0.54, dict(lh=('w', -30, -178, 0), dg=(0.185, 0.18, -0.135), ease=snap)),               # seat it
-    (0.62, dict(lh=('w', 140, 12, -46), dg=_LOW, dr=(90, 0, 0), rel=(-1, 0.3, -0.7))),                             # muzzle left: pinch the slide
-    (0.68, dict(lh=('w', 112, 12, -46))),                                                     # rack
-    (0.71, dict(lh=('w', 140, 12, -60), ease=snap)),
-    (0.84, dict(dg=(0.03, 0.02, 0.0), dr=(4, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
+    (0.08, dict(dg=(0.0, 0.02, 0.02), dr=(0, 20, -30), ease=snap)),                           # thumb the release: mag drops
+    (0.26, dict(dg=(-0.05, 0.27, -0.10), dr=(0, 90, 0), rel=(-1, 0.4, 0.2))),                 # muzzle up over the right pouch
+    (0.34, dict(dg=(-0.05, 0.27, -0.13), ease=snap)),                                         # seat it on the fresh mag
+    (0.40, dict(dg=(-0.05, 0.27, -0.10))),
+    (0.56, dict(dg=_LOW, dr=(90, 0, 0), lh=('w', 152, 12, -46), lel=LEL, rel=(-1, 0.3, -0.7))),  # across the belly
+    (0.62, dict(lh=('w', 122, 12, -46))),                                                     # rack
+    (0.65, dict(lh=('w', 152, 12, -60), ease=snap)),
+    (0.82, dict(dg=(0.03, 0.02, 0.0), dr=(4, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
