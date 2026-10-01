@@ -871,7 +871,8 @@ _BELLY = dict(dg=(0.24, 0.0, -0.27), dr=(90, -2, 0))                 # grip (-0.
 SPENT = ('tube', ROCKET_SPENT)
 reload_launcher = keyed([
     (0.00, dict(rk=SPENT)),
-    (0.06, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.05, dict(lh=Vector((0.44, -0.32, 0.58)), lel=(1, 0.2, -0.6))),                         # let go: out to the side first
+    (0.12, dict(lh='rest', lel=(0.4, 1, -0.1))),
     (0.22, dict(_BELLY)),
     (0.34, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),                                            # hand at the belt pouch
     (0.35, dict(rk=('hand', 0.0))),                                                           # rocket out, held by the nose
@@ -880,7 +881,8 @@ reload_launcher = keyed([
     (0.60, dict(lh=('w', ROCKET_SEAT + ROCKET_GRIP, 0, 0), dg=(0.25, 0.0, -0.27), ease=snap)),  # shove it home
     (0.61, dict(rk=('tube', 0.0))),
     (0.66, dict(lh=('w', ROCKET_SEAT + ROCKET_GRIP + 50, -20, 0), dg=(0.24, 0.0, -0.27))),
-    (0.76, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.71, dict(lh=Vector((0.46, -0.34, 0.46)), lel=(1, 0.2, -0.6))),
+    (0.78, dict(lh='rest', lel=(0.4, 1, -0.1))),
     (0.90, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
     (1.00, dict(lh=None, lel=None)),
 ])
