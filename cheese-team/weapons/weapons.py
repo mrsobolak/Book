@@ -694,7 +694,7 @@ def flat_sticker(name, img, centre, x_side, w, h, rot_deg=0.0, circle=True, lift
 
 # ================================================================== 6. SEMI-AUTO PISTOL (Boom Boom, secondary)
 def semiauto():
-    blk = wk.steel('M_SaBlack', base='#121315', bare='#b3b6bb', rough=0.32, wear=1.8, scratch=1.2, edge_gain=16.0)
+    blk = wk.steel('M_SaBlack', base='#121315', bare='#b3b6bb', rough=0.32, wear=1.6, scratch=1.2, edge_gain=11.0)
     blk_dk = wk.steel('M_SaBlackDk', base='#0d0d0f', bare='#9fa2a7', rough=0.36, wear=1.0, scratch=0.8, edge_gain=12.0)
     rub = wk.rubber('M_SaRubber', '#111112', rough=0.78, stipple=1.4)
     # ---- slide: squared-off, flat top, rear serrations, ejection port, sights

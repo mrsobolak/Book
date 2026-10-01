@@ -389,8 +389,10 @@ class NT:
         self.link(bev.outputs[0], d.inputs[0]); self.link(geo.outputs['Normal'], d.inputs[1])
         e = self.math('MULTIPLY', self.math('SUBTRACT', 1.0, d.outputs['Value']), gain, clamp=True)
         n = self.noise(bscale, 8, 0.7)
-        nm = self.bw(self.ramp(n, 0.45 - 0.2 * breakup, 0.70))
-        return self.math('MULTIPLY', e, nm, clamp=True)
+        big = self.noise(bscale * 0.12, 4, 0.5)                    # where hands/holsters rub: patchy, not an outline
+        nm = self.bw(self.ramp(n, 0.50 - 0.15 * breakup, 0.66))
+        bm_ = self.bw(self.ramp(big, 0.42, 0.62))
+        return self.math('MULTIPLY', self.math('MULTIPLY', e, nm, clamp=True), self.math('ADD', 0.25, self.math('MULTIPLY', bm_, 0.75)), clamp=True)
 
     def scratches(self, density=1.0, scale=40.0):
         """thin directional scratches: stretched noise -> sharp lines"""
