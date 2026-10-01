@@ -1,0 +1,6 @@
+export/**/_draft*
+export/**/_tmp/
+export/**/*_Normal.gl.png
+*.blend
+*.blend1
+__pycache__/
