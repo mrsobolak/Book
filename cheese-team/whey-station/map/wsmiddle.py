@@ -138,12 +138,12 @@ def half(K, T):
     K.box('TF_Grate', -24, -0.08, -21, -20, 0.0, -18, col=True, bevel=False)            # walkable grate window in the hall floor
     K.box('TF_Grate', -39.6, -4.02, -14.5, -5.4, -3.98, -13.5)                            # drain channel
     K.box('TF_Hazard', -40, -4.0, -15.8, -27.3, -3.99, -15.6); K.box('TF_Hazard', -16.7, -4.0, -15.8, -5.2, -3.99, -15.6)
-    for (x, z) in ((-36, -14), (-30, -14), (-22, -19), (-12, -14)):
+    for (x, z) in ((-36, -14), (-30, -14), (-25.5, -19), (-18.5, -19), (-12, -14)):   # chamber lamps on the ceiling either side of the grate window
         K.lamp_prop(x, -0.33, z, color='#e8f2ff', intensity=1.1, dist=11)
     K.light(-22, -2.0, -19.5, '#fff0d0', 0.9, 8)
     # chamber cover (library props)
     K.prop('crate', -25.8, -4.0, -20.8, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
-    K.prop('crate', -25.8, -2.8, -20.8, 0.7, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    K.prop('crate', -25.8, -2.8, -20.8, 0.3, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.prop('crate', -24.4, -4.0, -20.9, 1.1, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.prop('barrel', -18.0, -4.0, -21.2, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
     K.prop('barrel', -18.7, -4.0, -21.3, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
