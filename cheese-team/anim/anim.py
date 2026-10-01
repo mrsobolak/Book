@@ -148,6 +148,61 @@ class Rig:
         self.set_matrix(bone, M)
 
 
+# ------------------------------------------------------------------ collision-aware arm IK
+# the wedge (rest char space, metres): main block + the googly-eye bulge on the front face
+WEDGE_BOXES = [(Vector((-0.215, -0.115, 0.575)), Vector((0.203, 0.155, 1.0))),
+               (Vector((-0.18, -0.156, 0.675)), Vector((0.17, -0.10, 0.885)))]
+ARM_R = 0.016                                     # stick radius + a hair of air
+
+
+def _seg_hits_box(p0, p1, lo, hi):
+    """segment vs axis-aligned box (slab test)"""
+    t0, t1 = 0.0, 1.0
+    d = p1 - p0
+    for i in range(3):
+        if abs(d[i]) < 1e-9:
+            if p0[i] < lo[i] or p0[i] > hi[i]:
+                return False
+            continue
+        a = (lo[i] - p0[i]) / d[i]; b = (hi[i] - p0[i]) / d[i]
+        if a > b:
+            a, b = b, a
+        t0 = max(t0, a); t1 = min(t1, b)
+        if t0 > t1:
+            return False
+    return True
+
+
+def arm_ik(rig, side, target, pole, b3):
+    """two-bone arm IK whose elbow swings around the shoulder->hand axis (nearest to `pole` first) until both
+    sticks clear the wedge. target is char space."""
+    up, lo = 'upperarm_' + side, 'lowerarm_' + side
+    sp = rig.pb['spine_01']
+    to_rest = rig.arm.data.bones['spine_01'].matrix_local @ sp.matrix.inverted()   # posed arm space -> rest arm space
+    S = rig.C(to_rest @ rig.head(up)); T = rig.C(to_rest @ rig.A(target))
+    L1 = rig.bone_len(up) / 100.0; L2 = rig.bone_len(lo) / 100.0
+    d = max(abs(L1 - L2) + 1e-3, min(L1 + L2 - 1e-3, (T - S).length))
+    u = (T - S).normalized()
+    a = (L1 * L1 - L2 * L2 + d * d) / (2 * d); h = math.sqrt(max(0.0, L1 * L1 - a * a))
+    p0 = to_rest.to_3x3() @ Vector(pole)
+    p0 = (p0 - u * p0.dot(u)); p0 = p0.normalized() if p0.length > 1e-6 else u.orthogonal().normalized()
+    best = None
+    for k in range(0, 25):
+        ang = math.radians(((k + 1) // 2) * 7.5 * (1 if k % 2 else -1))
+        pv = Matrix.Rotation(ang, 3, u) @ p0
+        E = S + u * a + pv * h; W = S + u * d
+        Sa = S + (E - S).normalized() * 0.045            # the stick roots into the wedge side at the shoulder
+        hit = any(_seg_hits_box(q0, q1, lo_ - Vector((ARM_R,) * 3), hi_ + Vector((ARM_R,) * 3))
+                  for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
+        if not hit:
+            best = pv; break
+    if best is None:
+        best = p0
+    pole_posed = to_rest.inverted().to_3x3() @ best
+    rig.two_bone(up, lo, rig.A(target), pole_posed, b3=b3)
+    return best is not p0 or k == 0
+
+
 # ------------------------------------------------------------------ hold definitions
 def R(yaw=0.0, pitch=0.0, roll=0.0):
     """weapon orientation in char space: yaw (+ turns muzzle toward char left), pitch (+ muzzle up), roll (+ top to char right)"""
@@ -260,8 +315,8 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
         lspec = ('w',) + tuple(H['support'])
     rh = hand_pos(rig, rspec, grip, Rm, grip)
     lh = hand_pos(rig, lspec, grip, Rm, lrest)
-    rig.two_bone('upperarm_r', 'lowerarm_r', rig.A(rh), relbow, b3='hand_r')
-    rig.two_bone('upperarm_l', 'lowerarm_l', rig.A(lh), lelbow, b3='hand_l')
+    arm_ik(rig, 'r', rh, relbow, 'hand_r')
+    arm_ik(rig, 'l', lh, lelbow, 'hand_l')
     return grip, Rm
 
 
@@ -322,22 +377,22 @@ def fire_revolver(rig, t):
 
 
 # two-handed: swing out, slap the ejector rod muzzle-up, tip muzzle-down, thumb rounds in from the belt, close
-_UP = dict(dg=(0.15, 0.03, -0.07), dr=(38, 62, -62))
-_DN = dict(dg=(0.16, 0.04, -0.11), dr=(40, -38, -75))
+_UP = dict(dg=(0.17, 0.05, -0.10), dr=(38, 62, -62))
+_DN = dict(dg=(0.18, 0.06, -0.14), dr=(40, -38, -75))
 LDN = (0.6, -0.2, -1)                                   # left elbow out + down: forearm comes up from below
 reload_revolver = keyed([
     (0.00, {}),
     (0.10, dict(_UP, lh=('w', 150, -50, 8), lel=LDN)),                                        # muzzle up, palm under rod
-    (0.15, dict(dg=(0.15, 0.03, -0.058), lh=('w', 95, -50, 8), ease=snap)),                 # slap: shells out
-    (0.20, dict(dg=(0.15, 0.03, -0.07), lh=('w', 140, -58, 20))),
+    (0.15, dict(dg=(0.17, 0.05, -0.088), lh=('w', 95, -50, 8), ease=snap)),                 # slap: shells out
+    (0.20, dict(dg=(0.17, 0.05, -0.10), lh=('w', 140, -58, 20))),
     (0.30, dict(_DN, lh=Vector((0.30, -0.10, 0.40)), lel=(0.6, 0.4, -0.4))),                 # tip down, hand to belt
     (0.36, dict()),
     (0.46, dict(lh=('w', 0, 8, 58), lel=LDN)),                                                # over the open cylinder
-    (0.51, dict(lh=('w', 4, 0, 46), dg=(0.16, 0.04, -0.116))),                              # thumb in
-    (0.56, dict(lh=('w', 0, 8, 58), dg=(0.16, 0.04, -0.11))),
-    (0.61, dict(lh=('w', 4, 0, 46), dg=(0.16, 0.04, -0.116))),                              # thumb in
-    (0.66, dict(lh=('w', 20, -10, 62), dg=(0.16, 0.04, -0.11))),
-    (0.72, dict(dg=(0.13, 0.03, -0.08), dr=(30, 5, -10), lh=('w', 20, -10, 30), ease=snap)),  # swipe it shut
+    (0.51, dict(lh=('w', 4, 0, 46), dg=(0.18, 0.06, -0.146))),                              # thumb in
+    (0.56, dict(lh=('w', 0, 8, 58), dg=(0.18, 0.06, -0.14))),
+    (0.61, dict(lh=('w', 4, 0, 46), dg=(0.18, 0.06, -0.146))),                              # thumb in
+    (0.66, dict(lh=('w', 20, -10, 62), dg=(0.18, 0.06, -0.14))),
+    (0.72, dict(dg=(0.15, 0.04, -0.10), dr=(30, 5, -10), lh=('w', 20, -10, 30), ease=snap)),  # swipe it shut
     (0.82, dict(lh='rest', lel=(0.4, 1, -0.1))),
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
