@@ -1,5 +1,5 @@
 # Weapon export: build -> apply modifiers -> join -> bake one PBR set (+ORM) -> FBX / GLB / .blend / preview. Runs in Blender.
-import bpy, os, sys, math, shutil
+import re, bpy, os, sys, math, shutil
 import numpy as np
 from mathutils import Vector, Euler
 
@@ -186,6 +186,27 @@ def preview(path, res=(1600, 900), samples=128):
     wpull.back()
 
 
+SPIN_WEAPONS = {'Minigun'}
+SPIN = re.compile(r'^Mg_(Rotor|Spindle|SpacerRing|Barrel\d|Muzzle\d)')
+
+
+def split_group(ob, group, name):
+    """move the faces whose verts are all in `group` into a new object (same data layers, material, origin)"""
+    import bmesh
+    gi = ob.vertex_groups[group].index
+    new = ob.copy(); new.data = ob.data.copy(); new.name = name; new.data.name = name
+    for c in ob.users_collection:
+        c.objects.link(new)
+    for o, keep_in in ((ob, False), (new, True)):
+        bm = bmesh.new(); bm.from_mesh(o.data)
+        dl = bm.verts.layers.deform.active
+        kill = [v for v in bm.verts if ((gi in v[dl]) if dl else False) != keep_in]
+        bmesh.ops.delete(bm, geom=kill, context='VERTS')
+        bm.to_mesh(o.data); bm.free()
+        o.vertex_groups.clear()
+    return new
+
+
 def finish(name, export_root, res=2048, logp=None):
     for m in ('weapons', 'wk'):
         sys.modules.pop(m, None)
@@ -200,6 +221,9 @@ def finish(name, export_root, res=2048, logp=None):
         bpy.data.objects.remove(c)
     decals = [o for o in obs if uses_alpha(o)]
     solid = [o for o in obs if o not in decals]
+    spin = [o for o in solid if SPIN.match(o.name)] if name in SPIN_WEAPONS else []
+    for o in spin:                                   # parts that rotate (minigun barrel cluster): tagged, split after the bake
+        vg = o.vertex_groups.new(name='spin'); vg.add(list(range(len(o.data.vertices))), 1.0, 'REPLACE')
     W = join(solid, 'SM_%s' % name)
     smart_uv(W)
     me = W.data
@@ -228,6 +252,7 @@ def finish(name, export_root, res=2048, logp=None):
         me.uv_layers.remove(l)
     me.uv_layers['BakeUV'].name = 'UVMap'
     me.uv_layers['UVMap'].active_render = True
+    Sp = split_group(W, 'spin', 'SM_%s_Barrels' % name) if spin else None
     if decals:
         D = join(decals, 'SM_%s_Decals' % name)
         for m in D.data.materials:
@@ -245,6 +270,17 @@ def finish(name, export_root, res=2048, logp=None):
     for o in vl.objects:
         o.select_set(o in exp)
     vl.objects.active = W
+    if Sp is not None:                               # the spinning cluster ships as its own file (same origin as the gun)
+        for o in vl.objects:
+            o.select_set(o is Sp)
+        vl.objects.active = Sp
+        with bpy.context.temp_override(**ov(Sp, [Sp])):
+            bpy.ops.export_scene.fbx(filepath=os.path.join(outd, '%s_Barrels.fbx' % name), use_selection=True, object_types={'MESH'},
+                                     path_mode='COPY', embed_textures=True, apply_unit_scale=True, mesh_smooth_type='FACE')
+            bpy.ops.export_scene.gltf(filepath=os.path.join(outd, '%s_Barrels.glb' % name), export_format='GLB', use_selection=True)
+        for o in vl.objects:
+            o.select_set(o in exp)
+        vl.objects.active = W
     with bpy.context.temp_override(**ov(W, exp)):
         bpy.ops.export_scene.fbx(filepath=os.path.join(outd, '%s.fbx' % name), use_selection=True, object_types={'MESH'},
                                  path_mode='COPY', embed_textures=True, apply_unit_scale=True, mesh_smooth_type='FACE')

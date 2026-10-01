@@ -913,10 +913,6 @@ def boltrifle():
             rings.append(ring)
         bm = wk.loft(rings, closed=False, uvs=[(i / 64 * 3.4, j / 8) for j in range(9) for i in range(65)])
         make('Br_CamoTape%d' % k, bm, camo, solid=0.0004)
-    # ---- blaze-orange sling hanging under the rifle
-    a0 = W(-300, -103, 0); a1 = W(360, -33, 0)
-    sp = [a0, W(-200, -175, 4), W(30, -215, 10), W(250, -140, 6), a1]
-    sling('Br_Sling', sp, 0.026, blaze, twist=0.4)
     PIVOT['BoltRifle'] = (-84.0, -60.0)
     return 'BoltRifle'
 
