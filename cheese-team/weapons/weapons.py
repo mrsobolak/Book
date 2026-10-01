@@ -846,7 +846,7 @@ def boltrifle():
     rub = wk.rubber('M_BrButtPad', '#1d1a19', rough=0.8)
     camo = wk.image_mat('M_BrCamoTape', 'camo_tape.png', rough=0.85, bump=0.15)
     glass = mat_glass('M_BrGlass')
-    blaze = webbing('M_BrSling', '#ff4a00')
+    blaze = webbing('M_BrSling', '#e63600')
     BV = 0.0
     # ---- stock: butt -> wrist (pistol grip) -> action area -> forend
     st = [(-380, 18, -112, 20), (-370, 22, -118, 21), (-300, 15, -96, 19.5), (-220, 6, -72, 17.5), (-160, 0, -55, 15.5),
@@ -924,8 +924,8 @@ BUILDERS['BoltRifle'] = boltrifle
 def leverrifle():
     blued = wk.steel('M_LvBlued', base='#17191d', bare='#a9acb1', rough=0.3, wear=1.2, scratch=0.9, edge_gain=10.0)
     blued_dk = wk.steel('M_LvBluedDk', base='#101114', bare='#999ca1', rough=0.34, wear=0.8, scratch=0.5, edge_gain=10.0)
-    blond = wk.wood('M_LvBlond', light='#d9b27a', dark='#a87a44', rough=0.42, ring=22.0, axis='Y', grain=0.5, wear=0.6)
-    strap = webbing('M_LvStrap', '#ff4a00')
+    blond = wk.wood('M_LvBlond', light='#c9914a', dark='#8a5726', rough=0.4, ring=20.0, axis='Y', grain=0.55, wear=0.6)
+    strap = webbing('M_LvStrap', '#e63600')
     # ---- receiver (flat-sided, rounded top), loading gate, lever, hammer
     rc = rounded([(-14, 16, 6), (96, 16, 4), (100, 12, 2), (100, -16, 3), (94, -22, 2), (2, -22, 2), (-14, -12, 6)], n=8)
     recv = make('Lv_Receiver', profile(rc, -10.5, 10.5), blued, bevel=0.0018, seg=5)
@@ -937,8 +937,8 @@ def leverrifle():
     hm = rounded([(-8, 10, 1.5), (-10, -2, 2), (-18, -6, 3), (-24, 4, 3), (-28, 16, 3), (-34, 22, 2), (-30, 26, 2), (-20, 18, 3)], n=6)
     make('Lv_Hammer', profile(hm, -3.0, 3.0), blued_dk, bevel=0.0005)
     # lever loop (finger loop + trigger)
-    lp = [W(90, -22, 0), W(84, -38, 0), W(60, -44, 0), W(18, -42, 0), W(-6, -40, 0), W(-26, -50, 0), W(-36, -74, 0), W(-20, -96, 0),
-          W(4, -92, 0), W(10, -70, 0), W(2, -52, 0), W(-2, -34, 0)]
+    lp = [W(u, v, 0) for (u, v) in ((92, -23), (62, -27), (34, -29), (8, -31), (-6, -40), (-12, -58), (-4, -74), (14, -76),
+                                   (24, -62), (20, -46), (10, -36))]
     make('Lv_Lever', tube(wk.spline(lp, 6), 0.0040, n=16, flat=0.55), blued)
     make('Lv_Trigger', profile(rounded([(30, -22, 0), (29, -30, 2), (25, -38, 2), (22.5, -38, 1.5), (25.5, -30, 2), (26, -22, 0)]), -2.4, 2.4),
          blued_dk, bevel=0.0004)
