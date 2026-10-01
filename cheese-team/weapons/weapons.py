@@ -423,6 +423,90 @@ def tape_wrap(name, g, t0, t1, mat, turns=2.6, width_t=0.11, pad=0.45, seed=5):
 BUILDERS['SawedOff'] = sawedoff
 
 
+# ================================================================== 4. MACHINE PISTOL (Mr. Shotgun, secondary)
+def machinepistol():
+    finish = wk.paint('M_MpFinish', '#161617', under='#868a8f', rough=0.62, wear=1.4, scuff=1.4, col_var=0.12)
+    finish_dk = wk.paint('M_MpFinishDk', '#0f0f10', under='#7a7d82', rough=0.55, wear=1.0, scuff=0.8)
+    steel = wk.steel('M_MpSteel', base='#2a2b2e', bare='#a5a8ad', rough=0.42, wear=1.0, scratch=1.2, edge_gain=8.0)
+    rub = wk.rubber('M_MpRubber', '#121213', rough=0.75)
+
+    # ---- upper receiver: stamped box, pressed side ribs, spot welds, top slot + charging knob
+    rc = rounded([(-18, 2, 4), (172, 2, 3), (176, 8, 2), (176, 40, 3), (168, 44, 3), (-10, 44, 4), (-18, 38, 4)], n=6)
+    recv = make('Mp_Upper', profile(rc, -23.0, 23.0), finish, bevel=0.0024, seg=5, angle=30)
+    cut(recv, box(W(85, 44.0, 0), (0.0065, 0.145, 0.006)), 'topslot')
+    cut(recv, box(W(118, 26, -22.5), (0.004, 0.050, 0.014)), 'ejport')
+    for side in (1, -1):
+        rb = rounded([(8, 14, 4), (150, 14, 4), (150, 32, 4), (8, 32, 4)])
+        make('Mp_Rib%d' % side, profile(rb, side * 23.0 - (0 if side > 0 else 1.2), side * 23.0 + (1.2 if side > 0 else 0)),
+             finish, bevel=0.0010, seg=3)
+        for (u, v) in ((-4, 9), (-4, 37), (162, 9), (162, 37), (40, 7), (100, 7)):
+            make('Mp_Weld', sphere(W(u, v, side * 23.0), 0.0016, seg=12, rings=6, scale=(0.35, 1, 1)), finish_dk)
+    make('Mp_Bolt', profile(rounded([(96, 20, 1.5), (140, 20, 1.5), (140, 32, 1.5), (96, 32, 1.5)]), -20.5, -15.0), steel, bevel=0.0005)
+    make('Mp_ChargeStem', cyl(W(70, 40, 0), W(70, 52, 0), 0.0036, n=16), steel)
+    knob = lathe([(0, 49.0), (6.5, 49.2), (7.0, 51.0), (7.0, 56.0), (6.0, 58.0), (0, 58.3)], n=32, axis_v=0)
+    # knob axis is vertical: build along u then rotate about the stem
+    kn = make('Mp_ChargeKnob', knob, finish_dk, bevel=0.0004)
+    kn.data.transform(Matrix.Translation(W(70, 0, 0)) @ Matrix.Rotation(-PI / 2, 4, 'X') @ Matrix.Translation(-W(70, 0, 0)))
+    # sling loop at the back
+    make('Mp_SlingLoop', tube([W(-14, 36, 0) + Vector((0, 0.011 * math.sin(a), -0.010 + 0.010 * math.cos(a))) for a in [PI / 2 + PI * i / 14 for i in range(15)]],
+                              0.0018, n=10), steel)
+
+    # ---- lower: boxy grip frame + stamped trigger guard
+    lw = rounded([(-4, 4, 0), (120, 4, 0), (120, -4, 3), (58, -6, 4), (48, -120, 4), (14, -120, 4), (-4, -6, 6)], n=6)
+    lower = make('Mp_Lower', profile(lw, -17.5, 17.5), finish, bevel=0.0022, seg=5, angle=30)
+    cut(lower, box(W(32, -150, 0), (0.0255, 0.064, 0.0230)), 'magwell')
+    gd = rounded([(58, -4, 0), (112, -4, 0), (112, -10, 3), (104, -30, 8), (66, -32, 6), (58, -26, 2)], n=6)
+    hole = rounded([(66, -8, 3), (104, -8, 3), (98, -25, 6), (68, -26, 5)], n=6)
+    make('Mp_Guard', profile(gd, -7.5, 7.5, holes=[hole]), finish, bevel=0.0012)
+    tr = rounded([(84, -5, 0), (83, -12, 3), (79, -20, 2), (76.5, -20, 1.5), (79.5, -12, 3), (80, -5, 0)])
+    make('Mp_Trigger', profile(tr, -2.6, 2.6), steel, bevel=0.0004)
+    for side in (1, -1):                                       # stippled grip panels
+        gp = rounded([(20, -18, 5), (46, -18, 5), (44, -108, 5), (19, -108, 5)])
+        make('Mp_GripPanel%d' % side, profile(gp, side * 17.5 - (0 if side > 0 else 2.0), side * 17.5 + (2.0 if side > 0 else 0)),
+             rub, bevel=0.0012, seg=4)
+    # magazine release button
+    make('Mp_MagRelease', cyl(W(30, -122, 0) + Vector((0, 0, -0.002)), W(30, -126, 0), 0.0045, n=20), steel)
+
+    # ---- long straight magazine out of the grip
+    mg = rounded([(19, -100, 0), (45, -100, 0), (45, -262, 2), (19, -262, 2)])
+    mag = make('Mp_Magazine', profile(mg, -10.8, 10.8), finish_dk, bevel=0.0012, seg=3)
+    for side in (1, -1):
+        for k in range(6):
+            gb = box(W(32, -140 - k * 20, side * 10.8), (0.0016, 0.012, 0.0060))
+            cut(mag, gb, 'win%d%d' % (side, k))                      # witness holes
+    bp = rounded([(16, -262, 2), (48, -262, 2), (48, -270, 3), (16, -270, 3)])
+    make('Mp_MagBase', profile(bp, -12.5, 12.5), finish, bevel=0.0012)
+    make('Mp_MagRounds', profile(rounded([(22, -150, 2), (42, -150, 2), (42, -246, 2), (22, -246, 2)]), -8.5, 8.5),
+         wk.steel('M_MpBrass', base='#9c7735', bare='#c9a35b', rough=0.35, wear=0.3, scratch=0.3), bevel=0.0010)
+
+    # ---- barrel nut + short threaded barrel
+    make('Mp_BarrelNut', lathe([(0, 174.0), (12.0, 174.0), (13.0, 176.0), (13.0, 190.0), (12.0, 192.0), (9.0, 192.5)], n=6, axis_v=24.0,
+                               phase=PI / 6), steel, bevel=0.0008, angle=40)
+    th = [(8.0, 192.0), (8.0, 205.0)]
+    for k in range(18):
+        u = 205.0 + k * 1.6
+        th += [(8.0, u), (8.7, u + 0.4), (8.7, u + 0.8), (8.0, u + 1.2)]
+    th += [(8.0, 235.0), (7.4, 236.0)]
+    bar = make('Mp_Barrel', lathe(th, n=48, axis_v=24.0), steel)
+    cut(bar, cyl(W(200, 24, 0), W(240, 24, 0), 0.0046, n=32), 'bore')
+
+    # ---- little folding front grip under the front of the receiver (deployed)
+    hb = rounded([(140, 3, 2), (168, 3, 2), (168, -6, 2), (140, -6, 2)])
+    make('Mp_FGMount', profile(hb, -9.0, 9.0), steel, bevel=0.0008)
+    make('Mp_FGHinge', cyl(W(158, -8, -10.0), W(158, -8, 10.0), 0.0045, n=24), steel)
+    fg = rounded([(150, -6, 3), (166, -6, 3), (164, -70, 6), (148, -72, 6)], n=6)
+    fgo = make('Mp_FrontGrip', profile(fg, -8.5, 8.5), finish_dk, bevel=0.0030, seg=5)
+    for k in range(4):
+        gb = box(W(156.5, -24 - k * 12, 0), (0.030, 0.026, 0.0024))
+        cut(fgo, gb, 'gr%d' % k)
+
+    PIVOT['MachinePistol'] = (33.0, -60.0)
+    return 'MachinePistol'
+
+
+BUILDERS['MachinePistol'] = machinepistol
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
