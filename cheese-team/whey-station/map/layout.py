@@ -1,17 +1,18 @@
-# Whey Station v4 (simple) -- shared constants. Game frame: X right, Y up, Z lateral, metres.
-#  Base (local d 0..36 toward the middle, z -16..16): FLAG ROOM d0-18 (spawn in its back corner) | FRONT ROOM d18-36.
-#  Cheddar base at x=-64 facing +x; Bleu = same base rotated 180 deg at x=+64. Middle hall x -28..28, z -16..16.
-#  Three lanes: MAIN ground doors, HIGH bridge (y 6) straight through the middle, LOW tunnel (y -4) under it, z -9..-5 / cross / 5..9.
+# Whey Station -- shared layout constants (game frame: X right, Y up, Z lateral, metres).
+#  Cheddar base: base-local frame placed at x=-76 facing +x.  Bleu: same base rotated 180 deg at x=+76.
+#  Middle: x -40..40, point-symmetric about the origin.
+#  Levels: -4 brine tunnels (LOW route), 0 ground (MAIN route), 6 conveyor galleries + hall catwalks (HIGH route).
 import math
 PI = math.pi
 FLOORS = [-4.0, 0.0, 6.0]
-BASE_FRAME = {'C': (-64.0, 0.0), 'B': (64.0, PI)}
-SPAWNS = {'C': [-60.0, 0.1, 12.5], 'B': [60.0, 0.1, -12.5]}
-FLAGS = {'C': [-56.0, 0.5, 0.0], 'B': [56.0, 0.5, 0.0]}
-ROUTES = {   # Cheddar attacking the Bleu flag (Bleu base = Cheddar base rotated: world = (64 - d, -z))
-    'main': [[-60, 0, 12.5], [-56.5, 0, 8], [-46, 0, -7.5], [-28, 0, -6], [-28, 0, 0], [28, 0, 0], [46, 0, 7.5], [56, 0.5, 0]],
-    'high': [[-60, 0, 12.5], [-56.5, 0, 8], [-60, 0, 4], [-52, 6, 4], [-50, 6, 0], [28, 6, 0], [50, 6, 0], [52, 6, -4],
-             [60, 0, -4], [56, 0.5, 0]],
-    'low':  [[-60, 0, 12.5], [-56.5, 0, 8], [-55, 0, -5], [-55, 0, -7], [-48, -4, -7], [-28, -4, -7], [0, -4, -7],
-             [0, -4, 7], [48, -4, 7], [55, 0, 7], [56, 0.5, 0]],
+BASE_FRAME = {'C': (-76.0, 0.0), 'B': (76.0, PI)}
+SPAWNS = {'C': [-71.0, 0.1, 0.0], 'B': [71.0, 0.1, 0.0]}
+FLAG_LOCAL = (20.0, 0.3, -19.0)          # flag plinth in base-local coords
+FLAGS = {'C': [-56.0, 0.3, -19.0], 'B': [56.0, 0.3, 19.0]}
+# timing waypoints (world) for the three routes, Cheddar attacking Bleu
+ROUTES = {
+    'main': [[-71, 0, 0], [-30, 0, 0], [0, 0, 11], [30, 0, 0], [62, 0, 0], [62, 0, 8], [56, 0, 19]],
+    'high': [[-71, 0, 0], [-75, 6, 17], [-30, 6, 17.5], [0, 6, 17.5], [30, 6, -17.5]][:0] or
+            [[-71, 0, 0], [-74.5, 6, 17], [-30, 6, 17.5], [20, 6, 17.5], [33, 0, 17.5], [44, 0, 16], [56, 0, 19]],
+    'low':  [[-71, 0, 0], [-72, -4, -9], [-30, -4, -14], [0, -4, 0], [30, -4, 14], [46, -4, 15], [53, 0, 15], [56, 0, 19]],
 }
