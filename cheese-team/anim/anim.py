@@ -326,6 +326,9 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
         if best is None:
             IK_MISSES.append((side, tuple(round(c, 3) for c in target)))
             best = least[1]
+    if not hasattr(rig, '_last_pole'):
+        rig._last_pole = {}
+    rig._last_pole[side] = best.copy()
     pole_posed = to_rest.inverted().to_3x3() @ best
     rig.two_bone(up, lo, rig.A(target), pole_posed, b3=b3)
 
@@ -350,6 +353,9 @@ def _arm_hits(rig, side):
 def _mesh_pick(rig, side, target, b3, to_rest, u, p0, fallback):
     up, lo = 'upperarm_' + side, 'lowerarm_' + side
     inv = to_rest.inverted().to_3x3(); best = (10 ** 9, None)
+    last = getattr(rig, '_last_pole', {}).get(side)               # temporal coherence: no single-frame elbow flips
+    if last is not None and (last - u * last.dot(u)).length > 1e-4:
+        p0 = (last - u * last.dot(u)).normalized()
     for k in range(0, 24):
         ang = math.radians(((k + 1) // 2) * 15.0 * (1 if k % 2 else -1))
         pv = Matrix.Rotation(ang, 3, u) @ p0
@@ -864,6 +870,7 @@ def bake(rig, prefix, hold, gait_name, frames, extra=None, loop=None):
     rig.arm.animation_data.action = act
     cyc = (extra is None) if loop is None else loop
     n = frames
+    rig._last_pole = {}
     for f in range(n + 1):
         t = (f % n) / n if cyc else f / n
         pose_frame(rig, hold, gait_name if gait_name in GAIT else 'Idle', t, extra)
