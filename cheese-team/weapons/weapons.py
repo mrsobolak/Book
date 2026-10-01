@@ -319,13 +319,13 @@ def sawedoff():
     black_dk = wk.steel('M_SgParkDark', base='#141516', bare='#8a8d91', rough=0.5, wear=0.8, scratch=1.0, edge_gain=11.0)
     bare = wk.steel('M_SgSawCut', base='#8d9095', bare='#c4c6c9', rough=0.42, wear=0.0, scratch=2.0)
     bolt = wk.steel('M_SgBolt', base='#6d7075', bare='#b5b8bc', rough=0.3, wear=0.5, scratch=1.0)
-    wood = wk.wood('M_SgPumpWood', light='#7a4524', dark='#2b1408', rough=0.5, ring=40.0, axis='Y', wear=1.0)
+    wood = wk.wood('M_SgPumpWood', light='#5a3219', dark='#2a1309', rough=0.5, ring=110.0, axis='Y', wear=1.0, grain=0.4)
     grip_m = wk.plastic('M_SgGripPoly', '#1a1a1b', rough=0.62)
     duct = wk.tape('M_SgDuctTape')
 
     # ---- receiver
     rc = rounded([(0, 21, 7), (163, 23, 3), (170, 19, 2), (170, -18, 2), (161, -24, 3), (8, -24, 3), (0, -17, 7)], n=8)
-    recv = make('Sg_Receiver', profile(rc, -15.5, 15.5), black, bevel=0.0018, seg=5, angle=30)
+    recv = make('Sg_Receiver', profile(rc, -15.5, 15.5), black, bevel=0.0032, seg=6, angle=30)
     cut(recv, box(W(122, 1.0 + 8.5, -14.0), (0.007, 0.052, 0.017)), 'ejport')           # ejection port (right)
     cut(recv, box(W(143, -22.0, 0), (0.019, 0.042, 0.008)), 'loadport')                    # loading port (bottom)
     make('Sg_Bolt', profile(rounded([(98, 2, 2), (146, 2, 2), (146, 17, 2), (98, 17, 2)]), -12.5, -8.5), bolt, bevel=0.0006)
@@ -372,13 +372,13 @@ def sawedoff():
     # ---- wooden pump with grip grooves, action bars back to the receiver
     def oval(i, k, r, a):
         return r * (1.0 + 0.16 * math.cos(a) ** 2) * (1.0 - 0.10 * max(0.0, -math.sin(a)))
-    pump = lathe([(11.4, 186.0), (14.5, 188.0), (17.0, 192.0), (18.2, 198.0), (18.2, 286.0), (17.0, 292.0), (14.5, 296.0),
-                  (11.4, 298.0)], n=72, axis_v=MV, shape=oval, cap0=False, cap1=False)
+    prof = [(11.4, 186.0), (14.5, 188.0), (17.0, 192.0), (18.2, 198.0), (18.2, 202.0)]
+    for k in range(10):                                    # shallow rounded grip grooves, part of the surface
+        u = 205.0 + k * 8.0
+        prof += [(18.2, u), (17.6, u + 1.0), (16.9, u + 2.0), (17.6, u + 3.0), (18.2, u + 4.0)]
+    prof += [(18.2, 287.0), (17.0, 292.0), (14.5, 296.0), (11.4, 298.0)]
+    pump = lathe(prof, n=72, axis_v=MV, shape=oval, cap0=False, cap1=False)
     pmp = make('Sg_Pump', pump, wood, bevel=0.0, smooth=True)
-    for k in range(9):
-        u = 206.0 + k * 8.5
-        gr = lathe([(16.8, u - 1.4), (25.0, u - 1.4), (25.0, u + 1.4), (16.8, u + 1.4)], n=48, axis_v=MV)
-        cut(pmp, gr, 'gr%d' % k)
     for sd in (1, -1):
         make('Sg_ActionBar%d' % sd, profile(rounded([(150, -21.5, 0), (192, -21.5, 0), (192, -16.5, 0), (150, -16.5, 0)]),
                                             sd * 11.0 - 1.1, sd * 11.0 + 1.1), black_dk, bevel=0.0004)
@@ -386,14 +386,11 @@ def sawedoff():
     # ---- pistol grip only (no stock), silver duct tape wrapped round it
     rcap = rounded([(-4, 18, 4), (8, 18, 0), (8, -22, 0), (-4, -22, 6)])
     make('Sg_RearCap', profile(rcap, -14.5, 14.5), black, bevel=0.0026, seg=5)
-    g = Grip((24.0, -30.0), (16.0, -82.0), (-6.0, -132.0),
+    g = Grip((24.0, -30.0), (8.0, -80.0), (-22.0, -124.0),
              depth=lambda t: (15.0 + 1.5 * math.sin(PI * t), 16.0 + 2.0 * t), width=lambda t: 15.0 + 1.0 * math.sin(PI * t), e=2.6, butt=0.06)
-    R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=44, nth=56)
+    fg = lambda t, th: 1.0 - 0.07 * max(0.0, math.cos(th)) ** 4 * max(0.0, math.sin(PI * (t - 0.18) / 0.62 * 3.0)) * (0.18 < t < 0.80)
+    R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=56, nth=56, fn=fg)
     gp = make('Sg_PistolGrip', wk.loft([r[:-1] for r in R], closed=True, cap1=True), grip_m, smooth=True)
-    for k in range(4):                                   # finger grooves on the front strap
-        t = 0.25 + k * 0.17
-        c = g.point(t, 0.0, 1.0, 3.2)
-        cut(gp, sphere(c, 0.0062, seg=24, rings=12, scale=(3.0, 1.0, 1.0)), 'fg%d' % k)
     tape_wrap('Sg_DuctTape', g, 0.30, 0.66, duct)
 
     c = g.centre(0.42)
@@ -422,8 +419,11 @@ def tape_wrap(name, g, t0, t1, mat, turns=3, width_t=0.13, pad=0.5, seed=5):
     p0 = g.point(tt, PI + 0.4, 1.0, pad + 0.9)
     T, D = g.frame2(tt)
     outw = Vector((0.0, -1.0 * 0, 0.0))
-    pts = [p0 + Vector((0.004 * i, 0.0025 * i * i * 0.3, -0.0015 * i)) for i in range(6)]
-    bm = ribbon(pts, lambda t: 0.012 * (1 - 0.15 * t), lambda t, tan: Vector((0.3, 1.0, 0.0)).normalized())
+    pts = []
+    for i in range(7):                                   # hangs down the back, lifting off a little at the end
+        tt2 = min(0.97, tt + 0.03 * i)
+        pts.append(g.point(tt2, PI + 0.35, 1.0, pad + 1.0 + 0.25 * i * i * 0.12))
+    bm = ribbon(pts, lambda t: 0.011 * (1 - 0.15 * t), lambda t, tan: (pts[min(6, int(t * 6))] - g.point(tt, PI, 0.0, 0.0)).normalized())
     for v in bm.verts:
         v.co += Vector((0, 0, 0.0007 * noise.noise(v.co * 3000)))
     obs.append(make(name + 'Flap', bm, mat, solid=0.0004))

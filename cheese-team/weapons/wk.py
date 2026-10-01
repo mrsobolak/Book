@@ -634,13 +634,13 @@ def spline(pts, sub=6, closed=False):
     return out
 
 
-def tape(name, col='#9a9b9c'):
+def tape(name, col='#76787b'):
     """silver duct tape: cloth scrim weave, crinkles, satin sheen, dirty"""
     g = NT(name)
     dirt = g.noise(25, 6, 0.6)
     g.set('Base Color', g.ramp(dirt, 0.3, 0.85, tuple(c * 0.55 for c in srgb(col)), srgb(col)))
-    g.set('Metallic', 0.55)
-    g.set('Roughness', g.math('ADD', 0.38, g.math('MULTIPLY', dirt, 0.2)))
+    g.set('Metallic', 0.35)
+    g.set('Roughness', g.math('ADD', 0.45, g.math('MULTIPLY', dirt, 0.2)))
     wv1 = g.node('ShaderNodeTexWave'); wv1.inputs['Scale'].default_value = 1100.0; wv1.bands_direction = 'X'
     wv2 = g.node('ShaderNodeTexWave'); wv2.inputs['Scale'].default_value = 1100.0; wv2.bands_direction = 'Z'
     g.link(g.co, wv1.inputs['Vector']); g.link(g.co, wv2.inputs['Vector'])
