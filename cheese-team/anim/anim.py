@@ -197,7 +197,8 @@ def _seg_hits_tree(tree, p0, p1, r):
     if d.length < 1e-6:
         return False
     n = d.normalized(); a = n.orthogonal().normalized(); b = n.cross(a)
-    ring = [a * (r * math.cos(k * PI / 3)) + b * (r * math.sin(k * PI / 3)) for k in range(6)]
+    rc = r / math.cos(PI / 6)                                         # hexagon circumscribing the round tube
+    ring = [a * (rc * math.cos(k * PI / 3)) + b * (rc * math.sin(k * PI / 3)) for k in range(6)]
     verts = [p0 + o for o in ring] + [p1 + o for o in ring]
     faces = [(k, (k + 1) % 6, 6 + (k + 1) % 6, 6 + k) for k in range(6)] + [tuple(range(6)), tuple(range(11, 5, -1))]
     return bool(tree.overlap(BVHTree.FromPolygons(verts, faces)))
@@ -747,7 +748,7 @@ reload_lever = keyed([
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
-_SQ = dict(dg=(-0.06, 0.01, -0.135), dr=(-65, 0, 0), tw=65)         # squared up, gun low front-right, side mag toward the left hand
+_SQ = dict(dg=(-0.06, 0.01, -0.135), dr=(-25, 0, 0), tw=65)  # muzzle 40 deg left: the stock clears the right side         # squared up, gun low front-right, side mag toward the left hand
 reload_smg = keyed([                                                 # let go of the fore-end, square up, swap, blade back in
     (0.00, {}),
     (0.08, dict(lh='rest', lel=(0.4, 1, -0.1))),
@@ -756,7 +757,7 @@ reload_smg = keyed([                                                 # let go of
     (0.42, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.46, dict()),
     (0.60, dict(lh=('w', 120, 0, 320), lel=(1, -0.2, -0.6))),
-    (0.68, dict(lh=('w', 120, 0, 253), dg=(-0.066, 0.01, -0.135), ease=snap)),               # seat
+    (0.68, dict(lh=('w', 120, 0, 253), dg=(-0.064, 0.007, -0.135), ease=snap)),              # seat
     (0.74, dict(dg=(-0.06, 0.01, -0.135), lh='rest', lel=(0.4, 1, -0.1))),
     (0.90, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, lh=None, lel=None)),
     (1.00, {}),
@@ -764,15 +765,14 @@ reload_smg = keyed([                                                 # let go of
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
 _VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
-_BACK = (-0.180, 0.126, 0.0)                                         # slid 0.18 m back along the tube (body frame)
+_BACK = (-0.131, 0.092, 0.0)                                         # slid 0.18 m back along the tube (body frame)
 reload_launcher = keyed([                                            # RPG-style: slide it back, shove a rocket in the front
     (0.00, {}),
     (0.14, dict(dg=_BACK, lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.30, dict()),
     (0.46, dict(lh=('w', 1060, -60, 0), lel=(1, 0.0, -0.8))),                                  # rocket at the muzzle
-    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.188, 0.132, 0.0), ease=snap)),                   # shove it home
+    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.139, 0.097, 0.0), ease=snap)),                   # shove it home
     (0.62, dict(lh=('w', 1060, -60, 0), dg=_BACK)),
-    (0.70, dict(lh=('w', 880, -120, 0))),                                                     # back under the tube
     (0.82, dict(lh=None, dg=(0, 0, 0))),
     (1.00, {}),
 ])
