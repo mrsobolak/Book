@@ -769,7 +769,7 @@ def smudge_outline(cx, cz, length, width, ang, seed, fingers=3):
         w = width * (0.35 + 0.65 * math.sin(PI * min(1.0, t * 1.25)) ** 0.7) * (1.0 - 0.55 * t)
         wob = 0.0025 * math.sin(t * 19 + seed) + 0.0015 * math.sin(t * 41 + 2 * seed)
         # finger ridges: the top edge is scalloped by the streaks
-        sc = 0.18 * width * abs(math.sin(t * PI * fingers * 1.5 + seed)) * (1 - t)
+        sc = 0.10 * width * abs(math.sin(t * PI * fingers * 1.5 + seed)) * (1 - t)
         pts_top.append((u, w / 2 + wob - sc)); pts_bot.append((u, -w / 2 + wob * 0.7 + sc * 0.5))
     out = pts_bot + pts_top[::-1]
     return [(cx + u * ca - v * sa, cz + u * sa + v * ca) for (u, v) in out]
@@ -791,8 +791,8 @@ def wrench_outline(L=0.215):
     j_top = co + rot(Vector((-R * 0.95, jaw)), tilt); j_bot = co + rot(Vector((-R * 0.95, -jaw)), tilt)
     out.append(j_top)
     out.append(co + rot(Vector((-0.004, jaw)), tilt))
-    for i in range(7):
-        a = PI / 2 + PI * i / 6
+    for i in range(7):                                       # rounded throat, bulging INTO the head
+        a = PI / 2 - PI * i / 6
         out.append(co + rot(Vector((0.002 + math.cos(a) * jaw * 0.35, math.sin(a) * jaw)), tilt))
     out.append(co + rot(Vector((-0.004, -jaw)), tilt))
     out.append(j_bot)
@@ -821,9 +821,10 @@ def wrench_outline(L=0.215):
     return out, hole
 
 
-def wrench_mesh(F, thick=0.0075):
+def wrench_mesh(F, thick=0.0075, k=1.0):
     import bmesh
     out, hole = wrench_outline()
+    out = [p * k for p in out]; hole = [p * k for p in hole]
     bm = bmesh.new()
     def loop(pts, z):
         vs = [bm.verts.new((p.x, p.y, z)) for p in pts]
@@ -884,7 +885,7 @@ def mechanic(P, T):
     for f in bm.faces:
         for lp in f.loops:
             lp[uvl].uv = (lp.vert.co.x * 14.0, lp.vert.co.y * 14.0)
-    cap.append(A.make_obj('Mech_Brim', A.transform(bm, H), weld, 'spine_01', solid=0.004))
+    cap.append(A.make_obj('Mech_Brim', A.transform(bm, H), A.mat_felt('M_MechBrim', '#1d7179', '#185f66', rough=0.8, fiber=0.3), 'spine_01', solid=0.004))
     pts = [Vector((verts[i * (nv + 1) + nv].x, verts[i * (nv + 1) + nv].y, verts[i * (nv + 1) + nv].z)) for i in range(nu + 1)]
     bm = A.tube(pts, 0.0024, n=8)                                  # bound brim edge
     cap.append(A.make_obj('Mech_BrimEdge', A.transform(bm, H), seam, 'spine_01'))
@@ -893,9 +894,9 @@ def mechanic(P, T):
     obs += cap
     # black grease smudges (finger swipes) on the wedge
     gm = grease_mat()
-    for k, (cx, cz, L, W, ang) in enumerate(((0.150, 0.700, 0.062, 0.022, math.radians(-28)),
-                                            (-0.050, 0.615, 0.075, 0.020, math.radians(12)),
-                                            (-0.165, 0.775, 0.040, 0.016, math.radians(-70)))):
+    for k, (cx, cz, L, W, ang) in enumerate(((-0.046, 0.624, 0.090, 0.034, math.radians(14)),
+                                            (-0.166, 0.885, 0.060, 0.028, math.radians(-62)),
+                                            (0.150, 0.648, 0.040, 0.022, math.radians(-35)))):
         ol = smudge_outline(cx, cz, L, W, ang, seed=k * 7 + 3)
         obs.append(A.puff('Mech_Grease%d' % k, P, ol, 0.0008, gm, edge=0.003, power=1.0, bury=0.0012, res=0.0022, hole_clamp=False))
     # red shop rag stuffed into the big jaw hole, a tail hanging out
@@ -904,11 +905,17 @@ def mechanic(P, T):
     bun = A.sphere((0, 0, 0), 1.0, seg=40, rings_=22)
     def crumple(p):
         q = Vector(p)
-        f = 1.0 + 0.22 * abs(noise.noise(q * 2.2 + Vector((3, 1, 7)))) - 0.10 + 0.08 * noise.noise(q * 5.0)
-        return Vector((q.x * 0.040 * f, q.y * 0.030 * f, q.z * 0.036 * f))
+        ridge = 1.0 - abs(noise.noise(q * 2.6 + Vector((3, 1, 7))))          # sharp fold creases
+        f = 0.86 + 0.30 * ridge ** 3 + 0.06 * noise.noise(q * 6.0)
+        return Vector((q.x * 0.044 * f, q.y * 0.032 * f, q.z * 0.040 * f))
     A.displace(bun, crumple)
     A.transform(bun, Matrix.Translation(hc + Vector((0.002, 0.004, 0.004))))
     obs.append(A.make_obj('Mech_RagBunch', bun, rag, 'spine_01', subsurf=1))
+    for k, (dx, dz, tw) in enumerate(((-0.030, 0.034, 0.7), (0.020, 0.040, -0.5))):    # two cloth corners poking out
+        pts = [hc + Vector((dx * t, -0.022 - 0.010 * t, 0.010 + dz * t)) for t in [i / 6 for i in range(7)]]
+        bm = A.ribbon(pts, lambda t: 0.030 * (1 - t) ** 0.9 + 0.002, lambda t, tan: Vector((0, -1, 0.3 * tw)).normalized())
+        A.displace(bm, lambda p: p + Vector((0, -1, 0)) * 0.003 * noise.noise(p * 90.0))
+        obs.append(A.make_obj('Mech_RagCorner%d' % k, bm, rag, 'spine_01', solid=0.0022, subsurf=1))
     # tail: a cloth strip from the bunch draping down the face, folds across it, frayed end
     nu, nv = 10, 22
     verts = []; faces = []
@@ -916,7 +923,7 @@ def mechanic(P, T):
         t = j / nv
         for i in range(nu + 1):
             u = i / nu * 2 - 1
-            w = 0.046 * (1 - 0.25 * t)
+            w = 0.060 * (1 - t) ** 0.85 + 0.004               # narrows to the hanging corner of the rag
             x = hc.x + 0.006 + u * w / 2 + 0.010 * math.sin(t * 2.2)
             z = hc.z - 0.012 - 0.090 * t
             fold = 0.0045 * math.sin(u * 3.1 + t * 6.0) + 0.003 * math.sin(u * 7.0 - t * 3.0)
@@ -943,9 +950,10 @@ def mechanic(P, T):
     loc, nor = P.hit((1.0, cy, cz), (-1, 0, 0))
     sx = loc.x if loc is not None else 0.19
     X = Vector((0, math.cos(ang), math.sin(ang))); Y = Vector((0, -math.sin(ang), math.cos(ang))); Z = Vector((1, 0, 0))
-    wt = 0.0075
+    wt = 0.0092
+    wk = 1.28                                                     # big wrench
     F = A.frame_matrix(Vector((sx + wt / 2 + 0.0004, cy, cz)), X, Y, Z)
-    wb = wrench_mesh(F, thick=wt)
+    wb = wrench_mesh(F, thick=wt, k=wk)
     w = A.make_obj('Mech_Wrench', wb, steel, 'spine_01')
     bv = w.modifiers.new('bevel', 'BEVEL'); bv.width = 0.0011; bv.segments = 2; bv.limit_method = 'ANGLE'
     obs.append(w)
@@ -953,17 +961,18 @@ def mechanic(P, T):
     clipm = A.mat_metal('M_ClipSteel', '#9da3a8', rough=0.35, scratches=0.6)
     cw, st = 0.015, 0.0016
     top = wt + 0.0004 + st / 2
-    prof = [(-0.027, st / 2), (-0.016, st / 2), (-0.0125, st / 2 + 0.0008)]
-    for i in range(13):                                       # rounded arch over the shank (half-width ~0.0094)
+    hw = 0.0094 * wk + 0.0018
+    prof = [(-hw - 0.018, st / 2), (-hw - 0.004, st / 2), (-hw - 0.0013, st / 2 + 0.0008)]
+    for i in range(13):                                       # rounded arch over the shank
         a = PI - PI * i / 12
-        prof.append((0.0112 * math.cos(a), st / 2 + 0.0008 + (top - st / 2 - 0.0008) * math.sin(a) ** 0.55))
-    prof += [(0.0125, st / 2 + 0.0008), (0.016, st / 2), (0.027, st / 2)]
+        prof.append((hw * math.cos(a), st / 2 + 0.0008 + (top - st / 2 - 0.0008) * math.sin(a) ** 0.55))
+    prof += [(hw + 0.0013, st / 2 + 0.0008), (hw + 0.004, st / 2), (hw + 0.018, st / 2)]
     S = A.frame_matrix(Vector((sx + 0.0002, cy, cz)), X, Y, Z)
     path = [S @ Vector((0.0, py, ph)) for (py, ph) in prof]
     bm = A.ribbon(path, cw, lambda t, tan: X.cross(tan).normalized())     # strip spans the wrench axis
     strap = A.make_obj('Mech_Clip', bm, clipm, 'spine_01', solid=st)
     obs.append(strap)
-    for k, off in enumerate((-0.0215, 0.0215)):
+    for k, off in enumerate((-hw - 0.0105, hw + 0.0105)):
         sc = A.lathe([(1.0, 0.0), (1.0, 0.0008), (0.8, 0.0020), (0.0, 0.0024)], 0.0040, 0.0040, n=16)
         A.transform(sc, A.frame_matrix(Vector((sx + 0.0002 + st, cy, cz)) + Y * off, X, Y, Z))
         obs.append(A.make_obj('Mech_Screw%d' % k, sc, clipm, 'spine_01'))
