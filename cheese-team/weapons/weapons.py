@@ -443,10 +443,7 @@ def machinepistol():
             make('Mp_Weld', sphere(W(u, v, side * 23.0), 0.0016, seg=12, rings=6, scale=(0.35, 1, 1)), finish_dk)
     make('Mp_Bolt', profile(rounded([(96, 20, 1.5), (140, 20, 1.5), (140, 32, 1.5), (96, 32, 1.5)]), -20.5, -15.0), steel, bevel=0.0005)
     make('Mp_ChargeStem', cyl(W(70, 40, 0), W(70, 52, 0), 0.0036, n=16), steel)
-    knob = lathe([(0, 49.0), (6.5, 49.2), (7.0, 51.0), (7.0, 56.0), (6.0, 58.0), (0, 58.3)], n=32, axis_v=0)
-    # knob axis is vertical: build along u then rotate about the stem
-    kn = make('Mp_ChargeKnob', knob, finish_dk, bevel=0.0004)
-    kn.data.transform(Matrix.Translation(W(70, 0, 0)) @ Matrix.Rotation(-PI / 2, 4, 'X') @ Matrix.Translation(-W(70, 0, 0)))
+    make('Mp_ChargeKnob', cyl(W(70, 49, 0), W(70, 57, 0), 0.0068, n=32), finish_dk, bevel=0.0012, seg=4)
     # sling loop at the back
     make('Mp_SlingLoop', tube([W(-14, 36, 0) + Vector((0, 0.011 * math.sin(a), -0.010 + 0.010 * math.cos(a))) for a in [PI / 2 + PI * i / 14 for i in range(15)]],
                               0.0018, n=10), steel)
