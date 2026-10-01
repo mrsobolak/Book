@@ -557,9 +557,11 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.086, D=0.125, yc=-0.074, min_
     sl = sum((k * 0.01 - my) * (rim[k] - mz) for k in ks) / max(1e-9, sum((k * 0.01 - my) ** 2 for k in ks))
     def rim_z(y):                                  # straight least-squares line along the band: no wrinkles
         return mz + sl * (y - my)
-    def side_x(y, z):
+    def side_x(y, z):                             # side face (never inside it: above the face the ray hits the top slope)
         loc, nor = P.hit((sgn * 1.0, y, z), (-sgn, 0, 0))
-        return abs(loc.x) if loc is not None else 0.205
+        return max(abs(loc.x), 0.203) if loc is not None else 0.205
+    band_x = max([abs((ob.matrix_world @ v.co).x) for ob in cap_obs for v in ob.data.vertices
+                  if sgn * (ob.matrix_world @ v.co).x > 0.16 and abs((ob.matrix_world @ v.co).y - yc) < W / 2 + 0.01] or [0.214])
     D = min(D, min(rim_z(yc - W / 2), rim_z(yc + W / 2)) + 0.014 - min_z)
     # (the flap sits on the front half of the side face, ahead of the shoulder: the arm stick never reaches it)
     nu, nv = 22, 18
@@ -574,6 +576,8 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.086, D=0.125, yc=-0.074, min_
             y = yc + u * hw
             z = rim_z(y) + 0.014 - v
             x = side_x(y, z) + 0.0075 + 0.0045 * (v / D) + 0.0025 * (1 - u * u)
+            if v < 0.030:                             # tucked under the cap band: stay just outside it
+                x = max(x, band_x + 0.0045 - 0.004 * v / 0.030)
             verts.append(Vector((sgn * x, y, z))); uvs.append((u, v))
     for j in range(nv):
         for i in range(nu):
