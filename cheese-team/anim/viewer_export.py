@@ -14,7 +14,7 @@ CLASS_WEAPONS = {'Outlaw': ('Revolver', 'Derringer'), 'MrShotgun': ('SawedOff', 
 DUAL = {'SawedOff'}
 
 
-def export(cls, dst):
+def export(cls, dst, tex=1024, fmt='WEBP'):
     bpy.ops.wm.open_mainfile(filepath=os.path.join(ANIM, cls + '_TP.blend'))
     arm = next(o for o in bpy.data.objects if o.type == 'ARMATURE')
     s = arm.matrix_world.to_scale()[0] / 0.01
@@ -41,10 +41,14 @@ def export(cls, dst):
                     bpy.data.objects.remove(o, do_unlink=True)
     arm.data.pose_position = 'POSE'
     bpy.context.view_layer.update()
+    for im in bpy.data.images:                      # small textures: the viewer embeds every model in one HTML file
+        if im.size[0] > tex or im.size[1] > tex:
+            im.scale(min(tex, im.size[0]), min(tex, im.size[1]))
     path = os.path.join(dst, cls + '.glb')
     win = bpy.context.window_manager.windows[0]
     area = next((a for a in win.screen.areas if a.type == 'VIEW_3D'), win.screen.areas[0])
     with bpy.context.temp_override(window=win, screen=win.screen, area=area, active_object=arm, object=arm):
         bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', export_animations=True,
-                                  export_animation_mode='ACTIONS')
+                                  export_animation_mode='ACTIONS', export_image_format=fmt,
+                                  export_image_quality=82)
     return path

@@ -94,6 +94,21 @@ async function addFiles(files) {
 }
 // drag-drop / picker live in the plain script in the page (they work even if this bundle fails); hand them the loader
 window.__addFiles = addFiles;
+// models baked into the page: <script type="application/octet-stream" data-name="Outlaw.glb">base64</script>
+(async () => {
+  const tags = [...document.querySelectorAll('script[data-name]')];
+  if (!tags.length) return;
+  const files = [];
+  for (const t of tags) {
+    status(`Unpacking ${t.dataset.name}…`);
+    const blob = await (await fetch('data:model/gltf-binary;base64,' + t.textContent.trim())).blob();
+    files.push(new File([blob], t.dataset.name)); t.textContent = '';
+  }
+  const order = ['Outlaw', 'MrShotgun', 'RocketGuy', 'Sniper', 'Mechanic', 'Greg'];
+  files.sort((a, b) => order.indexOf(a.name.split('.')[0]) - order.indexOf(b.name.split('.')[0]));
+  await addFiles(files);
+  $('char').value = files[0].name.split('.')[0]; showChar($('char').value);
+})();
 if (window.__pending && window.__pending.length) { const p = window.__pending.splice(0); addFiles(p); }
 
 // ---------------- UI
