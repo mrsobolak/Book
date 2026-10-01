@@ -540,7 +540,7 @@ BUILDERS['RocketGuy'] = rocketguy
 
 
 # ================================================================== 4. SNIPER
-def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.100, D=0.125, yc=-0.084, min_z=0.700):
+def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.086, D=0.125, yc=-0.074, min_z=0.700):
     """quilted ear flap hanging from the cap band down the side face (sgn=+1: character's left, +x)"""
     import bmesh
     # where the cap band sits on this side: lowest cap point per y slice
@@ -582,8 +582,9 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.100, D=0.125, yc=-0.084, min_
     bm = A.bm_from(verts, faces)
     obs = [A.make_obj(name, bm, mat, 'spine_01', solid=0.0055)]
     # fleece trim around the sides + bottom
-    border = [verts[j * (nu + 1)] for j in range(nv + 1)] + [verts[nv * (nu + 1) + i] for i in range(1, nu + 1)] + \
-             [verts[j * (nu + 1) + nu] for j in range(nv - 1, -1, -1)]
+    j0 = 3                                        # trim starts below the cap band (no hooks poking out above it)
+    border = [verts[j * (nu + 1)] for j in range(j0, nv + 1)] + [verts[nv * (nu + 1) + i] for i in range(1, nu + 1)] + \
+             [verts[j * (nu + 1) + nu] for j in range(nv - 1, j0 - 1, -1)]
     border = [p + Vector((sgn * 0.0005, 0, 0)) for p in border]
     bm = A.tube(border, 0.0052, n=10, flat=1.0)
     A.displace(bm, lambda p: p + Vector((sgn, 0, 0)) * 0.0012 * noise.noise(p * 600.0))
