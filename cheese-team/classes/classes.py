@@ -651,7 +651,7 @@ def sniper(P, T):
             v = j / nv
             bx = u * (a * 0.84) * (1 - 0.15 * v ** 2)
             by = -(b * 0.97) * math.sqrt(max(0.0, 1 - (bx / a) ** 2)) - v * 0.105 * (1 - 0.5 * u * u)
-            bz = 0.012 - 0.020 * u * u + 0.010 * v - 0.014 * v * v
+            bz = 0.010 - 0.020 * u * u - 0.040 * v - 0.006 * v * v
             verts.append(Vector((bx, by, bz)))
     for i in range(nu):
         for j in range(nv):
@@ -669,7 +669,7 @@ def sniper(P, T):
             v = 0.15 + r * 0.8
             bx = u * (a * 0.84) * (1 - 0.15 * v ** 2) * 0.96
             by = -(b * 0.97) * math.sqrt(max(0.0, 1 - (bx / a) ** 2)) - v * 0.105 * (1 - 0.5 * u * u)
-            bz = 0.012 - 0.020 * u * u + 0.010 * v - 0.014 * v * v + 0.0024
+            bz = 0.010 - 0.020 * u * u - 0.040 * v - 0.006 * v * v + 0.0024
             pts.append(Vector((bx, by, bz)))
         bm = A.tube(pts, 0.0008, n=5)
         cap.append(A.make_obj('Sniper_BrimStitch%d' % int(r * 4), A.transform(bm, H), seam, 'spine_01'))
