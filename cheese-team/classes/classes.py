@@ -1031,12 +1031,28 @@ def mechanic(P, T):
     steel = A.mat_metal('M_WrenchSteel', '#c9ccd2', rough=0.22, scratches=0.8)
     cz, cy = 0.630, 0.018
     ang = math.radians(8)
-    loc, nor = P.hit((1.0, cy, cz), (-1, 0, 0))
-    sx = loc.x if loc is not None else 0.19
-    X = Vector((0, math.cos(ang), math.sin(ang))); Y = Vector((0, -math.sin(ang), math.cos(ang))); Z = Vector((1, 0, 0))
+    # the side face is yawed (the wedge narrows to the back): fit its plane, skipping the arm stick
+    pts = []
+    for yy in (-0.10, -0.07, -0.04, 0.04, 0.07, 0.10, 0.12):
+        for zz in (0.60, 0.63, 0.66):
+            loc, nor = P.hit((1.0, yy, zz), (-1, 0, 0))
+            if loc is not None and loc.x < 0.22:
+                pts.append(loc)
+    cen = sum(pts, Vector()) / len(pts)
+    # least squares x = a*y + b*z + c
+    import numpy as np
+    M_ = np.array([[p.y, p.z, 1.0] for p in pts]); rhs = np.array([p.x for p in pts])
+    (ka, kb, kc), *_ = np.linalg.lstsq(M_, rhs, rcond=None)
+    Z = Vector((1.0, -ka, -kb)).normalized()                      # outward face normal
+    up = (Vector((0, 0, 1)) - Z * Z.z).normalized(); fw = up.cross(Z).normalized()   # in-plane axes (fw ~ +y)
+    if fw.y < 0:
+        fw = -fw
+    X = (fw * math.cos(ang) + up * math.sin(ang)).normalized(); Y = Z.cross(X).normalized()
+    sx = ka * cy + kb * cz + kc
+    base = Vector((sx, cy, cz))
     wt = 0.0092
     wk = 1.16                                                     # big wrench (fills the side face)
-    F = A.frame_matrix(Vector((sx + wt / 2 + 0.0004, cy, cz)), X, Y, Z)
+    F = A.frame_matrix((base + Z * (wt / 2 + 0.0004)), X, Y, Z)
     wb = wrench_mesh(F, thick=wt, k=wk)
     w = A.make_obj('Mech_Wrench', wb, steel, 'spine_01')
     bv = w.modifiers.new('bevel', 'BEVEL'); bv.width = 0.0011; bv.segments = 2; bv.limit_method = 'ANGLE'
@@ -1051,17 +1067,17 @@ def mechanic(P, T):
         a = PI - PI * i / 12
         prof.append((hw * math.cos(a), st / 2 + 0.0008 + (top - st / 2 - 0.0008) * math.sin(a) ** 0.55))
     prof += [(hw + 0.0013, st / 2 + 0.0008), (hw + 0.004, st / 2), (hw + 0.018, st / 2)]
-    S = A.frame_matrix(Vector((sx + 0.0002, cy, cz)), X, Y, Z)
+    S = A.frame_matrix((base + Z * (0.0002)), X, Y, Z)
     path = [S @ Vector((0.0, py, ph)) for (py, ph) in prof]
     bm = A.ribbon(path, cw, lambda t, tan: X.cross(tan).normalized())     # strip spans the wrench axis
     strap = A.make_obj('Mech_Clip', bm, clipm, 'spine_01', solid=st)
     obs.append(strap)
     for k, off in enumerate((-hw - 0.0105, hw + 0.0105)):
         sc = A.lathe([(1.0, 0.0), (1.0, 0.0008), (0.8, 0.0020), (0.0, 0.0024)], 0.0040, 0.0040, n=16)
-        A.transform(sc, A.frame_matrix(Vector((sx + 0.0002 + st, cy, cz)) + Y * off, X, Y, Z))
+        A.transform(sc, A.frame_matrix((base + Z * (0.0002 + st)) + Y * off, X, Y, Z))
         obs.append(A.make_obj('Mech_Screw%d' % k, sc, clipm, 'spine_01'))
         slot = A.box((0, 0, 0), (0.0060, 0.0011, 0.0012))
-        A.transform(slot, A.frame_matrix(Vector((sx + 0.0002 + st + 0.0021, cy, cz)) + Y * off, X, Y, Z) @ Matrix.Rotation(0.6 * k + 0.3, 4, 'Z'))
+        A.transform(slot, A.frame_matrix((base + Z * (0.0002 + st + 0.0021)) + Y * off, X, Y, Z) @ Matrix.Rotation(0.6 * k + 0.3, 4, 'Z'))
         obs.append(A.make_obj('Mech_ScrewSlot%d' % k, slot, A.mat_plain('M_SlotDark', '#1a1a1a', rough=0.6, bump=0.0), 'spine_01'))
     return obs
 
