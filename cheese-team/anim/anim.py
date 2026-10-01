@@ -811,12 +811,11 @@ reload_launcher = keyed([                                            # RPG-style
     (0.00, {}),
     (0.14, dict(dg=_BACK, lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.30, dict()),
-    (0.46, dict(lh=('w', 1060, -60, 0), lel=(1, 0.0, -0.8))),                                  # rocket at the muzzle
-    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.172, 0.120, 0.0), ease=snap)),                   # shove it home
+    (0.46, dict(lh=('w', 1060, -60, 0), lel=(1, 0.0, -0.8))),                                 # rocket at the muzzle
+    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.172, 0.120, 0.0), ease=snap)),                 # shove it home
     (0.62, dict(lh=('w', 1060, -60, 0), dg=_BACK)),
-    (0.68, dict(lh=('w', 1040, -95, 0))),                                                     # drop just under the tube
-    (0.75, dict(lh=('w', 860, -95, 0), dg=(-0.082, 0.058, 0.0))),                            # slide back along the underside
-    (0.82, dict(lh=None, dg=(0, 0, 0))),
+    (0.74, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),                                            # the opening, played backwards
+    (0.88, dict(lh=None, lel=None, dg=(0, 0, 0))),
     (1.00, {}),
 ])
 
