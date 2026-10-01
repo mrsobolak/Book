@@ -102,7 +102,7 @@ def base(K, T):
     K.slab('TF_Ceiling', 12, -16, 36, -12, -0.33, -0.3, holes=[(24.33, -15.8, 30.0, -12.2)], col=False)
     K.box('TF_Hazard', 0.2, -4.0, -15.8, 11.8, -3.99, -15.6)                           # floor edge stripes
     K.box('TF_Hazard', 12.0, -4.0, -15.8, 35.8, -3.99, -15.6)
-    for (d, z) in ((4, -11), (17, -14), (24, -14), (33, -14)):
+    for (d, z) in ((4, -11), (16, -14), (22, -14), (33, -14)):
         K.lamp_prop(d, -0.33, z, color='#e8f2ff', intensity=1.1, dist=11)
     K.prop('barrel', 1.0, -4.0, -15.0, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))       # sump cover
     K.prop('barrel', 1.0, -4.0, -14.2, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
