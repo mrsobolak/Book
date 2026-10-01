@@ -81,12 +81,10 @@ def half(K, T):
     P.stairs(-3.75, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')            # clear of the pit wall
     P.rail(-5.05, -8, -5.05, 8, 0.0, mat='TF_Steel')
     P.rail(-3.0, 8.05, 5.0, 8.05, 0.0, mat='TF_Steel')
-    # cover: vats and stacked crates/barrels (library props)
+    # cover: vats and stacked crates (library props)
     vat(K, -18, 10.5, T=T); vat(K, -18, -10.5, T=T); vat(K, -10, -13.5, 2.4, T=T)
     K.prop('crate', -9.0, 0, 1.6, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.prop('crate', -9.0, 1.2, 1.6, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
-    for (x, z) in ((-16.8, -1.8), (-16.2, -2.4)):
-        K.prop('barrel', x, 0, z, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
     for x in (-24, -12):
         K.light(x, 13.5, 0, '#fff0d8', 2.2, 30)
     K.light(-18, 9.0, 16, '#ffe9cc', 1.2, 16); K.light(-18, 9.0, -16, '#ffe9cc', 1.2, 16); K.light(0, -1.2, 0, '#bfe3ff', 1.0, 12)
@@ -147,8 +145,6 @@ def half(K, T):
     K.prop('crate', -25.8, -4.0, -20.8, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.prop('crate', -25.8, -2.8, -20.8, 0.3, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.prop('crate', -24.4, -4.0, -20.9, 1.1, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
-    K.prop('barrel', -18.0, -4.0, -21.2, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
-    K.prop('barrel', -18.7, -4.0, -21.3, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
     K.prop('pallet_stack', -21.5, -4.0, -17.2, 0.0, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
     K.area('Pump Chamber', -27, -22, -17, -16, -4, kind='tunnel')
     # brine pit dressing

@@ -104,8 +104,6 @@ def base(K, T):
     K.box('TF_Hazard', 12.0, -4.0, -15.8, 35.8, -3.99, -15.6)
     for (d, z) in ((4, -11), (16, -14), (22, -14), (33, -14)):
         K.lamp_prop(d, -0.33, z, color='#e8f2ff', intensity=1.1, dist=11)
-    K.prop('barrel', 1.0, -4.0, -15.0, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))       # sump cover
-    K.prop('barrel', 1.0, -4.0, -14.2, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
     K.prop('crate', 9.5, -4.0, -15.0, 0.3, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.area('Brine Tunnel', 0, -16, 36, -6, -4, team=T, kind='tunnel')
     # hatch stair from the tunnel up into the flag room
@@ -128,7 +126,6 @@ def base(K, T):
     crates(K, 13.2, 3.4, 2); crates(K, 14.6, 3.4, 1); crates(K, 20.5, 10.5, 2); crates(K, 21.0, -3.6, 1)
     K.prop('pallet_stack', 12.0, 0, 13.6, 0.0, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
     K.prop('pallet_stack', 14.0, 0, 13.6, 0.1, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
-    K.prop('barrel', 11.2, 0, 11.6, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
     K.light(17, 9.3, 4, '#ffe9c8', 1.6, 18)
     K.area('Loading Yard', 10, -6, 24, 15, 0, team=T)
     # ---------------- Aging Cellar = FLAG ROOM ----------------
