@@ -256,6 +256,7 @@ def mrshotgun(P, T):
         A.transform(st, A.frame_matrix(p, xx, yy, nrm))
         cap.append(A.make_obj('Shotgun_Stud%d' % k, A.transform(st, H), stud, 'spine_01'))
     print('shotgun cap fit', A.fit_hat(P, cap, cap[:3] + [o for o in cap if o.name == 'Shotgun_Bill'], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3]))
+    print('shotgun cap drape', A.drape(P, cap, cap[:3] + [o for o in cap if o.name == 'Shotgun_Bill'], H.col[2][:3]))
     obs += cap
     # hair: smooth, chunky cartoon clumps (matches the toon body; no stringy strands)
     hair = A.mat_plain('M_ShotgunHair', '#5e3b21', rough=0.55, col2='#432914', nscale=55, bump=0.04, bscale=180)

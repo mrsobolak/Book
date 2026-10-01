@@ -552,3 +552,49 @@ def fit_hat(P, objs, check, pivot, u, v, n, rng_deg=8.0, step_deg=2.0, clear=0.0
             vv.co = L @ vv.co
         me.update()
     return a, b, s
+
+
+def drape(P, objs, check, n, band=0.065, maxd=0.04, clear=0.0025, bins=72, step=0.0015):
+    """let a fabric hat's band hug the head: every vertex moves down along -n by drop(angle) * falloff(height), where
+    height is measured from the hat's lowest point and drop(angle) is the largest smooth drop for which no `check`
+    vertex gets closer than `clear` to (or into) the body. Everything in objs moves with the same field."""
+    n = Vector(n).normalized()
+    allw = [(ob, vv.index, ob.matrix_world @ vv.co) for ob in objs for vv in ob.data.vertices]
+    base = min((w.dot(n) for _, _, w in allw))
+    c = sum((w for _, _, w in allw), Vector()) / len(allw)
+    a1 = n.orthogonal().normalized(); a2 = n.cross(a1)
+    def ang_bin(w):
+        d = w - c
+        return int(((math.atan2(d.dot(a2), d.dot(a1)) / (2 * PI)) % 1.0) * bins) % bins
+    def fall(w):
+        h = w.dot(n) - base
+        return max(0.0, 1.0 - h / band) ** 1.5
+    def ok(p):
+        loc, nor, i, d = P.bvh.find_nearest(p)
+        return loc is None or (p - loc).dot(nor) >= clear
+    lim = [maxd] * bins
+    for ob in check:
+        mw = ob.matrix_world
+        for vv in ob.data.vertices:
+            w = mw @ vv.co
+            f = fall(w)
+            if f < 0.02:
+                continue
+            b = ang_bin(w)
+            d = 0.0
+            while d + step <= maxd and ok(w - n * (d + step) * f):
+                d += step
+            lim[b] = min(lim[b], d)
+    # min filter then gentle blur (never above the min-filtered value)
+    mf = [min(lim[(i + k) % bins] for k in range(-3, 4)) for i in range(bins)]
+    bl = [sum(mf[(i + k) % bins] for k in range(-3, 4)) / 7 for i in range(bins)]
+    field = [min(a, b) for a, b in zip(mf, bl)]
+    def apply(sc):
+        for ob in objs:
+            inv = ob.matrix_world.inverted(); me = ob.data
+            for vv in me.vertices:
+                w = ob.matrix_world @ vv.co
+                vv.co = inv @ (w - n * field[ang_bin(w)] * fall(w) * sc)
+            me.update()
+    apply(1.0)
+    return sum(field) / bins, min(field), max(field)
