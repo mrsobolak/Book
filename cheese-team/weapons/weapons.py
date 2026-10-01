@@ -657,6 +657,103 @@ def rocketlauncher():
 BUILDERS['RocketLauncher'] = rocketlauncher
 
 
+def flat_sticker(name, img, centre, x_side, w, h, rot_deg=0.0, circle=True, lift=0.3):
+    """die-cut sticker on a flat side face (x = const), centre (u, v) mm"""
+    ro = math.radians(rot_deg); NR, NA = 8, 48
+    verts = []; uvs = []; faces = []
+    def P(s, t):
+        u = centre[0] + s * math.cos(ro) - t * math.sin(ro); v = centre[1] + s * math.sin(ro) + t * math.cos(ro)
+        return W(u, v, x_side + (lift if x_side > 0 else -lift))
+    flip = x_side > 0                         # +x side seen from +x: u runs right-to-left on screen
+    if circle:
+        verts.append(P(0, 0)); uvs.append((0.5, 0.5))
+        for i in range(1, NR + 1):
+            for j in range(NA):
+                a = 2 * PI * j / NA; r = w / 2 * i / NR
+                s, t = r * math.cos(a), r * math.sin(a)
+                verts.append(P(s, t)); uvs.append((0.5 + s / w, 0.5 + t / w))
+        for j in range(NA):
+            faces.append((0, 1 + j, 1 + (j + 1) % NA))
+        for i in range(NR - 1):
+            for j in range(NA):
+                a = 1 + i * NA + j; b = 1 + i * NA + (j + 1) % NA
+                faces.append((a, a + NA, b + NA, b))
+    else:
+        for (s, t) in ((-w / 2, -h / 2), (w / 2, -h / 2), (w / 2, h / 2), (-w / 2, h / 2)):
+            verts.append(P(s, t)); uvs.append((s / w + 0.5, t / h + 0.5))
+        faces.append((0, 1, 2, 3))
+    bm = wk.bm_from(verts, faces)
+    uvl = bm.loops.layers.uv.new('UVMap'); bm.verts.index_update()
+    for f in bm.faces:
+        for lp in f.loops:
+            uu, vv = uvs[lp.vert.index]
+            lp[uvl].uv = ((1 - uu) if flip else uu, vv)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return make(name, bm, wk.image_mat('M_' + name, img, rough=0.3, bump=0.03), solid=0.0003)
+
+
+# ================================================================== 6. SEMI-AUTO PISTOL (Boom Boom, secondary)
+def semiauto():
+    blk = wk.steel('M_SaBlack', base='#121315', bare='#b3b6bb', rough=0.32, wear=1.8, scratch=1.2, edge_gain=16.0)
+    blk_dk = wk.steel('M_SaBlackDk', base='#0d0d0f', bare='#9fa2a7', rough=0.36, wear=1.0, scratch=0.8, edge_gain=12.0)
+    rub = wk.rubber('M_SaRubber', '#111112', rough=0.78, stipple=1.4)
+    # ---- slide: squared-off, flat top, rear serrations, ejection port, sights
+    sl = rounded([(-32, -3.5, 1.5), (168, -3.5, 1.5), (170, -1.0, 1.0), (170, 15.5, 2.0), (166, 18.5, 2.5), (-27, 18.5, 2.5),
+                  (-32, 14.0, 2.0)], n=6)
+    slide = make('Sa_Slide', profile(sl, -11.6, 11.6), blk, bevel=0.0012, seg=4, angle=30)
+    for k in range(11):
+        u = -26.0 + k * 2.4
+        for sd in (1, -1):
+            gb = box(W(u, 8.0, sd * 11.6), (0.0016, 0.0009, 0.0190))
+            cut(slide, gb, 'ser%d%d' % (k, sd))
+    cut(slide, box(W(62, 9.0, -9.5), (0.010, 0.040, 0.014)), 'ejport')
+    cut(slide, cyl(W(160, 0, 0), W(175, 0, 0), 0.0072, n=40), 'muzzle')
+    make('Sa_Bushing', lathe([(5.0, 160.0), (7.0, 160.0), (7.0, 169.5), (6.6, 170.4), (4.4, 170.4), (4.4, 160.0)], n=40,
+                             cap0=False, cap1=False), blk_dk, bevel=0.0)
+    make('Sa_Barrel', lathe([(5.4, 30.0), (5.4, 168.0)], n=32), wk.steel('M_SaBarrel', base='#5d6065', bare='#b2b5ba', rough=0.3), bevel=0.0)
+    bore = make('Sa_Bore', lathe([(5.5, 120.0), (5.5, 169.0)], n=32, cap0=True, cap1=False),
+                wk.steel('M_SaBore', base='#0b0b0c', bare='#222', rough=0.5, wear=0, scratch=0))
+    make('Sa_EjBarrelHood', profile(rounded([(42, 2.0, 1), (82, 2.0, 1), (82, 12.0, 1), (42, 12.0, 1)]), -9.4, -6.0),
+         wk.steel('M_SaHood', base='#5d6065', bare='#b2b5ba', rough=0.28), bevel=0.0004)
+    fs = rounded([(155, 18.0, 0), (162, 18.0, 0), (161, 24.0, 1.5), (157, 24.0, 1.5)])
+    make('Sa_FrontSight', profile(fs, -1.6, 1.6), blk_dk, bevel=0.0004)
+    rs = rounded([(-24, 18.0, 0), (-12, 18.0, 0), (-12, 24.5, 1.5), (-24, 23.0, 1.5)])
+    rso = make('Sa_RearSight', profile(rs, -6.0, 6.0), blk_dk, bevel=0.0005)
+    cut(rso, box(W(-18, 24.5, 0), (0.0030, 0.020, 0.0050)), 'notch')
+    # ---- frame: dust cover, trigger guard, grip frame with beavertail
+    fr = rounded([(-40, -3.5, 4), (150, -3.5, 2), (150, -14.0, 3), (88, -16.0, 4), (80, -40.0, 8), (44, -42.0, 9),
+                  (30, -24.0, 5), (8, -24.0, 6), (-2, -100.0, 4), (-8, -108.0, 3), (-44, -108.0, 3), (-46, -100.0, 3),
+                  (-32, -24.0, 10), (-50, -2.0, 6), (-52, 3.0, 3), (-44, 4.0, 2)], n=8)
+    hole = rounded([(36, -19.0, 4), (80, -19.0, 4), (74, -36.0, 8), (46, -37.0, 6)], n=6)
+    make('Sa_Frame', profile(fr, -10.4, 10.4, holes=[hole]), blk, bevel=0.0012, seg=4, angle=30)
+    tr = rounded([(50, -14, 0), (60, -14, 0), (60, -28, 2), (52, -28, 2)])
+    make('Sa_Trigger', profile(tr, -3.6, 3.6), blk_dk, bevel=0.0006)
+    # hammer (ring hammer), thumb safety, slide stop, mag release, grip panels, magazine base
+    hm = rounded([(-38, 2, 1.5), (-40, 18, 3), (-50, 22, 4), (-56, 16, 4), (-50, 8, 3), (-44, -2, 2)], n=6)
+    ham = make('Sa_Hammer', profile(hm, -3.2, 3.2), blk_dk, bevel=0.0005)
+    cut(ham, cyl(W(-49, 15, -5), W(-49, 15, 5), 0.0028, n=20), 'ring')
+    ts = rounded([(-34, 2.0, 2), (-14, 4.0, 2), (-12, 9.0, 2), (-30, 8.0, 2)])
+    make('Sa_ThumbSafety', profile(ts, 10.4, 12.2), blk_dk, bevel=0.0005)
+    ss = rounded([(10, -3.0, 2), (36, -1.5, 2), (36, 4.0, 2), (14, 4.5, 2)])
+    make('Sa_SlideStop', profile(ss, 10.4, 12.0), blk_dk, bevel=0.0005)
+    make('Sa_SlideStopPin', cyl(W(30, 0.5, 12.0), W(30, 0.5, 12.8), 0.0028, n=20), blk_dk)
+    make('Sa_MagRelease', cyl(W(14, -22, 10.4), W(14, -22, 12.0), 0.0045, n=24), blk_dk, bevel=0.0004)
+    gp = rounded([(-30, -30, 6), (2, -30, 5), (-6, -100, 4), (-40, -100, 4)], n=6)
+    for sd in (1, -1):
+        po = make('Sa_GripPanel%d' % sd, profile(gp, sd * 10.4 - (0 if sd > 0 else 3.0), sd * 10.4 + (3.0 if sd > 0 else 0)), rub,
+                  bevel=0.0022, seg=4)
+        wk.screw(W(-12, -36, sd * 13.4), Vector((sd, 0, 0)), r=0.0022, mat=blk_dk, name='Sa_GripScrew')
+        wk.screw(W(-20, -94, sd * 13.4), Vector((sd, 0, 0)), r=0.0022, mat=blk_dk, name='Sa_GripScrew')
+    flat_sticker('Sa_SkullSticker', 'st_skull.png', (-19.0, -64.0), 13.45, 22.0, 22.0, rot_deg=-10)
+    mb = rounded([(-42, -106, 2), (-4, -106, 2), (-4, -112, 2.5), (-44, -112, 2.5)])
+    make('Sa_MagBase', profile(mb, -9.0, 9.0), blk_dk, bevel=0.0010)
+    PIVOT['SemiAuto'] = (-22.0, -62.0)
+    return 'SemiAuto'
+
+
+BUILDERS['SemiAuto'] = semiauto
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
