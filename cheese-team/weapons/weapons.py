@@ -990,6 +990,105 @@ def leverrifle():
 BUILDERS['LeverRifle'] = leverrifle
 
 
+def grease_mat(name, base_mat_fn):
+    """wrap: takes an NT-built material function result and overlays dark glossy grease stains (procedural)"""
+    m = base_mat_fn
+    nt = m.node_tree
+    bs = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    co = nt.nodes.new('ShaderNodeTexCoord').outputs['Object']
+    nz = nt.nodes.new('ShaderNodeTexNoise'); nz.inputs['Scale'].default_value = 28.0; nz.inputs['Detail'].default_value = 8
+    nz.inputs['Distortion'].default_value = 1.5
+    nt.links.new(co, nz.inputs['Vector'])
+    rp = nt.nodes.new('ShaderNodeValToRGB'); rp.color_ramp.elements[0].position = 0.60; rp.color_ramp.elements[1].position = 0.70
+    nt.links.new(nz.outputs['Fac'], rp.inputs['Fac'])
+    sep = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(rp.outputs['Color'], sep.inputs[0])
+    m_ = sep.outputs[0]
+    for sock, val in (('Base Color', (0.012, 0.010, 0.008, 1)), ('Roughness', 0.18)):
+        mix = nt.nodes.new('ShaderNodeMix'); mix.data_type = 'RGBA' if sock == 'Base Color' else 'FLOAT'
+        nt.links.new(m_, mix.inputs['Factor'])
+        if bs.inputs[sock].is_linked:
+            nt.links.new(bs.inputs[sock].links[0].from_socket, mix.inputs['A'])
+        else:
+            mix.inputs['A'].default_value = bs.inputs[sock].default_value
+        mix.inputs['B'].default_value = val
+        nt.links.new(mix.outputs['Result'], bs.inputs[sock])
+    return m
+
+
+# ================================================================== 9. SMG (Mechanic, primary)
+def smg():
+    blk = grease_mat('g', wk.steel('M_SmgBody', base='#161719', bare='#9fa2a7', rough=0.5, wear=1.2, scratch=1.4, edge_gain=8.0, tint_var=0.08))
+    blk_dk = wk.steel('M_SmgDark', base='#0f1011', bare='#8d9095', rough=0.45, wear=0.8, scratch=0.8, edge_gain=8.0)
+    orange = wk.paint('M_SmgOrange', '#e2620e', under='#1a1a1a', under_metal=0.0, rough=0.55, wear=1.6, scuff=1.3, col_var=0.12)
+    zipm = wk.plastic('M_SmgZipTie', '#121212', rough=0.4)
+    # ---- tubular receiver with cocking slot, rear cap, front nut
+    R = 19.0
+    rcv = make('Smg_Receiver', lathe([(R, -40.0), (R, 230.0)], n=64, axis_v=0.0), blk)
+    cut(rcv, box(W(80, 0, -R), (0.008, 0.110, 0.006)), 'cockslot')
+    cut(rcv, box(W(150, 6, R - 1), (0.010, 0.050, 0.020)), 'ejport')
+    make('Smg_CockHandle', cyl(W(40, 0, -R + 2), W(40, 0, -R - 14), 0.0042, n=20), blk_dk)
+    make('Smg_CockKnob', sphere(W(40, 0, -R - 16), 0.0062, seg=24, rings=12, scale=(1, 1, 0.8)), blk_dk)
+    make('Smg_RearCap', lathe([(0, -52.0), (R - 2, -52.0), (R + 1.5, -49.0), (R + 1.5, -38.0), (R, -36.0)], n=64), blk_dk, bevel=0.0005)
+    # ---- ribbed barrel shroud with cooling holes, short barrel
+    sh = make('Smg_Shroud', lathe([(R - 1.0, 228.0), (R - 1.0, 330.0), (R - 4.0, 336.0)], n=64), blk)
+    for k in range(6):
+        for j in range(8):
+            a = 2 * PI * j / 8 + (k % 2) * PI / 8
+            uu = 245.0 + k * 14.0
+            cut(sh, cyl(W(uu, R * math.sin(a) * 1.4, R * math.cos(a) * 1.4), W(uu, 0, 0), 0.0036, n=16), 'h%d%d' % (k, j))
+    for k in range(5):                                     # raised rib rings
+        uu = 238.0 + k * 22.0
+        make('Smg_Rib', lathe([(R - 0.5, uu), (R + 1.2, uu + 0.5), (R + 1.2, uu + 3.5), (R - 0.5, uu + 4.0)], n=64, cap0=False, cap1=False), blk)
+    bo = make('Smg_Barrel', lathe([(7.0, 300.0), (7.0, 352.0), (6.4, 354.0)], n=32), blk_dk)
+    cut(bo, cyl(W(330, 0, 0), W(360, 0, 0), 0.0046, n=24), 'bore')
+    make('Smg_FrontSight', profile(rounded([(318, R - 2, 0), (328, R - 2, 0), (327, R + 10, 1.5), (319, R + 10, 1.5)]), -1.5, 1.5), blk_dk, bevel=0.0003)
+    make('Smg_RearSight', profile(rounded([(-30, R - 2, 0), (-14, R - 2, 0), (-14, R + 8, 2), (-30, R + 8, 2)]), -5.0, 5.0), blk_dk, bevel=0.0005)
+    # ---- side-mounted magazine (sticking out to the left, +x) with housing + zip tie
+    hb = profile(rounded([(115, -14, 2), (165, -14, 2), (165, 14, 2), (115, 14, 2)]), R - 4, R + 22)
+    make('Smg_MagHousing', hb, blk, bevel=0.0014)
+    mg = profile(rounded([(124, -11, 2), (156, -11, 2), (156, 11, 2), (124, 11, 2)]), R + 22, R + 190)
+    mag = make('Smg_Magazine', mg, blk_dk, bevel=0.0012)
+    for k in range(6):
+        cut(mag, box(W(140, 11.0, R + 50 + k * 22), (0.012, 0.0020, 0.006)), 'rib%d' % k)
+    make('Smg_MagBase', profile(rounded([(121, -13, 2), (159, -13, 2), (159, 13, 2), (121, 13, 2)]), R + 190, R + 197), blk, bevel=0.0010)
+    # zip tie around housing + magazine
+    path = []
+    for i in range(48):                                   # a rectangle-ish loop round housing+mag around x
+        a = 2 * PI * i / 48
+        x = (R + 16) + 22.0 * math.cos(a); v = 15.5 * math.sin(a)
+        path.append(W(140.0, v, x))
+    make('Smg_ZipTie', tube(path, 0.0018, n=6, flat=0.4, closed=True, up=Vector((0, 1, 0))), zipm)
+    make('Smg_ZipHead', box(W(140, 15.5, R + 34) + Vector((0, 0, 0.002)), (0.0065, 0.0065, 0.0052)), zipm)
+    make('Smg_ZipTail', tube([W(140, 18, R + 34), W(140, 26, R + 37), W(141, 31, R + 42)], 0.0013, n=6, flat=0.4), zipm)
+    # ---- trigger group + orange-painted pistol grip
+    th = rounded([(70, -14, 0), (150, -14, 0), (148, -22, 3), (120, -26, 4), (112, -50, 8), (80, -52, 8), (72, -36, 4)], n=6)
+    hole = rounded([(86, -28, 4), (114, -28, 4), (108, -46, 7), (90, -46, 6)], n=6)
+    make('Smg_TriggerHousing', profile(th, -9.5, 9.5, holes=[hole]), blk, bevel=0.0014)
+    make('Smg_Trigger', profile(rounded([(102, -24, 0), (101, -32, 2), (97, -40, 2), (94.5, -40, 1.5), (97.5, -32, 2), (98, -24, 0)]), -2.4, 2.4),
+         blk_dk, bevel=0.0004)
+    g = Grip((76.0, -30.0), (64.0, -78.0), (46.0, -118.0),
+             depth=lambda t: (15.0 + 1.5 * math.sin(PI * t), 17.0 + 2.0 * t), width=lambda t: 13.5 + 1.0 * math.sin(PI * t), e=2.6, butt=0.06)
+    fg = lambda t, th: 1.0 - 0.07 * max(0.0, math.cos(th)) ** 4 * max(0.0, math.sin(PI * (t - 0.18) / 0.62 * 3.0)) * (0.18 < t < 0.80)
+    Rr = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=48, nth=56, fn=fg)
+    make('Smg_Grip', wk.loft([r[:-1] for r in Rr], closed=True, cap1=True), orange)
+    # ---- wire folding stock (folded out)
+    S = blk_dk
+    for sd in (1, -1):
+        p = [W(-50, 8, sd * 14), W(-140, 2, sd * 15), W(-260, -12, sd * 15), W(-300, -18, sd * 15)]
+        make('Smg_StockWire%d' % sd, tube(wk.spline(p, 6), 0.0040, n=12), S)
+        p2 = [W(-50, -12, sd * 14), W(-160, -40, sd * 15), W(-300, -66, sd * 15)]
+        make('Smg_StockWireLo%d' % sd, tube(wk.spline(p2, 6), 0.0036, n=12), S)
+    make('Smg_StockButt', tube([W(-300, -18, 15), W(-306, -40, 16), W(-300, -66, 15)], 0.0045, n=12), S)
+    make('Smg_StockButtPad', profile(rounded([(-312, -8, 4), (-300, -8, 4), (-300, -74, 4), (-312, -74, 4)]), -16.0, 16.0),
+         wk.rubber('M_SmgPad', '#141414'), bevel=0.0020)
+    make('Smg_StockHinge', cyl(W(-46, -2, -16), W(-46, -2, 16), 0.0060, n=24), S)
+    PIVOT['SMG'] = (g.centre(0.45).x, g.centre(0.45).y)
+    return 'SMG'
+
+
+BUILDERS['SMG'] = smg
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
