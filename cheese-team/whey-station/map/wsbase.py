@@ -73,7 +73,7 @@ def base(K, T):
     K.wall('CMU', 'z', 6, 15.2, 10, WT, 0, 10, holes=[(8, 11, 0, 3.0)])
     P.opening('z', 8, 11, 10, WT, 0, 3.0, mat='Steel')
     K.wall('CMU', 'x', 0, 10, 15.2, WT, 0, 6.0)
-    P.stairs(1.5, 15.0 - RUN6, -PI / 2, 2.0, 0.0, 6.0, kind='steel')
+    P.stairs(1.5, 7.4, -PI / 2, 2.0, 0.0, 6.0, kind='steel', going=0.25)    # v1 started 0.16 m from the wall: unreachable from below
     P.rail(2.65, 15.2, 9.8, 15.2, 6.0)
     K.light(5, 9.3, 10, '#ffe6c0', 1.0, 12)
     K.area('Stair Hall', 0, 6, 10, 15, 0, team=T)

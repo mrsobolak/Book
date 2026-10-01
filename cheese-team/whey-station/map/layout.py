@@ -1,6 +1,6 @@
 # Whey Station -- shared layout constants (game frame: X right, Y up, Z lateral, metres).
 #  Cheddar base: base-local frame placed at x=-76 facing +x.  Bleu: same base rotated 180 deg at x=+76.
-#  Middle: x -40..40, point-symmetric about the origin.
+#  Middle: x -40..40 (Vat Hall -30..30 + Turbine-style hallways), point-symmetric about the origin.
 #  Levels: -4 brine tunnels (LOW route), 0 ground (MAIN route), 6 conveyor galleries + hall catwalks (HIGH route).
 import math
 PI = math.pi
@@ -11,8 +11,9 @@ FLAG_LOCAL = (20.0, 0.3, -19.0)          # flag plinth in base-local coords
 FLAGS = {'C': [-56.0, 0.3, -19.0], 'B': [56.0, 0.3, 19.0]}
 # timing waypoints (world) for the three routes, Cheddar attacking Bleu
 ROUTES = {
-    'main': [[-71, 0, 0], [-30, 0, 0], [0, 0, 11], [30, 0, 0], [62, 0, 0], [62, 0, 8], [56, 0, 19]],
-    'high': [[-71, 0, 0], [-75, 6, 17], [-30, 6, 17.5], [0, 6, 17.5], [30, 6, -17.5]][:0] or
-            [[-71, 0, 0], [-74.5, 6, 17], [-30, 6, 17.5], [20, 6, 17.5], [33, 0, 17.5], [44, 0, 16], [56, 0, 19]],
+    'main': [[-71, 0, 0], [-37, 0, 0], [-37, 0, 7], [-28, 0, 7], [0, 0, 11], [28, 0, -7], [37, 0, -7], [37, 0, 0],
+             [62, 0, 0], [62, 0, 8], [56, 0, 19]],
+    'high': [[-71, 0, 0], [-74.5, 6, 16], [-36, 6, 17.5], [-34, 6, 21], [-28, 6, 21], [29, 6, 21], [33, 6, 16],
+             [35, 6, 14.5], [35, 0, 4.5], [38, 0, 11.5], [44, 0, 11.5], [56, 0, 19]],
     'low':  [[-71, 0, 0], [-72, -4, -9], [-30, -4, -14], [0, -4, 0], [30, -4, 14], [46, -4, 15], [53, 0, 15], [56, 0, 19]],
 }
