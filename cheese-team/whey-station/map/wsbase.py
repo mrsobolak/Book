@@ -129,8 +129,21 @@ def base(K, T):
     K.cyl('TF_Conc', fx, 0.3, fz, 0.55, 0.12, seg=24, col=True)
     K.cyl(tm('TF_Glow'), fx, 0.42, fz, 0.38, 0.02, seg=24)
     K.box('Glass', fx - 3, 8.05, fz - 3, fx + 3, 8.1, fz + 3)
+    # capture lamp: a round steel hood hanging over the pad on three cables, glowing team colour underneath
+    TP = tm('TF_Paint')
+    K.cyl('TF_Steel', fx, 5.6, fz, 2.8, 0.25, seg=48)
+    K.cyl(TP, fx, 5.63, fz, 2.84, 0.16, seg=48)
+    K.cyl(tm('TF_Glow'), fx, 5.58, fz, 2.5, 0.02, seg=48)
+    for k in range(3):
+        a = k * 2 * PI / 3 + 0.5
+        K.cyl('TF_Steel', fx + 2.3 * math.cos(a), 5.85, fz + 2.3 * math.sin(a), 0.025, 2.15, seg=6)
+    # team backdrop behind the pad: corrugated team-colour cladding framed in steel on the back wall
+    K.box(tm('TF_Corr'), 15.0, 0.0, -23.8, 24.0, 7.5, -23.7)
+    for d in (15.0, 24.0):
+        K.box('TF_Steel', d - 0.1, 0.0, -23.8, d + 0.1, 7.6, -23.62)
+    K.box('TF_Steel', 14.9, 7.5, -23.8, 24.1, 7.7, -23.62)
     K.light(fx, 7.5, fz, '#ffb070' if T == 'C' else '#8ab8ff', 2.6, 14)
-    K.light(fx, 5.0, fz, '#fff4e0', 1.2, 10)
+    K.light(fx, 4.8, fz, '#fff4e0', 1.2, 10)
     # low cover walls for the defenders, one by each ground door
     for (a0, b0, a1, b1) in ((13.4, -9.8, 16.6, -9.4), (25.0, -20.6, 28.2, -20.2)):
         K.box('TF_Conc', a0, 0, b0, a1, 1.2, b1, col=True)
