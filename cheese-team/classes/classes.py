@@ -369,26 +369,26 @@ def wristband(P, bone, leather, chrome, t=0.55, side=''):
     x = ax.orthogonal().normalized(); y = ax.cross(x)
     F = A.frame_matrix(c, x, y, ax)
     obs = []
-    h, ri, ro = 0.021, 0.0105, 0.0195
+    h, ri, ro = 0.026, 0.0105, 0.0255
     sec = [(ri, -h), (ro - 0.003, -h), (ro - 0.0005, -h + 0.0012), (ro, -h + 0.004), (ro + 0.0006, 0.0), (ro, h - 0.004),
            (ro - 0.0005, h - 0.0012), (ro - 0.003, h), (ri, h)]
     bm = A.revolve(sec, 1.0, 1.0, n=40)
     obs.append(A.make_obj('Rocket_Cuff%s' % side, A.transform(bm, F), leather, bone))
     stitch = A.mat_plain('M_CuffStitch', '#cfc3a6', rough=0.7, bump=0.0)
-    for zz in (-h + 0.0045, h - 0.0045):
+    for zz in (-h + 0.0050, h - 0.0050):
         for k in range(20):                                   # dashed stitch line
             f0 = 2 * PI * k / 20; f1 = f0 + 2 * PI / 20 * 0.55
             pts = [Vector(((ro + 0.0004) * math.cos(f0 + (f1 - f0) * i / 3), (ro + 0.0004) * math.sin(f0 + (f1 - f0) * i / 3), zz)) for i in range(4)]
             bm = A.tube(pts, 0.00065, n=5)
             obs.append(A.make_obj('Rocket_CuffStitch%s_%d_%d' % (side, int(zz > 0), k), A.transform(bm, F), stitch, bone))
-    for row, zz in enumerate((-0.0085, 0.0085)):
+    for row, zz in enumerate((-0.0105, 0.0105)):
         for k in range(7):
             f = 2 * PI * (k + 0.5 * row) / 7
             r_dir = Vector((math.cos(f), math.sin(f), 0))
             t_dir = Vector((-math.sin(f), math.cos(f), 0))
             S = A.frame_matrix(Vector((0, 0, zz)) + r_dir * (ro - 0.0005), t_dir, Vector((0, 0, 1)), r_dir)
-            sp = A.lathe([(1.0, 0.0), (1.0, 0.0012), (0.92, 0.0018), (0.55, 0.0068), (0.14, 0.0118), (0.0, 0.0124)],
-                         0.0056, 0.0056, e=2.0, n=16)            # rivet base + cone with a blunted tip
+            sp = A.lathe([(1.0, 0.0), (1.0, 0.0012), (0.92, 0.0018), (0.55, 0.0088), (0.14, 0.0158), (0.0, 0.0166)],
+                         0.0072, 0.0072, e=2.0, n=16)            # rivet base + cone with a blunted tip
             A.transform(sp, S)
             obs.append(A.make_obj('Rocket_Spike%s_%d_%d' % (side, row, k), A.transform(sp, F), chrome, bone))
     return obs
@@ -400,19 +400,19 @@ def rocketguy(P, T):
     lining = A.mat_plain('M_HelmetLining', '#24201d', rough=0.85, col2='#151311', nscale=200, bump=0.15, bscale=600)
     rubber = A.mat_plain('M_HelmetTrim', '#161515', rough=0.55, bump=0.03)
     chrome = A.mat_metal('M_Chrome', '#e8e8ea', rough=0.12, scratches=0.4)
-    a, b = 0.236, 0.168
+    a, b = 0.238, 0.174
     H = hat_frame(T, fwd=math.radians(-2), side=math.radians(-11), lift=0.0, shift=(0.004, 0.004))
     prof = [(1.0, -0.150), (1.0, -0.100), (1.0, -0.050), (0.997, 0.0), (0.975, 0.048), (0.925, 0.092), (0.845, 0.130),
             (0.725, 0.160), (0.565, 0.181), (0.38, 0.193), (0.19, 0.199), (0.0, 0.201)]
-    shell = A.lathe(prof, a, b, e=2.4, n=112, cap_bottom=False)
+    shell = A.lathe(prof, a, b, e=3.6, n=128, cap_bottom=False)
     def cut_z(fx, fy):                       # opening: brow edge high at the front, cheek guards, low at the back
         th = math.degrees(abs(math.atan2(fx / a, -fy / b)))      # 0 = straight ahead, 180 = back
         if th < 50:
             return -0.058 + 0.010 * (th / 50) ** 2
         if th < 78:
             u = (th - 50) / 28
-            return -0.048 - 0.095 * (3 * u * u - 2 * u ** 3)
-        return -0.150 + 0.006 * min(1.0, (th - 78) / 40)
+            return -0.048 - 0.072 * (3 * u * u - 2 * u ** 3)
+        return -0.120 + 0.012 * min(1.0, (th - 78) / 60)
     dele = []
     for f in shell.faces:
         c = f.calc_center_median()
@@ -422,7 +422,7 @@ def rocketguy(P, T):
     bmesh.ops.delete(shell, geom=[v for v in shell.verts if not v.link_faces], context='VERTS')
     loops = A.boundary_loops(shell)
     lin = shell.copy()
-    A.transform(lin, Matrix.Diagonal((0.955, 0.94, 0.96, 1.0)) @ Matrix.Translation((0, 0, -0.004)))
+    A.transform(lin, Matrix.Diagonal((0.978, 0.97, 0.975, 1.0)) @ Matrix.Translation((0, 0, -0.002)))
     A.local_uv(shell)
     helm = [A.make_obj('Rocket_HelmetShell', A.transform(shell, H), paint, 'spine_01', solid=0.007)]
     helm.append(A.make_obj('Rocket_HelmetLining', A.transform(lin, H), lining, 'spine_01', solid=0.006))
@@ -434,7 +434,7 @@ def rocketguy(P, T):
         bm = A.tube(pts, 0.0062, n=10, cap=False, flat=1.3, up=Vector((0, 0, 1)))
         helm.append(A.make_obj('Rocket_HelmetTrim%d' % i, A.transform(bm, H), rubber, 'spine_01'))
     # three chrome visor snaps across the brow
-    sbvh = A.bvh_of(A.lathe(prof, a * 1.0, b * 1.0, e=2.4, n=112, cap_bottom=False))
+    sbvh = A.bvh_of(A.lathe(prof, a * 1.0, b * 1.0, e=3.6, n=128, cap_bottom=False))
     for k, sx in enumerate((-0.085, 0.0, 0.085)):
         loc, nor, idx, d = sbvh.ray_cast(Vector((sx, -1.0, -0.028)), Vector((0, 1, 0)))
         if loc is None:
@@ -448,46 +448,47 @@ def rocketguy(P, T):
     rubber_g = A.mat_plain('M_GoggleRubber', '#2a2522', rough=0.6, bump=0.06, bscale=500)
     lens = mat_lens('M_GoggleLens', '#6b3e12')
     strap = A.mat_plain('M_GoggleStrap', '#3c3a37', rough=0.75, col2='#2a2826', nscale=300, bump=0.12, bscale=900)
-    gz = 0.085
+    gz = 0.092
+    gr = 1.42                                 # goggle size factor
     centers = []
-    for sx in (-0.062, 0.062):
+    for sx in (-0.074, 0.074):
         loc, nor, idx, d = sbvh.ray_cast(Vector((sx, -1.0, gz)), Vector((0, 1, 0)))
         nor = nor if nor.y < 0 else -nor
         nor = (nor + Vector((0, -0.25, 0.0))).normalized()
         centers.append((loc, nor))
         xx = Vector((0, 0, 1)).cross(nor).normalized(); yy = nor.cross(xx)
         G = A.frame_matrix(loc + nor * 0.004, xx, yy, nor)
-        cup = A.lathe([(0.86, -0.004), (1.0, 0.0), (1.06, 0.006), (1.05, 0.014), (0.98, 0.019), (0.9, 0.020)], 0.033, 0.030, n=40,
+        cup = A.lathe([(0.86, -0.004), (1.0, 0.0), (1.06, 0.006), (1.05, 0.014), (0.98, 0.019), (0.9, 0.020)], 0.033 * gr, 0.030 * gr, n=48,
                       cap_bottom=True, cap_top=False)
         helm.append(A.make_obj('Rocket_GoggleCup%d' % len(centers), A.transform(A.transform(cup, G), H), rubber_g, 'spine_01'))
-        ring = A.revolve([(0.86, 0.017), (0.98, 0.017), (1.0, 0.0205), (0.97, 0.0235), (0.86, 0.0225)], 0.033, 0.030, n=48)
+        ring = A.revolve([(0.86, 0.017), (0.98, 0.017), (1.0, 0.0205), (0.97, 0.0235), (0.86, 0.0225)], 0.033 * gr, 0.030 * gr, n=56)
         helm.append(A.make_obj('Rocket_GoggleRim%d' % len(centers), A.transform(A.transform(ring, G), H), chrome, 'spine_01'))
-        ln = A.lathe([(1.0, 0.0), (0.96, 0.0035), (0.75, 0.0058), (0.0, 0.0066)], 0.0285, 0.0258, n=48)
+        ln = A.lathe([(1.0, 0.0), (0.96, 0.0035), (0.75, 0.0058), (0.0, 0.0066)], 0.0285 * gr, 0.0258 * gr, n=56)
         A.transform(ln, Matrix.Translation((0, 0, 0.0168)))
         helm.append(A.make_obj('Rocket_GoggleLens%d' % len(centers), A.transform(A.transform(ln, G), H), lens, 'spine_01'))
     (l0, n0), (l1, n1) = centers
-    p0 = l0 + n0 * 0.014 + Vector((0.030, 0, 0)); p1 = l1 + n1 * 0.014 - Vector((0.030, 0, 0))
+    p0 = l0 + n0 * 0.014 + Vector((0.030 * gr, 0, 0)); p1 = l1 + n1 * 0.014 - Vector((0.030 * gr, 0, 0))
     mid = (p0 + p1) / 2 + (n0 + n1).normalized() * 0.006
     bm = A.tube([p0, (p0 + mid) / 2 + Vector((0, -0.002, 0)), mid, (p1 + mid) / 2 + Vector((0, -0.002, 0)), p1], 0.0042, n=10, flat=0.7)
     helm.append(A.make_obj('Rocket_GoggleBridge', A.transform(bm, H), rubber_g, 'spine_01'))
     # strap: around the dome from one cup to the other, round the back, hugging the paint
     spts = []
     for i in range(41):
-        f = -PI / 2 + math.radians(32) + (2 * PI - math.radians(64)) * i / 40
+        f = -PI / 2 + math.radians(38) + (2 * PI - math.radians(76)) * i / 40
         dvec = Vector((math.cos(f), math.sin(f), 0.0))
         zz = gz - 0.012 + 0.010 * math.sin(f + PI / 2) ** 2
         loc, nor, idx, d = sbvh.ray_cast(Vector((0, 0, zz)) + dvec * 1.0, -dvec)
         if loc is not None:
             spts.append(loc + nor.normalized() * 0.0045 * (1 if nor.dot(dvec) > 0 else -1))
-    bm = A.ribbon(spts, lambda t: 0.021, lambda t, tan: (spts[min(len(spts) - 1, int(t * (len(spts) - 1)))] - Vector((0, 0, gz))).normalized(), thick=0.0)
+    bm = A.ribbon(spts, lambda t: 0.026, lambda t, tan: (spts[min(len(spts) - 1, int(t * (len(spts) - 1)))] - Vector((0, 0, gz))).normalized(), thick=0.0)
     helm.append(A.make_obj('Rocket_GoggleStrap', A.transform(bm, H), strap, 'spine_01', solid=0.0022))
     print('rocket helmet fit', A.fit_hat(P, helm, helm[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=6.0))
     obs += helm
     # big band-aid over the centre hole, like it's covering a wound; one corner peeling up
     tan = A.mat_image('M_Bandaid', 'bandaid.png', rough=0.6, bump=0.05)
-    L, W = 0.150, 0.050
-    ang = math.radians(24)
-    cx, cz = 0.052, 0.648
+    L, W = 0.185, 0.062
+    ang = math.radians(20)
+    cx, cz = 0.048, 0.636
     ud = Vector((math.cos(ang), 0, math.sin(ang))); vd = Vector((-math.sin(ang), 0, math.cos(ang)))
     verts = []; uvs = []; faces = []
     nu, nv = 48, 12
