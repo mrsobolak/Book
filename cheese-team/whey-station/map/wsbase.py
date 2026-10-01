@@ -89,16 +89,23 @@ def base(K, T):
     P.rail(1.33, -10.05, 7.0, -10.05, 0.0); P.rail(1.33, -7.95, 7.0, -7.95, 0.0); P.rail(1.28, -10, 1.28, -8, 0.0)
     K.light(6, 4.6, -10, '#d6ecff', 0.9, 9)
     # sump + brine tunnel (y -4)
-    K.slab('FloorDmg', 0, -16, 12, -6, -4.3, -4.0)
-    K.slab('FloorDmg', 12, -16, 36, -12, -4.3, -4.0)
-    K.wall('Ribbed', 'z', -16, -6, 0, WT, -4.0, -0.3)
-    K.wall('Ribbed', 'x', 0, 12, -6, WT, -4.0, -0.3)
-    K.wall('Ribbed', 'x', 0, 36, -16, WT, -4.0, -0.3)
-    K.wall('Ribbed', 'z', -12, -6, 12, WT, -4.0, -0.3)
-    K.wall('Ribbed', 'x', 12, 36, -12, WT, -4.0, -0.3)
-    K.box('Grate', 12.4, -4.02, -13.6, 35.8, -3.98, -12.6)
-    for d in (5, 18, 30):
-        K.light(d, -0.8, -13.5 if d > 12 else -11, '#9fd0ff', 0.8, 9)
+    K.slab('TF_Floor', 0, -16, 12, -6, -4.3, -4.0)
+    K.slab('TF_Floor', 12, -16, 36, -12, -4.3, -4.0)
+    K.wall2('z', -16, -6, 0, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('x', 0, 12, -6, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('x', 0, 36, -16, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('z', -12, -6, 12, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('x', 12, 36, -12, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.box('TF_Grate', 12.4, -4.02, -13.6, 35.8, -3.98, -12.6)
+    K.box('TF_Ceiling', 0, -0.33, -16, 12, -0.3, -6)                                # tunnel ceilings (under the slabs above)
+    K.box('TF_Ceiling', 12, -0.33, -16, 36, -0.3, -12)
+    K.box('TF_Hazard', 0.2, -4.0, -15.8, 11.8, -3.99, -15.6)                           # floor edge stripes
+    K.box('TF_Hazard', 12.0, -4.0, -15.8, 35.8, -3.99, -15.6)
+    for (d, z) in ((4, -11), (17, -14), (24, -14), (33, -14)):
+        K.lamp_prop(d, -1.1, z, color='#cfe6ff', intensity=1.1, dist=11)
+    K.prop('barrel', 1.0, -4.0, -15.0, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))       # sump cover
+    K.prop('barrel', 1.0, -4.0, -14.2, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
+    K.prop('crate', 9.5, -4.0, -15.0, 0.3, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.area('Brine Tunnel', 0, -16, 36, -6, -4, team=T, kind='tunnel')
     # hatch stair from the tunnel up into the flag room
     P.stairs(30.0, -14.7, PI, 2.0, -4.0, 0.0, kind='steel')                       # clear of the tunnel wall (face at -15.8)

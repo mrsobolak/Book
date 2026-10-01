@@ -2,7 +2,7 @@
 #  Vat Hall      x -30..30, z -24..24, floor 0, roof 16: six curd vats, brine pit (y -4) in the centre,
 #                catwalks at y 6 along both long walls, a conveyor bridge across the pit.
 #  Hallways      (Cheddar half, x -40..-30, Turbine-style L turns): main L-hallway z -4..10; gallery junction z 14..24
-#                at y 6; brine-tank room z -24..-4 (ground + catwalk); brine tunnel x -40..-5 z -16..-12 at y -4.
+#                at y 6; brine-tank room z -24..-4 (ground + catwalk); brine tunnel x -40..-5 z -16..-12 at y -4 with a pump chamber halfway.
 import math
 import wsparts
 PI = math.pi
@@ -34,7 +34,7 @@ def pump_skid(K, x, z):
 def half(K, T):
     P = wsparts.Parts(K, T)
     # ---------------- Vat Hall (west half; the rotated pass builds the east half): x -30..30, z -24..24, roof 16 ----------------
-    K.slab('Epoxy', -30, -24, 0, 24, -0.3, 0.0, holes=[(-4.8, -8, 0, 8)])          # hall floor with the pit hole
+    K.slab('Epoxy', -30, -24, 0, 24, -0.3, 0.0, holes=[(-4.8, -8, 0, 8), (-24, -21, -20, -18)])          # hall floor with the pit hole
     K.slab('CorrWorn', -30, -24, 0, 24, 16.0, 16.4, holes=[(-22, -6, -8, 6)], col=False)   # roof with skylight
     for x in (-22, -15):
         K.box('Glass', x, 16.05, -6, x + 7, 16.1, 6)
@@ -70,10 +70,10 @@ def half(K, T):
         P.rail(s * 1.55, 0, s * 1.55, 18.8, 6.0, panel=P.tm('TF_Paint'))
     P.ibeam(0, 10.0, 0, 5.25, w=0.3)
     # brine pit: channel x -5..5, z -16..16 at y -4 (open to the hall for |z|<8)
-    K.slab('FloorDmg', -5, -16, 0, 16, -4.3, -4.0)
-    K.wall('Precast', 'z', -16, 16, -5, WT, -4.0, -0.3, holes=[(-16, -12, -4.0, -1.0)])   # top stays under the floor slab (no z-fight strip)
-    K.wall('Precast', 'x', -5, 5, 16, WT, -4.0, -0.3)
-    K.box('Grate', -4.6, -4.02, -15.6, -0.2, -3.98, 15.6)
+    K.slab('TF_Floor', -5, -16, 0, 16, -4.3, -4.0)
+    K.wall2('z', -16, 16, -5, WT, -4.0, -0.3, holes=[(-16, -12, -4.0, -1.0)], lower='TF_Tile', upper='TF_Conc', band=1.3)   # top stays under the floor slab (no z-fight strip)
+    K.wall2('x', -5, 5, 16, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.box('TF_Grate', -4.6, -4.02, -15.6, -0.2, -3.98, 15.6)
     P.stairs(-3.75, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')            # clear of the pit wall
     P.rail(-5.05, -8, -5.05, 8, 0.0)
     P.rail(-3.0, 8.05, 5.0, 8.05, 0.0)
@@ -121,13 +121,38 @@ def half(K, T):
         K.cyl('Stainless', x, 0.4 + h, z, r, 0.6, seg=20, r2=0.4)
     K.light(-35, 8.8, -14, '#d8ecff', 1.1, 14)
     K.area('Brine Tanks', -40, -24, -30, -4, 0, team=T)
-    # brine tunnel (LOW route) x -40..-5, z -16..-12, y -4 -- ceiling is the floor above
-    K.slab('FloorDmg', -40, -16, -5, -12, -4.3, -4.0)
-    K.wall('Ribbed', 'x', -40, -5, -16, WT, -4.0, -0.3)
-    K.wall('Ribbed', 'x', -40, -5, -12, WT, -4.0, -0.3)
-    K.box('Grate', -39.6, -4.02, -14.5, -5.4, -3.98, -13.5)
-    for x in (-34, -22, -10):
-        K.light(x, -0.8, -14, '#9fd0ff', 0.8, 9)
+    # brine tunnel (LOW route) x -40..-5, z -16..-12, y -4, with a pump chamber (x -27..-17, z -22..-16) halfway:
+    # a wider room with cover and a grate window up into the Vat Hall floor, so the long tube is broken up
+    K.slab('TF_Floor', -40, -16, -5, -12, -4.3, -4.0)
+    K.slab('TF_Floor', -27, -22, -17, -16, -4.3, -4.0)
+    K.wall2('x', -40, -5, -16, WT, -4.0, -0.3, holes=[(-27, -17, -4.0, -0.3)], lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('x', -40, -5, -12, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('x', -27, -17, -22, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('z', -22, -16, -27, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    K.wall2('z', -22, -16, -17, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    for x in (-27, -17):                                                               # hazard-striped columns at the chamber mouth
+        K.box('TF_Hazard', x - 0.3, -4.0, -16.3, x + 0.3, -0.3, -15.7, col=True)
+    K.box('TF_Ceiling', -40, -0.33, -16, -5, -0.3, -12)
+    K.box('TF_Ceiling', -27, -0.33, -22, -24, -0.3, -16); K.box('TF_Ceiling', -20, -0.33, -22, -17, -0.3, -16)
+    K.box('TF_Ceiling', -24, -0.33, -18, -20, -0.3, -16); K.box('TF_Ceiling', -24, -0.33, -22, -20, -0.3, -21)
+    K.box('TF_Grate', -24, -0.08, -21, -20, 0.0, -18, col=True, bevel=False)            # walkable grate window in the hall floor
+    K.box('TF_Grate', -39.6, -4.02, -14.5, -5.4, -3.98, -13.5)                            # drain channel
+    K.box('TF_Hazard', -40, -4.0, -15.8, -27.3, -3.99, -15.6); K.box('TF_Hazard', -16.7, -4.0, -15.8, -5.2, -3.99, -15.6)
+    for (x, z) in ((-36, -14), (-30, -14), (-22, -19), (-12, -14)):
+        K.lamp_prop(x, -1.1, z, color='#cfe6ff', intensity=1.1, dist=11)
+    K.light(-22, -2.0, -19.5, '#fff0d0', 0.9, 8)
+    # chamber cover (library props)
+    K.prop('crate', -25.8, -4.0, -20.8, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    K.prop('crate', -25.8, -2.8, -20.8, 0.7, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    K.prop('crate', -24.4, -4.0, -20.9, 1.1, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    K.prop('barrel', -18.0, -4.0, -21.2, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
+    K.prop('barrel', -18.7, -4.0, -21.3, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
+    K.prop('pallet_stack', -21.5, -4.0, -17.2, 0.0, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
+    K.area('Pump Chamber', -27, -22, -17, -16, -4, kind='tunnel')
+    # brine pit dressing
+    K.box('TF_Ceiling', -5, -0.33, -16, 0, -0.3, -8); K.box('TF_Ceiling', -5, -0.33, 8, 0, -0.3, 16)
+    for z in (-12, 12):
+        K.lamp_prop(-2.5, -1.1, z, color='#cfe6ff', intensity=1.0, dist=10)
 
 
 def middle(K):
