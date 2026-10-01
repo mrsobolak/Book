@@ -521,7 +521,7 @@ def fabric_img(name, img, rough=0.88):
     g.link(uv.outputs[0], tx.inputs['Vector'])
     g.set('Base Color', tx.outputs['Color']); g.set('Roughness', rough)
     try:
-        g.set('Sheen Weight', 0.3)
+        g.set('Sheen Weight', 0.08)
     except KeyError:
         pass
     wv = g.node('ShaderNodeTexWave'); wv.inputs['Scale'].default_value = 1400.0
@@ -580,23 +580,30 @@ def loft(rings, closed=True, cap0=False, cap1=False, uvs=None):
     return bm
 
 
-def studio(strength=1.0):
-    """neutral product-shot lighting + world for checking weapons (not exported)"""
+def studio(strength=1.0, hdri='studio_small_09_2k.hdr'):
+    """product-shot lighting for checking weapons (not exported): studio HDRI reflections + soft key/rim, grey backdrop"""
     sc = bpy.context.scene
     c = coll('STUDIO')
-    for nm_, loc, en, size, col in (('Key', (0.9, -0.7, 0.9), 220.0, 0.9, (1.0, 0.96, 0.9)),
-                                    ('Fill', (-1.0, -0.4, 0.3), 70.0, 1.2, (0.85, 0.9, 1.0)),
-                                    ('Rim', (-0.3, 1.0, 0.8), 160.0, 0.8, (1.0, 1.0, 1.0)),
-                                    ('Top', (0.0, 0.0, 1.3), 60.0, 1.5, (1.0, 1.0, 1.0))):
+    for nm_, loc, en, size, col in (('Key', (0.9, -0.7, 0.9), 90.0, 0.9, (1.0, 0.96, 0.9)),
+                                    ('Rim', (-0.3, 1.0, 0.8), 90.0, 0.8, (1.0, 1.0, 1.0))):
         ld = bpy.data.lights.new(nm_, 'AREA'); ld.energy = en * strength; ld.size = size; ld.color = col
         lo = bpy.data.objects.new(nm_, ld); c.objects.link(lo); lo.location = loc
         lo.rotation_euler = (Vector((0, 0, 0)) - lo.location).to_track_quat('-Z', 'Y').to_euler()
     w = bpy.data.worlds.new('StudioWorld'); w.use_nodes = True
-    bg = next(n for n in w.node_tree.nodes if n.type == 'BACKGROUND')
-    bg.inputs['Color'].default_value = (0.32, 0.31, 0.30, 1); bg.inputs['Strength'].default_value = 0.35
+    nt = w.node_tree; nt.nodes.clear()
+    out = nt.nodes.new('ShaderNodeOutputWorld')
+    path = os.path.join(HERE, 'hdri', hdri)
+    bg_env = nt.nodes.new('ShaderNodeBackground'); bg_env.inputs['Strength'].default_value = 1.0
+    if os.path.exists(path):
+        env = nt.nodes.new('ShaderNodeTexEnvironment'); env.image = bpy.data.images.load(path, check_existing=True)
+        nt.links.new(env.outputs[0], bg_env.inputs['Color'])
+    bg_cam = nt.nodes.new('ShaderNodeBackground'); bg_cam.inputs['Color'].default_value = (0.20, 0.20, 0.205, 1)
+    lp = nt.nodes.new('ShaderNodeLightPath'); mx = nt.nodes.new('ShaderNodeMixShader')
+    nt.links.new(lp.outputs['Is Camera Ray'], mx.inputs[0]); nt.links.new(bg_env.outputs[0], mx.inputs[1]); nt.links.new(bg_cam.outputs[0], mx.inputs[2])
+    nt.links.new(mx.outputs[0], out.inputs[0])
     sc.world = w
     sc.render.engine = 'CYCLES'
-    sc.cycles.samples = 48; sc.cycles.preview_samples = 32
+    sc.cycles.samples = 96; sc.cycles.preview_samples = 32
     try:
         sc.cycles.use_preview_denoising = True; sc.cycles.device = 'GPU'
     except Exception:

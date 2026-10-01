@@ -139,7 +139,7 @@ def cloth_wrap(name, g, t0, t1, mat, pad=1.8, seed=3):
 def revolver():
     blued = wk.steel('M_RevBlued', base='#15171c', bare='#9ea2a8', rough=0.28, wear=1.0, scratch=0.8)
     blued_dk = wk.steel('M_RevBluedDark', base='#0f1013', bare='#8d9197', rough=0.34, wear=0.7, scratch=0.5)
-    walnut = wk.wood('M_RevWalnut', light='#5e331b', dark='#200f07', rough=0.40, ring=38.0, axis='Z')
+    walnut = wk.wood('M_RevWalnut', light='#4a2614', dark='#160904', rough=0.38, ring=34.0, axis='Z')
     lead = wk.steel('M_RevLead', base='#606266', bare='#7b7e82', rough=0.55, wear=0.0, scratch=0.0, metallic=0.85)
     fabric = wk.fabric_img('M_RevBandana', 'bandana_paisley.png')
 
@@ -157,14 +157,14 @@ def revolver():
         if u < -7.0:
             t -= min(5.0, (-7.0 - u) * 0.45)                          # narrowing to the grip
         return t
-    frame_ob = make('Rev_Frame', profile(fr, -16.5, 16.5, holes=[win], taper=taper), blued, bevel=0.0011, seg=4)
+    frame_ob = make('Rev_Frame', profile(fr, -15.2, 15.2, holes=[win], taper=taper), blued, bevel=0.0011, seg=4)
     cut(frame_ob, box(W(-17, 4, 0), (0.0074, 0.026, 0.026)), 'hammerslot')
     cut(frame_ob, box(W(-2.0, 13.6, 0), (0.0022, 0.009, 0.0032)), 'rearsight')
     cut(frame_ob, cyl(W(41.7, 0, 0), W(60, 0, 0), 0.0096, n=40), 'barrelseat')
     lg = rounded([(-6.5, -21, 2), (-0.8, -21, 1), (-0.8, -7, 1), (-6.5, -7, 2)])
-    make('Rev_LoadingGate', profile(lg, -17.4, -16.3), blued_dk, bevel=0.0004)
+    make('Rev_LoadingGate', profile(lg, -16.1, -15.0), blued_dk, bevel=0.0004)
     for (u, v, side) in ((44, -26, 1), (44, -26, -1), (-19, -27, 1), (-19, -27, -1), (24, -38.0, 1), (24, -38.0, -1)):
-        hw = 16.5 + taper(u, v)
+        hw = 15.2 + taper(u, v)
         wk.screw(W(u, v, side * hw), Vector((side, 0, 0)), r=0.0019, mat=blued_dk, name='Rev_Screw', slot_ang=0.3 + u * 0.05)
 
     # ---- barrel: long octagon-style hex, muzzle crown, bore, front sight blade
@@ -235,7 +235,7 @@ def revolver():
     make('Rev_TriggerGuard', tube(sm, 0.0044, n=18, flat=0.36), blued)
 
     # ---- grip: plow-handle, oval sections; walnut panels between steel straps; bandana at the bottom
-    g = Grip((-20.5, -30.0), (-22.0, -86.0), (-40.0, -114.0),
+    g = Grip((-20.5, -30.0), (-19.0, -80.0), (-45.0, -110.0),
              depth=lambda t: (11.5 + 2.5 * math.sin(PI * min(1.0, t * 1.1)), 12.0 + 4.0 * t),
              width=lambda t: 14.0 + 1.6 * math.sin(PI * t * 0.9), e=2.4, butt=0.05)
     grip_parts('Rev_Grip', g, walnut, blued)
