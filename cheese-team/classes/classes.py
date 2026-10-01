@@ -540,7 +540,7 @@ BUILDERS['RocketGuy'] = rocketguy
 
 
 # ================================================================== 4. SNIPER
-def ear_flap(P, cap_obs, sgn, name, mat, fleece, W=0.118, D=0.096, yc=-0.058, flare=34.0):
+def ear_flap(P, cap_obs, sgn, name, mat, fleece, W=0.132, D=0.104, yc=-0.040, flare=58.0):
     """hunting-cap ear flap: hinged under the cap band on the side, hanging down and flaring OUT so it reads from the
     front. Blaze outside, fleece lining inside, fleece-trimmed edge, a dangling tie. sgn=+1: character's left (+x)."""
     rim = {}; bx = {}
@@ -578,7 +578,7 @@ def ear_flap(P, cap_obs, sgn, name, mat, fleece, W=0.118, D=0.096, yc=-0.058, fl
         for i in range(nu):
             q = j * (nu + 1) + i
             faces.append((q, q + 1, q + nu + 2, q + nu + 1))
-    obs = [A.make_obj(name, A.bm_from(outer, faces), mat, 'spine_01', solid=0.0018),
+    obs = [A.make_obj(name, A.bm_from(outer, faces), mat, 'spine_01', solid=0.0030),
            A.make_obj(name + 'Lining', A.bm_from(inner, faces), fleece, 'spine_01', solid=0.0015)]
     # quilting on the outside: two diagonal stitch lines each way
     stitch = A.mat_plain('M_FlapStitch', '#b8420a', rough=0.8, bump=0.0)
@@ -596,7 +596,7 @@ def ear_flap(P, cap_obs, sgn, name, mat, fleece, W=0.118, D=0.096, yc=-0.058, fl
     border = [outer[j * (nu + 1)] for j in range(j0, nv + 1)] + [outer[nv * (nu + 1) + i] for i in range(1, nu + 1)] + \
              [outer[j * (nu + 1) + nu] for j in range(nv - 1, j0 - 1, -1)]
     border = [p - Vector((sgn * 0.0018, 0, 0)) for p in border]
-    bm = A.tube(border, 0.0046, n=10)
+    bm = A.tube(border, 0.0058, n=10)
     A.displace(bm, lambda p: p + Vector((sgn, 0, 0)) * 0.0010 * noise.noise(p * 600.0))
     obs.append(A.make_obj(name + 'Trim', bm, fleece, 'spine_01'))
     b0 = outer[nv * (nu + 1) + nu // 2] + Vector((0, 0, -0.003))
