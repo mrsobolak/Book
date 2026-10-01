@@ -157,8 +157,8 @@ def R(yaw=0.0, pitch=0.0, roll=0.0):
 
 HOLDS = {
     # one-handed pistol: right hand out front-right, left hand relaxed at the side
-    'pistol': dict(grip=Vector((-0.262, -0.25, 0.655)), rot=dict(yaw=3, pitch=0, roll=0), support=None,
-                   lhand=Vector((0.305, -0.03, 0.50)), relbow=Vector((-1, 0.1, -0.4)), lelbow=Vector((1, 0.2, -0.2))),
+    'pistol': dict(grip=Vector((-0.20, -0.36, 0.70)), rot=dict(yaw=3, pitch=0, roll=0), support=None,
+                   lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
 }
 
 WEAPON_HOLD = {'Revolver': 'pistol', 'Derringer': 'pistol', 'SemiAuto': 'pistol', 'SnubNose': 'pistol'}
@@ -236,6 +236,10 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
         grip.z += 0.003 * math.sin(2 * PI * t)
     grip.z += bob + HIP_DROP                                     # the whole upper body rides the pelvis
     lhand = H['lhand'].copy(); lhand.z += bob + HIP_DROP
+    if moving:                                                   # free hand swings against the lead leg
+        sw = math.sin(2 * PI * t)
+        lhand += Vector((0, 0.045, 0)) * sw * (1 if g['dir'].y <= 0 else 0.6) * (0.4 if g['dir'].x else 1)
+        lhand.z += 0.012 * abs(sw)
     lelbow = H['lelbow']; relbow = H['relbow']
     lspec = rspec = None
     if extra:
@@ -317,23 +321,23 @@ def fire_revolver(rig, t):
     return {'dgrip': Vector((0, 0.022 * k, 0.018 * k)), 'drot': {'pitch': 16 * k, 'yaw': -2 * k}}
 
 
-# grip near front-centre for loading: the stick arms can't meet closer than ~0.15 m in front of the wedge, so the
-# left hand takes the gun under the barrel while the right hand fetches rounds from the hip and thumbs them in.
-_LOAD = dict(dg=(0.19, 0.03, 0.045), dr=(82, -22, -90))
+# two-handed: swing out, slap the ejector rod muzzle-up, tip muzzle-down, thumb rounds in from the belt, close
+_UP = dict(dg=(0.14, 0.07, 0.06), dr=(38, 62, -62))
+_DN = dict(dg=(0.15, 0.08, 0.02), dr=(40, -38, -75))
 reload_revolver = keyed([
     (0.00, {}),
-    (0.10, dict(dg=(0.09, 0.05, 0.085), dr=(30, 62, -70), lh='rest')),                      # flick open, muzzle up: dump
-    (0.15, dict(dg=(0.09, 0.05, 0.10), dr=(30, 74, -74), ease=snap)),                        # shake
-    (0.20, dict(dg=(0.09, 0.05, 0.088), dr=(30, 64, -70))),
-    (0.32, dict(_LOAD, lh=('w', 200, -10, -58), lel=(1, -0.3, -0.6))),                      # left hand takes the barrel
-    (0.36, dict(rh='grip', rel=(-1, 0.1, -0.4))),
-    (0.48, dict(rh=Vector((-0.255, -0.05, 0.52)), rel=(-1, 0.4, -0.1))),                     # right hand to hip pouch
-    (0.53, dict()),
-    (0.63, dict(rh=('w', 12, -12, 64), rel=(-1, -0.3, -0.5))),                              # rounds over the cylinder
-    (0.67, dict(dg=(0.19, 0.03, 0.039), rh=('w', 12, -12, 54))),                             # press in
-    (0.71, dict(dg=(0.19, 0.03, 0.045), rh=('w', 12, -12, 62))),
-    (0.78, dict(rh='grip', rel=(-1, 0.1, -0.4))),                                            # regrip
-    (0.84, dict(dg=(0.12, 0.02, 0.03), dr=(40, -5, 10), lh='rest', lel=(1, 0.2, -0.2), ease=snap)),  # flick shut
+    (0.10, dict(_UP, lh=('w', 150, -50, 8), lel=(1, 0, -1))),                                 # muzzle up, palm under rod
+    (0.15, dict(dg=(0.14, 0.07, 0.072), lh=('w', 95, -50, 8), ease=snap)),                  # slap: shells out
+    (0.20, dict(dg=(0.14, 0.07, 0.06), lh=('w', 140, -58, 20))),
+    (0.30, dict(_DN, lh=Vector((0.30, -0.10, 0.47)), lel=(1, 0.3, -0.3))),                   # tip down, hand to belt
+    (0.36, dict()),
+    (0.46, dict(lh=('w', 0, 8, 58), lel=(1, -0.2, -0.8))),                                    # over the open cylinder
+    (0.51, dict(lh=('w', 4, 0, 46), dg=(0.15, 0.08, 0.014))),                               # thumb in
+    (0.56, dict(lh=('w', 0, 8, 58), dg=(0.15, 0.08, 0.02))),
+    (0.61, dict(lh=('w', 4, 0, 46), dg=(0.15, 0.08, 0.014))),                               # thumb in
+    (0.66, dict(lh=('w', 20, -10, 62), dg=(0.15, 0.08, 0.02))),
+    (0.72, dict(dg=(0.13, 0.07, 0.04), dr=(30, 5, -10), lh=('w', 20, -10, 30), ease=snap)),   # swipe it shut
+    (0.82, dict(lh='rest', lel=(0.4, 1, -0.1))),
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
@@ -438,7 +442,6 @@ def check(rig, act, step=1):
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     hands = ('hand_l', 'hand_r')
     worst = []
-    base3 = None
     wobjs = [o for w in rig.weapons.values() for o in w['objs']]
     for f in range(f0, f1 + 1, step):
         sc.frame_set(f)
@@ -446,7 +449,8 @@ def check(rig, act, step=1):
         body = _bvh([rig.body], exclude_groups=hands)
         acc = _bvh(rig.acc) if rig.acc else None
         wedge = _bvh([rig.body], only_groups=('spine_01', 'pelvis', 'aim', 'root'))
-        arms = _bvh([rig.body], only_groups=('upperarm_l', 'lowerarm_l', 'upperarm_r', 'lowerarm_r'))
+        arms = _bvh([rig.body], only_groups=('upperarm_l', 'lowerarm_l', 'upperarm_r', 'lowerarm_r', 'hand_l', 'hand_r'))
+        hats = _bvh(rig.acc, only_groups=('spine_01', 'aim')) if rig.acc else None
         legs_l = _bvh([rig.body], only_groups=('thigh_l', 'calf_l', 'foot_l'))
         legs_r = _bvh([rig.body], only_groups=('thigh_r', 'calf_r', 'foot_r'))
         mw = rig.arm.matrix_world
@@ -454,10 +458,9 @@ def check(rig, act, step=1):
         skip = [(mw @ rig.arm.pose.bones[b].tail, 0.034 * k) for b in ('lowerarm_l', 'lowerarm_r')]
         c1 = _ov(wb, body, skip)
         c2 = len(wb.overlap(acc)) if (wb and acc) else 0
-        c3 = len(arms.overlap(wedge)) if (arms and wedge) else 0
-        if base3 is None:
-            base3 = _rest_arm_overlap(rig)
-        c3 = max(0, c3 - base3)
+        sh = [(mw @ rig.arm.pose.bones[b].head, 0.035 * k) for b in ('upperarm_l', 'upperarm_r')]
+        c3 = _ov(wedge, arms, sh)                       # (the arm sticks root into the wedge sides at the shoulders)
+        c3 += _ov(hats, arms, sh)                       # arms through hats / face accessories count too
         c4 = len(legs_l.overlap(legs_r)) if (legs_l and legs_r) else 0
         if c1 or c2 or c3 or c4:
             worst.append((f, c1, c2, c3, c4))
