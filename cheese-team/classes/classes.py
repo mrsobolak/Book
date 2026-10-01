@@ -422,7 +422,7 @@ def rocketguy(P, T):
         if th < 80:
             u = (th - 50) / 30
             return -0.010 - 0.062 * (3 * u * u - 2 * u ** 3)
-        return -0.072 + 0.008 * min(1.0, (th - 80) / 60)
+        return -0.072 + 0.008 * min(1.0, (th - 80) / 60) + 0.032 * math.exp(-((th - 96) / 20) ** 2)  # clear the shoulders
     dele = []
     for f in shell.faces:
         c = f.calc_center_median()
