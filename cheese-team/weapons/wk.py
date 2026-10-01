@@ -449,13 +449,13 @@ def wood(name, light='#7a4a28', dark='#3a1f10', rough=0.45, grain=1.0, ring=60.0
     g.link(g.co, mp.inputs['Vector'])
     dn = g.noise(3.0, 4, 0.6, vec=mp.outputs[0])
     wv = g.node('ShaderNodeTexWave'); wv.wave_type = 'RINGS'; wv.inputs['Scale'].default_value = ring
-    wv.inputs['Distortion'].default_value = 6.0; wv.inputs['Detail'].default_value = 4; wv.inputs['Detail Scale'].default_value = 2.0
+    wv.inputs['Distortion'].default_value = 9.0; wv.inputs['Detail'].default_value = 6; wv.inputs['Detail Scale'].default_value = 3.0
     off = g.node('ShaderNodeVectorMath'); off.operation = 'ADD'
     g.link(mp.outputs[0], off.inputs[0]); g.link(dn, off.inputs[1])
     g.link(off.outputs[0], wv.inputs['Vector'])
     fine = g.noise(240, 6, 0.7, vec=mp.outputs[0])
     gr = g.math('ADD', g.math('MULTIPLY', wv.outputs['Fac'], 0.75 * grain), g.math('MULTIPLY', fine, 0.35))
-    c = g.ramp(gr, 0.25, 0.85, srgb(dark), srgb(light))
+    c = g.ramp(gr, 0.15, 0.95, srgb(dark), srgb(light))
     e = g.edges(radius=0.0015, gain=6.0, breakup=0.7, bscale=60)
     lighter = tuple(min(1, x * 1.6 + 0.02) for x in srgb(light))
     g.set('Base Color', g.mix(g.math('MULTIPLY', e, wear, clamp=True), c, (*lighter, 1)))
@@ -514,12 +514,14 @@ def image_mat(name, img, rough=0.6, metal=0.0, bump=0.0, uvname='UVMap', alpha=F
     return g.m
 
 
-def fabric_img(name, img, rough=0.88):
+def fabric_img(name, img, rough=0.88, sat=1.0, val=1.0):
     g = NT(name)
     tx = g.node('ShaderNodeTexImage'); tx.image = bpy.data.images.load(os.path.join(TEX, img), check_existing=True)
     uv = g.node('ShaderNodeUVMap'); uv.uv_map = 'UVMap'
     g.link(uv.outputs[0], tx.inputs['Vector'])
-    g.set('Base Color', tx.outputs['Color']); g.set('Roughness', rough)
+    hs = g.node('ShaderNodeHueSaturation'); hs.inputs['Saturation'].default_value = sat; hs.inputs['Value'].default_value = val
+    g.link(tx.outputs['Color'], hs.inputs['Color'])
+    g.set('Base Color', hs.outputs['Color']); g.set('Roughness', rough)
     try:
         g.set('Sheen Weight', 0.08)
     except KeyError:
@@ -612,3 +614,16 @@ def studio(strength=1.0, hdri='studio_small_09_2k.hdr'):
         sc.view_settings.view_transform = 'AgX'
     except TypeError:
         pass
+
+
+def spline(pts, sub=6, closed=False):
+    """Catmull-Rom resample of world points"""
+    P = [pts[0]] + list(pts) + [pts[-1]]
+    out = []
+    for k in range(1, len(P) - 2):
+        p0, p1, p2, p3 = P[k - 1], P[k], P[k + 1], P[k + 2]
+        for i in range(sub):
+            t = i / sub
+            out.append(0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3))
+    out.append(P[-2])
+    return out

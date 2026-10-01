@@ -139,33 +139,38 @@ def cloth_wrap(name, g, t0, t1, mat, pad=1.8, seed=3):
 def revolver():
     blued = wk.steel('M_RevBlued', base='#15171c', bare='#9ea2a8', rough=0.28, wear=1.0, scratch=0.8)
     blued_dk = wk.steel('M_RevBluedDark', base='#0f1013', bare='#8d9197', rough=0.34, wear=0.7, scratch=0.5)
-    walnut = wk.wood('M_RevWalnut', light='#4a2614', dark='#160904', rough=0.38, ring=34.0, axis='Z')
+    walnut = wk.wood('M_RevWalnut', light='#3f2111', dark='#1a0b05', rough=0.36, ring=22.0, axis='Z', grain=0.45)
     lead = wk.steel('M_RevLead', base='#606266', bare='#7b7e82', rough=0.55, wear=0.0, scratch=0.0, metallic=0.85)
-    fabric = wk.fabric_img('M_RevBandana', 'bandana_paisley.png')
+    fabric = wk.fabric_img('M_RevBandana', 'bandana_paisley.png', sat=1.35, val=0.85)
 
-    # ---- frame: slim nose under the cylinder, chamfered topstrap, narrowing behind the recoil shield
-    fr = rounded([(48.5, 11.0, 2.5), (48.5, -19.0, 4), (44.5, -37.0, 6), (30, -40.5, 14), (6, -41.5, 8), (-12, -42.0, 2),
-                  (-22, -40.0, 0), (-29, -24.0, 0), (-33, -8.0, 6), (-27, 3.0, 8), (-14, 10.5, 7), (-3, 13.2, 2),
-                  (41.5, 13.2, 3)], n=8)
-    win = rounded([(-0.6, -35.8, 1.5), (41.6, -35.8, 1.5), (41.6, 8.3, 1.5), (-0.6, 8.3, 1.5)])
-    def taper(u, v):
-        t = 0.0
-        if v > 9.0 and -1.0 < u < 43.0:
-            t -= 6.5 * min(1.0, (v - 9.0) / 4.0)                      # chamfered topstrap
-        if u > 42.5:
-            t -= 4.5                                                  # narrower front ring round the barrel
-        if u < -7.0:
-            t -= min(5.0, (-7.0 - u) * 0.45)                          # narrowing to the grip
-        return t
-    frame_ob = make('Rev_Frame', profile(fr, -15.2, 15.2, holes=[win], taper=taper), blued, bevel=0.0011, seg=4)
-    cut(frame_ob, box(W(-17, 4, 0), (0.0074, 0.026, 0.026)), 'hammerslot')
-    cut(frame_ob, box(W(-2.0, 13.6, 0), (0.0022, 0.009, 0.0032)), 'rearsight')
-    cut(frame_ob, cyl(W(41.7, 0, 0), W(60, 0, 0), 0.0096, n=40), 'barrelseat')
-    lg = rounded([(-6.5, -21, 2), (-0.8, -21, 1), (-0.8, -7, 1), (-6.5, -7, 2)])
-    make('Rev_LoadingGate', profile(lg, -16.1, -15.0), blued_dk, bevel=0.0004)
-    for (u, v, side) in ((44, -26, 1), (44, -26, -1), (-19, -27, 1), (-19, -27, -1), (24, -38.0, 1), (24, -38.0, -1)):
-        hw = 15.2 + taper(u, v)
-        wk.screw(W(u, v, side * hw), Vector((side, 0, 0)), r=0.0019, mat=blued_dk, name='Rev_Screw', slot_ang=0.3 + u * 0.05)
+    # ---- frame, built like the real thing from rounded parts (no flat slab)
+    cax = -14.0
+    # recoil shield: round flange behind the cylinder
+    rs = [(p[0], p[1]) for p in arc(-4.0, cax, 22.5, 0, 360, 48)]
+    rs = [(max(-8.2, min(0.0, u)), v) for (u, v) in [(u, v) for (u, v) in rs]]
+    shield = rounded([(-8.2, 10.5, 4), (0.0, 12.0, 2), (0.0, -37.5, 2), (-8.2, -40.0, 4)])
+    make('Rev_RecoilShield', profile(shield, -15.6, 15.6), blued, bevel=0.0024, seg=5, angle=30)
+    # topstrap: narrow, rounded, with the rear-sight groove
+    ts = rounded([(-3.0, 8.0, 0), (43.5, 8.0, 0), (43.5, 13.0, 2), (-3.0, 13.4, 2)])
+    top = make('Rev_Topstrap', profile(ts, -8.2, 8.2), blued, bevel=0.0026, seg=5, angle=30)
+    cut(top, box(W(-1.5, 13.6, 0), (0.0022, 0.009, 0.0034)), 'rearsight')
+    # bottom strap under the cylinder, sweeping up into the front ring
+    bs = rounded([(-2.0, -36.0, 0), (44.0, -36.0, 0), (48.5, -22.0, 6), (48.5, -30.0, 0), (42.0, -40.5, 9), (20.0, -42.2, 14),
+                  (-2.0, -42.5, 0)], n=8)
+    make('Rev_BottomStrap', profile(bs, -11.5, 11.5), blued, bevel=0.0026, seg=5, angle=30)
+    # front ring round the barrel shank + base-pin housing
+    fr = rounded([(41.6, 12.5, 3), (48.5, 12.5, 3), (48.5, -21.0, 4), (41.6, -21.0, 2)])
+    ring = make('Rev_FrontRing', profile(fr, -10.6, 10.6), blued, bevel=0.0024, seg=5, angle=30)
+    cut(ring, cyl(W(40.0, 0, 0), W(60, 0, 0), 0.0096, n=48), 'barrelseat')
+    # hammer housing / top of the grip frame, narrower than the shield
+    hh = rounded([(-7.0, 9.5, 2), (-14, 10.5, 7), (-27, 3.0, 8), (-33, -8.0, 6), (-29, -26.0, 0), (-20, -42.5, 0), (-7.0, -42.5, 0)], n=8)
+    house = make('Rev_HammerHousing', profile(hh, -10.6, 10.6), blued, bevel=0.0024, seg=5, angle=30)
+    cut(house, box(W(-17, 4, 0), (0.0072, 0.024, 0.030)), 'hammerslot')
+    lg = rounded([(-6.5, -22, 2), (-0.8, -22, 1), (-0.8, -6, 1), (-6.5, -6, 2)])
+    make('Rev_LoadingGate', profile(lg, -16.4, -15.2), blued_dk, bevel=0.0005)
+    for (u, v, x) in ((45.0, -15.5, 10.6), (45.0, -15.5, -10.6), (-20.0, -27.0, 10.6), (-20.0, -27.0, -10.6),
+                      (24.0, -40.0, 11.5), (24.0, -40.0, -11.5), (-4.0, -32.0, 15.6), (-4.0, -32.0, -15.6)):
+        wk.screw(W(u, v, x), Vector((1 if x > 0 else -1, 0, 0)), r=0.0019, mat=blued_dk, name='Rev_Screw', slot_ang=0.3 + u * 0.05)
 
     # ---- barrel: long octagon-style hex, muzzle crown, bore, front sight blade
     hexr = 9.2
@@ -190,7 +195,6 @@ def revolver():
     wk.screw(W(162, -3.0, -10.9), Vector((-1, 0, 0)), r=0.0016, mat=blued_dk, name='Rev_Screw')
 
     # ---- cylinder: six visible chambers with bullet noses, stop notches, chamfers
-    cax = -14.0
     cy = lathe([(13.0, 0.3), (19.9, 0.3), (20.8, 1.7), (20.8, 39.4), (19.8, 40.8), (8.0, 40.8)], n=96, axis_v=cax)
     cyo = make('Rev_Cylinder', cy, blued, bevel=0.0005)
     for k in range(6):
@@ -226,13 +230,9 @@ def revolver():
                   (-1.5, -41, 0)])
     make('Rev_Trigger', profile(tg, -2.3, 2.3), blued_dk, bevel=0.0005)
     gp = [Vector(W(u, v, 0)) for (u, v) in
-          [(16, -41.0), (16.5, -48), (14, -58), (8, -65.5), (-1, -68.5), (-9, -66.0), (-13.0, -59), (-12.5, -50), (-11.5, -44)]]
-    sm = []
-    for i in range(len(gp) - 1):
-        for k in range(5):
-            sm.append(gp[i].lerp(gp[i + 1], k / 5))
-    sm.append(gp[-1])
-    make('Rev_TriggerGuard', tube(sm, 0.0044, n=18, flat=0.36), blued)
+          [(15, -41.0), (16.5, -49), (13.5, -59), (6, -66.0), (-3, -67.5), (-10, -63.5), (-13.0, -55), (-13.0, -46)]]
+    sm = wk.spline(gp, 8)
+    make('Rev_TriggerGuard', tube(sm, 0.0045, n=20, flat=0.42), blued)
 
     # ---- grip: plow-handle, oval sections; walnut panels between steel straps; bandana at the bottom
     g = Grip((-20.5, -30.0), (-19.0, -80.0), (-45.0, -110.0),
