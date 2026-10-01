@@ -181,6 +181,7 @@ def camo_tape():
 
 
 def blueprint():
+    """the Mechanic's 'blueprint': it's just a drawing of cheese"""
     W, H = 1448, 2048
     bg = (22, 72, 150); ln = (225, 238, 255)
     im = Image.new('RGB', (W, H), bg); d = ImageDraw.Draw(im)
@@ -189,130 +190,42 @@ def blueprint():
     for y in range(0, H, 40):
         d.line((0, y, W, y), fill=(40, 92, 168), width=1)
     d.rectangle((50, 50, W - 50, H - 50), outline=ln, width=5)
-    # ---- title block
-    d.rectangle((W - 650, H - 330, W - 50, H - 50), outline=ln, width=4)
-    for y in (H - 260, H - 190, H - 120):
-        d.line((W - 650, y, W - 50, y), fill=ln, width=2)
-    d.line((W - 350, H - 190, W - 350, H - 50), fill=ln, width=2)
-    ctext(d, (W - 350, H - 295), 'CHEESE TURRET MK.II', C(46), ln)
-    ctext(d, (W - 350, H - 225), '+ HELPER BOT "GOUDA BOY"', C(34), ln)
-    d.text((W - 640, H - 180), 'DRAWN: MECHANIC', font=M(26), fill=ln)
-    d.text((W - 340, H - 180), 'SCALE 1:BRIE', font=M(26), fill=ln)
-    d.text((W - 640, H - 110), 'MATERIAL: CHEESE', font=M(26), fill=ln)
-    d.text((W - 340, H - 110), 'SHEET 1 OF 3', font=M(26), fill=ln)
-
-    def dim(x0, y0, x1, y1, txt, off=30, vertical=False):
-        if vertical:
-            d.line((x0 + off, y0, x0 + off, y1), fill=ln, width=2)
-            for y in (y0, y1):
-                d.line((x0 + 6, y, x0 + off + 14, y), fill=ln, width=2)
-                d.polygon([(x0 + off, y), (x0 + off - 7, y + (12 if y == y0 else -12)), (x0 + off + 7, y + (12 if y == y0 else -12))], fill=ln)
-            d.text((x0 + off + 10, (y0 + y1) / 2 - 12), txt, font=M(24), fill=ln)
-        else:
-            d.line((x0, y0 + off, x1, y0 + off), fill=ln, width=2)
-            for x in (x0, x1):
-                d.line((x, y0 + 6, x, y0 + off + 14), fill=ln, width=2)
-                d.polygon([(x, y0 + off), (x + (12 if x == x0 else -12), y0 + off - 7), (x + (12 if x == x0 else -12), y0 + off + 7)], fill=ln)
-            ctext(d, ((x0 + x1) / 2, y0 + off - 18), txt, M(24), ln)
-
-    def wedge(x, y, w_, h_, holes=(), lw=5, flip=False):
-        """cheese wedge in side view: thick end left (or right if flip), sloping top, holes"""
-        if flip:
-            pts = [(x, y + h_), (x + w_, y + h_), (x + w_, y)]
-        else:
-            pts = [(x, y), (x, y + h_), (x + w_, y + h_)]
-        d.polygon(pts, outline=ln, width=lw)
-        for (hx, hy, r) in holes:
-            d.ellipse((x + hx - r, y + hy - r, x + hx + r, y + hy + r), outline=ln, width=max(2, lw - 2))
-
-    def block(x, y, w_, h_, holes=(), lw=5, r=10):
-        d.rounded_rectangle((x, y, x + w_, y + h_), radius=r, outline=ln, width=lw)
-        for (hx, hy, rr) in holes:
-            d.ellipse((x + hx - rr, y + hy - rr, x + hx + rr, y + hy + rr), outline=ln, width=max(2, lw - 2))
-
-    # ---- turret: side elevation -- a cheese wedge on a breadstick tripod, firing cheese sticks
-    ox, oy = 140, 260
-    d.text((ox, oy - 90), 'A  SIDE ELEVATION', font=C(40), fill=ln)
-    base_y = oy + 620
-    for x1 in (ox + 60, ox + 470, ox + 260):
-        d.line((ox + 260, oy + 380, x1, base_y), fill=ln, width=7)          # breadstick legs
-        for k in range(1, 6):                                                # breadstick scoring
-            t = k / 6
-            xa = ox + 260 + (x1 - ox - 260) * t; ya = oy + 380 + (base_y - oy - 380) * t
-            d.line((xa - 6, ya - 3, xa + 6, ya + 3), fill=ln, width=2)
-    for x in (ox + 60, ox + 470):
-        d.ellipse((x - 26, base_y - 14, x + 26, base_y + 10), outline=ln, width=3)   # cracker feet
-        for k in (-1, 0, 1):
-            d.ellipse((x + k * 10 - 2, base_y - 4, x + k * 10 + 2, base_y), fill=ln)
-    block(ox + 225, oy + 290, 70, 100, holes=((20, 30, 8), (48, 70, 10)), lw=4, r=6)         # cheese-cube pivot
-    wedge(ox + 110, oy + 120, 320, 175, holes=((70, 130, 22), (150, 150, 14), (210, 160, 10), (60, 75, 12)))   # body
-    for yb in (oy + 215, oy + 262):                                                     # cheese-stick barrels
-        xs = ox + 110 + 320 * (yb - oy - 120) / 175 - 4                                 # start at the wedge's slope
-        d.rounded_rectangle((xs, yb - 12, ox + 740, yb + 12), radius=12, outline=ln, width=4)
-        for k in range(7):
-            d.ellipse((ox + 470 + k * 38, yb - 4, ox + 476 + k * 38, yb + 2), outline=ln, width=2)
-    block(ox + 20, oy + 190, 90, 90, holes=((25, 30, 10), (60, 60, 14)), lw=4)          # ammo: cheese cube box
-    d.text((ox + 24, oy + 290), 'CUBES', font=M(22), fill=ln)
-    d.arc((ox + 90, oy + 120, ox + 230, oy + 220), 200, 330, fill=ln, width=3)
-    d.ellipse((ox + 300, oy + 60, ox + 380, oy + 120), outline=ln, width=3)              # sensor: an olive
-    d.ellipse((ox + 330, oy + 80, ox + 350, oy + 100), outline=ln, width=3)
-    d.line((ox + 340, oy + 120, ox + 340, oy + 150), fill=ln, width=3)
-    dim(ox + 20, oy + 640, ox + 740, oy + 640, '1 WHEEL', off=60)
-    dim(ox + 760, oy + 120, ox + 760, base_y, '3 WEDGES', off=30, vertical=True)
-    # ---- plan: a cheese wheel seen from above, one wedge missing
-    tx, ty = 1060, 470
-    d.text((tx - 80, ty - 330), 'B  PLAN', font=C(40), fill=ln)
-    d.ellipse((tx - 150, ty - 150, tx + 150, ty + 150), outline=ln, width=5)
-    d.ellipse((tx - 120, ty - 120, tx + 120, ty + 120), outline=ln, width=2)            # rind
-    d.pieslice((tx - 150, ty - 150, tx + 150, ty + 150), -70, -20, fill=bg, outline=ln, width=5)
-    for (hx, hy, r) in ((-60, -30, 18), (40, 50, 22), (-30, 70, 12), (70, -10, 10), (-80, 40, 9), (10, -80, 14)):
-        d.ellipse((tx + hx - r, ty + hy - r, tx + hx + r, ty + hy + r), outline=ln, width=3)
-    d.text((tx + 40, ty - 205), 'MISSING: 1/8', font=M(24), fill=ln)
-    d.text((tx + 40, ty - 178), '(I ATE IT)', font=M(24), fill=ln)
-    # ---- helper bot: a stack of cheese
-    rx, ry = 160, 1150
-    d.text((rx, ry - 70), 'C  HELPER BOT', font=C(40), fill=ln)
-    block(rx + 120, ry + 140, 240, 240, holes=((50, 60, 20), (170, 90, 26), (90, 170, 16), (190, 200, 12)), r=20)   # body: cheese block
-    wedge(rx + 150, ry + 10, 180, 120, holes=((60, 85, 12),), flip=False)                 # head: wedge
-    for ex in (rx + 205, rx + 260):
-        d.ellipse((ex - 14, ry + 75, ex + 14, ry + 103), outline=ln, width=4)            # googly eyes
-        d.ellipse((ex - 4, ry + 87, ex + 4, ry + 95), fill=ln)
-    d.line((rx + 165, ry + 10, rx + 165, ry - 18), fill=ln, width=3)
-    d.ellipse((rx + 155, ry - 38, rx + 175, ry - 18), outline=ln, width=3)
-    for sx, x0 in ((-1, rx + 120), (1, rx + 360)):                                         # string-cheese arms
-        d.line((x0, ry + 190, x0 + sx * 90, ry + 260), fill=ln, width=7)
-        d.line((x0 + sx * 90, ry + 260, x0 + sx * 110, ry + 330), fill=ln, width=7)
-        d.polygon([(x0 + sx * 110, ry + 330), (x0 + sx * 140, ry + 370), (x0 + sx * 90, ry + 375)], outline=ln, width=3)
-    for k in range(6):                                                                     # treads: cheese wheels
-        cx_ = rx + 130 + k * 46
-        d.ellipse((cx_ - 21, ry + 400, cx_ + 21, ry + 442), outline=ln, width=3)
-        d.ellipse((cx_ - 6, ry + 415, cx_ + 6, ry + 427), outline=ln, width=2)
-    d.rounded_rectangle((rx + 95, ry + 392, rx + 385, ry + 450), radius=29, outline=ln, width=4)
-    dim(rx + 95, ry + 470, rx + 385, ry + 470, '1.5 BRIES', off=50)
-    # notes
-    nx, ny = 760, 1120
-    notes = ['NOTES:', '1. ALL BOLTS: CHEDDAR', '2. GREASE PIVOT W/ BUTTER (!!)', '3. BARRELS: STRING CHEESE',
-             '4. AMMO: CUBES, DICED 1cm', '5. DO NOT LEAVE IN SUN', '6. HOLES ARE STRUCTURAL', '   (DO NOT FILL)']
-    for k, t in enumerate(notes):
-        d.text((nx, ny + k * 46), t, font=MB(28) if k == 0 else M(28), fill=ln)
-    d.line((nx, ny + 390, nx + 500, ny + 390), fill=ln, width=2)
-    d.text((nx, ny + 410), 'REV C  -- CHECKED BY: TIM', font=M(26), fill=ln)
-    d.ellipse((ox + 290, oy + 45, ox + 395, oy + 135), outline=(255, 250, 230), width=3)
-    d.text((ox + 410, oy + 20), 'IT IS AN OLIVE', font=C(30), fill=(255, 250, 230))
+    # one big cheese wedge, 3/4 view: thick back face on the left, sloping top down to the point on the right
+    A = (250, 1000)      # back-bottom-left
+    B = (250, 560)       # back-top-left
+    Cp = (560, 420)      # back-top-right (depth)
+    Dp = (560, 860)      # back-bottom-right (depth)
+    T = (1230, 1290)     # tip bottom (front)
+    Tb = (1260, 1150)    # tip bottom (depth)
+    lw = 7
+    d.polygon([A, B, T], outline=ln, width=lw)                      # front face (triangle)
+    d.line((B[0], B[1], Cp[0], Cp[1]), fill=ln, width=lw)           # top back edge
+    d.line((Cp[0], Cp[1], Tb[0], Tb[1]), fill=ln, width=lw)         # top far edge
+    d.line((Tb[0], Tb[1], T[0], T[1]), fill=ln, width=lw)
+    d.line((A[0], A[1], T[0], T[1]), fill=ln, width=lw)
+    d.line((B[0], B[1], T[0], T[1]), fill=ln, width=lw)
+    # holes on the front face (ellipses) + a few on the top
+    for (cx, cy, rx, ry) in ((360, 860, 50, 46), (480, 930, 34, 30), (330, 700, 28, 26), (600, 1040, 42, 38), (760, 1120, 24, 22),
+                             (430, 760, 20, 18), (880, 1200, 18, 16), (540, 820, 16, 14)):
+        d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), outline=ln, width=5)
+        d.arc((cx - rx + 6, cy - ry + 6, cx + rx - 6, cy + ry - 6), 200, 330, fill=ln, width=2)
+    for (cx, cy, rx, ry) in ((520, 560, 40, 18), (760, 760, 30, 13), (930, 930, 22, 10), (400, 520, 18, 8)):
+        d.ellipse((cx - rx, cy - ry, cx + rx, cy + ry), outline=ln, width=4)
+    # hole cut on the back edge
+    d.arc((222, 620, 278, 690), 270, 90, fill=ln, width=5)
+    # title
+    ctext(d, (W / 2, 1560), 'CHEESE', C(170), ln)
+    ctext(d, (W / 2, 1700), 'FIG. 1', M(44), ln)
     a = np.asarray(im).astype(float)
     rng = np.random.RandomState(7)
     yy, xx = np.mgrid[0:H, 0:W].astype(float)
-    # paper: diazo fade + blotchy
     n = np.asarray(Image.fromarray((rng.rand(H // 64, W // 64) * 255).astype(np.uint8)).resize((W, H), Image.BICUBIC)) / 255.0
     a *= (0.86 + 0.18 * n)[..., None]
-    # coffee rings
-    for (cx, cy, r) in ((1080, 1650, 150), (420, 700, 120), (1180, 1000, 95)):
+    for (cx, cy, r) in ((1150, 1820, 150), (300, 1650, 110), (1180, 380, 95)):
         dist = np.sqrt((xx - cx) ** 2 + (yy - cy) ** 2)
         ring = np.exp(-((dist - r) / 5.0) ** 2) * (0.55 + 0.45 * np.sin(np.arctan2(yy - cy, xx - cx) * 3 + cx) ** 2)
-        fill = (dist < r) * 0.12
-        m = np.clip(ring + fill, 0, 1)[..., None]
+        m = np.clip(ring + (dist < r) * 0.12, 0, 1)[..., None]
         a = a * (1 - m) + np.array([92, 64, 40]) * m
-    # folds / creases + edge darkening
     for y in (H / 3, 2 * H / 3):
         a *= (1 - 0.18 * np.exp(-((yy - y) / 6) ** 2))[..., None]
     e = np.minimum(np.minimum(xx, W - xx), np.minimum(yy, H - yy)) / 60.0
