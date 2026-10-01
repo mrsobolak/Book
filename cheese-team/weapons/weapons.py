@@ -1468,14 +1468,15 @@ def buckshot():
 def rocket():
     """TF2 'stock' style rocket (concept sheet): blunt nose cap, fat cone warhead, dark collar, long grey motor body with a
     dark band, flared nozzle at the back. Body fits the launcher tube (ID 89 mm); origin at the nozzle, nose along +u."""
-    grey = wk.paint('M_RkGrey', '#53575b', under='#9a9da1', rough=0.55, wear=1.1, scuff=1.0, col_var=0.08)
-    head = wk.paint('M_RkHead', '#3f4245', under='#8e9195', rough=0.5, wear=1.2, scuff=1.0, col_var=0.08)
-    dark = wk.paint('M_RkDark', '#1d1e20', under='#6b6e72', rough=0.6, wear=0.9, scuff=0.8)
+    grey = wk.paint('M_RkGrey', '#4a4e52', under='#6e7276', rough=0.55, wear=0.35, scuff=0.35, col_var=0.06)
+    head = wk.paint('M_RkHead', '#393c3f', under='#686b6f', rough=0.5, wear=0.4, scuff=0.35, col_var=0.06)
+    dark = wk.paint('M_RkDark', '#18191b', under='#4a4c50', rough=0.6, wear=0.3, scuff=0.3)
     tip = wk.steel('M_RkTip', base='#26282b', bare='#8d9095', rough=0.45, wear=1.0, scratch=0.6)
     noz = wk.steel('M_RkNozzle', base='#1b1c1e', bare='#6a6c70', rough=0.5, wear=1.0, scratch=0.5)
     # flared nozzle bell + neck
-    make('Rk_Nozzle', lathe([(0.0, 10.0), (28.0, 6.0), (39.0, 0.0), (42.5, 2.0), (43.0, 12.0), (40.0, 22.0), (32.0, 34.0),
-                             (30.5, 52.0), (31.0, 60.0)], n=56, cap0=False, cap1=False), noz, bevel=0.0)
+    make('Rk_Nozzle', lathe([(0.0, 22.0), (26.0, 20.0), (36.0, 3.0), (41.0, 0.0), (43.0, 1.5), (43.0, 9.0), (40.0, 12.0),
+                             (36.0, 22.0), (32.0, 36.0), (30.5, 52.0), (31.0, 60.0)], n=56, cap0=False, cap1=False), noz, bevel=0.0)
+    make('Rk_Throat', lathe([(0.0, 21.0), (12.0, 21.0), (12.0, 23.0), (0.0, 23.0)], n=24, cap0=False, cap1=False), dark)
     # motor body
     make('Rk_Body', lathe([(31.0, 60.0), (35.5, 68.0), (36.0, 74.0), (36.0, 470.0)], n=56, cap0=False, cap1=False), grey)
     make('Rk_BandRear', lathe([(36.0, 74.0), (37.2, 76.0), (37.2, 100.0), (36.0, 102.0)], n=56, cap0=False, cap1=False), dark)
