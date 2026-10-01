@@ -14,3 +14,19 @@ accessories only, plus a uniform height scale. Accessories are built by code (`a
 | Heavy | 1.16 | ten-gallon hat, handlebar moustache, gold sheriff star |
 
 Build one class: `blender -b -P build_class.py -- <Class> <outdir> [preview|full]`
+
+## Final looks (as shipped)
+| Class | Accessories | Height |
+|---|---|---|
+| Outlaw | low black flat-brim hat, pencil moustache, toothpick, red paisley bandana (right arm) | 1.00 |
+| Mr. Shotgun | backwards trucker cap, angry brows, mutton chops, shotgun shells in the holes | 1.00 |
+| Rocket Guy | open-face helmet + goggles, band-aid, spiked wristbands | 1.00 |
+| Sniper | camo face paint (no hat) | 1.07 |
+| Mechanic | grease smears, big wrench strapped to the side (no hat) | 1.00 |
+| Heavy | ten-gallon hat, handlebar moustache, sheriff star | 1.16 |
+
+## Export
+`finish.finish(cls, export_root)` (run inside Blender) builds the class, bakes the accessories to one PBR set
+(BaseColor / Roughness / Metallic / Normal + packed ORM, 2048), skins them rigidly to their bones, applies the class
+height (object + the actions' object-level keys) and writes `<cls>.fbx`, `<cls>.glb`, `<cls>.blend`, `textures/` and a
+preview. `finish.lineup(export_root, png)` renders all six side by side.
