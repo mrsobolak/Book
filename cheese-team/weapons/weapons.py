@@ -1236,7 +1236,7 @@ def minigun():
         for (u, v) in ((-188, 50), (-188, -60), (120, 46), (120, -60), (-60, -64), (60, 66), (-120, 52)):
             make('Mg_HexBolt', cyl(W(u, v, sd * (BW - 0.5)), W(u, v, sd * (BW + 2.6)), 0.0046, n=6), park, bevel=0.0005)
     # gold sheriff star painted on the left side (+x)
-    sw = 104.0; su, sv = -118.0, -6.0
+    sw = 128.0; su, sv = -122.0, 0.0
     vs = [W(su + (i - 0.5) * sw, sv + (j - 0.5) * sw, BW + 0.35) for i in (0, 1) for j in (0, 1)]
     sb = wk.bm_from(vs, [(0, 2, 3, 1)])
     uvl = sb.loops.layers.uv.new('UVMap'); sb.verts.index_update()
@@ -1247,7 +1247,7 @@ def minigun():
     bmesh.ops.recalc_face_normals(sb, faces=sb.faces[:])
     make('Mg_Star', sb, starm.m)
     # warning stencil under the star
-    make('Mg_Stencil', profile(rounded([(-170, -50, 1), (-66, -50, 1), (-66, -40, 1), (-170, -40, 1)]), BW + 0.0, BW + 0.3),
+    make('Mg_Stencil', profile(rounded([(-176, -64, 1), (-70, -64, 1), (-70, -56, 1), (-176, -56, 1)]), BW + 0.0, BW + 0.3),
          wk.paint('M_MgStencil', '#d7cfb8', under='#4a0e0c', under_metal=0.0, rough=0.6, wear=2.0, scuff=2.0), bevel=0.0)
 
     # ================= gun housing: round nose from the body to the rotor, with a clamp band
