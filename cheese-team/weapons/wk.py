@@ -437,6 +437,10 @@ def paint(name, col, under='#8a8c90', under_metal=1.0, rough=0.55, wear=1.0, scu
     g.set('Base Color', g.mix(m, basec, under))
     g.set('Roughness', g.mixf(m, g.math('ADD', rough - 0.05, g.math('MULTIPLY', g.noise(5, 3), 0.1)), 0.3))
     g.set('Metallic', g.mixf(m, 0.0, under_metal))
+    try:
+        g.set('Specular IOR Level', g.mixf(m, 0.3, 0.5))
+    except KeyError:
+        pass
     g.bump(g.math('MULTIPLY', m, -1.0), 0.15, 0.0003)
     return g.m
 

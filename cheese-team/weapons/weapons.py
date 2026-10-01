@@ -425,7 +425,7 @@ BUILDERS['SawedOff'] = sawedoff
 
 # ================================================================== 4. MACHINE PISTOL (Mr. Shotgun, secondary)
 def machinepistol():
-    finish = wk.paint('M_MpFinish', '#161617', under='#868a8f', rough=0.62, wear=1.4, scuff=1.4, col_var=0.12)
+    finish = wk.paint('M_MpFinish', '#0e0e0f', under='#868a8f', rough=0.62, wear=1.4, scuff=1.4, col_var=0.12)
     finish_dk = wk.paint('M_MpFinishDk', '#0f0f10', under='#7a7d82', rough=0.55, wear=1.0, scuff=0.8)
     steel = wk.steel('M_MpSteel', base='#2a2b2e', bare='#a5a8ad', rough=0.42, wear=1.0, scratch=1.2, edge_gain=8.0)
     rub = wk.rubber('M_MpRubber', '#121213', rough=0.75)
