@@ -1193,106 +1193,189 @@ BUILDERS['Blueprint'] = blueprint
 
 # ================================================================== 11. MINIGUN (Greg, primary)
 def minigun():
-    gun = wk.steel('M_MgBarrels', base='#3a3d42', bare='#a8abb0', rough=0.36, wear=1.2, scratch=1.0, edge_gain=9.0, tint_var=0.08)
-    gun_dk = wk.steel('M_MgDark', base='#202225', bare='#8f9297', rough=0.42, wear=1.0, scratch=0.8, edge_gain=9.0)
-    red = wk.paint('M_MgRed', '#6e1512', under='#3f4246', rough=0.5, wear=1.5, scuff=1.4, col_var=0.14)
-    brass = wk.steel('M_MgBrass', base='#a8823a', bare='#d8b66e', rough=0.32, wear=0.4, scratch=0.5)
+    gun = wk.steel('M_MgBarrels', base='#4d5157', bare='#b4b7bc', rough=0.34, wear=1.2, scratch=1.1, edge_gain=10.0, tint_var=0.08)
+    heat = wk.steel('M_MgHeat', base='#3b342e', bare='#8e8a86', rough=0.42, wear=0.6, scratch=0.6, tint_var=0.2)   # heat-darkened muzzles
+    gun_dk = wk.steel('M_MgDark', base='#1e2023', bare='#8f9297', rough=0.42, wear=1.2, scratch=0.9, edge_gain=10.0)
+    park = wk.steel('M_MgPark', base='#2b2d30', bare='#9a9da2', rough=0.6, wear=1.0, scratch=1.2, edge_gain=8.0, tint_var=0.1)
+    red = wk.paint('M_MgRed', '#4a0e0c', under='#3f4246', rough=0.5, wear=1.6, scuff=1.5, col_var=0.16)
+    brass = wk.steel('M_MgBrass', base='#a8823a', bare='#d8b66e', rough=0.30, wear=0.5, scratch=0.5)
+    copper = wk.steel('M_MgCopper', base='#a5582e', bare='#d08a58', rough=0.32, wear=0.3, scratch=0.3)
     rub = wk.rubber('M_MgRubber', '#141414')
+    cable = wk.rubber('M_MgCable', '#1a1a1b', rough=0.55, stipple=0.3)
     starm = wk.NT('M_MgStar')
     tx = starm.node('ShaderNodeTexImage'); tx.image = bpy.data.images.load(os.path.join(wk.TEX, 'star_paint.png'), check_existing=True)
     uvn = starm.node('ShaderNodeUVMap'); uvn.uv_map = 'UVMap'; starm.link(uvn.outputs[0], tx.inputs['Vector'])
-    starm.set('Base Color', tx.outputs['Color']); starm.set('Alpha', tx.outputs['Alpha']); starm.set('Roughness', 0.45); starm.set('Metallic', 0.6)
+    starm.set('Base Color', tx.outputs['Color']); starm.set('Alpha', tx.outputs['Alpha']); starm.set('Roughness', 0.42); starm.set('Metallic', 0.7)
     try:
         starm.m.surface_render_method = 'BLENDED'
     except Exception:
         pass
-    # ---- boxy red body
-    BW = 70.0
-    bd = rounded([(-180, 70, 10), (120, 70, 8), (140, 50, 6), (140, -60, 6), (120, -78, 8), (-180, -78, 10)], n=6)
-    body = make('Mg_Body', profile(bd, -BW, BW), red, bevel=0.0035, seg=5)
+
+    # ================= receiver body: boxy dark-red housing, chamfered, panel lines, hatch, vents, bolts
+    BW = 68.0
+    bd = rounded([(-200, 62, 14), (-12, 62, 6), (0, 74, 4), (118, 74, 8), (132, 58, 6), (132, -54, 6), (116, -72, 10), (-200, -72, 14)], n=8)
+    body = make('Mg_Body', profile(bd, -BW, BW, taper=lambda u, v: -4.0 * max(0.0, (v - 50) / 24.0) - 3.0 * max(0.0, (-v - 50) / 22.0)),
+                red, bevel=0.0045, seg=6, angle=28)
     for sd in (1, -1):
-        for (u, v) in ((-160, 55), (-160, -62), (100, 55), (100, -62), (-30, 55), (-30, -62)):
-            wk.screw(W(u, v, sd * BW), Vector((sd, 0, 0)), r=0.0032, mat=gun_dk, name='Mg_Bolt', slot_ang=u * 0.02)
-        pan = rounded([(-150, 40, 6), (60, 40, 6), (60, -48, 6), (-150, -48, 6)])
-        make('Mg_SidePanel%d' % sd, profile(pan, sd * BW - (0 if sd > 0 else 2.5), sd * BW + (2.5 if sd > 0 else 0)), red, bevel=0.0015)
-    # vents on top
-    for k in range(6):
-        make('Mg_Vent', profile(rounded([(-140 + k * 18, 68, 2), (-130 + k * 18, 68, 2), (-130 + k * 18, 73, 2), (-140 + k * 18, 73, 2)]), -40, 40),
-             gun_dk, bevel=0.0010)
-    # ---- painted gold sheriff star on the left side (+x)
-    sw = 110.0
-    verts = []; faces = []; uvs = []
-    for i in range(2):
-        for j in range(2):
-            uu = -95 + (i - 0.5) * sw; vv = -4 + (j - 0.5) * sw
-            verts.append(W(uu, vv, BW + 2.6)); uvs.append((1 - i, j))
-    faces = [(0, 2, 3, 1)]
-    sb = wk.bm_from(verts, faces)
+        for (u0, v0, u1, v1) in ((-185, -60, 108, -58.6), (-185, 48, -20, 49.4), (-60, -58, -58.6, 48), (60, -58, 61.4, 60)):
+            cut(body, box(W((u0 + u1) / 2, (v0 + v1) / 2, sd * BW), (0.0036, abs(u1 - u0) * MM, abs(v1 - v0) * MM)), 'pl')
+    # access hatch (right side) with latches and hinge
+    hatch = rounded([(-52, -46, 6), (52, -46, 6), (52, 40, 6), (-52, 40, 6)])
+    make('Mg_Hatch', profile(hatch, -BW - 2.2, -BW + 0.2), red, bevel=0.0012, seg=3)
+    make('Mg_HatchHinge', cyl(W(-53, -46, -BW - 2.8), W(-53, 40, -BW - 2.8), 0.0032, n=20), gun_dk)
+    for v in (-30, 24):
+        lt = rounded([(42, v - 6, 2), (60, v - 6, 2), (60, v + 6, 2), (42, v + 6, 2)])
+        make('Mg_Latch', profile(lt, -BW - 4.5, -BW - 1.5), park, bevel=0.0008)
+        make('Mg_LatchPin', cyl(W(55, v, -BW - 4.5), W(55, v, -BW - 6.0), 0.0022, n=16), gun_dk)
+    # vents (top front)
+    for k in range(7):
+        make('Mg_Vent', profile(rounded([(10 + k * 13, 73.5, 2), (18 + k * 13, 73.5, 2), (18 + k * 13, 76.5, 2), (10 + k * 13, 76.5, 2)]), -44, 44),
+             park, bevel=0.0008)
+    # corner bolts (hex) on both sides
+    for sd in (1, -1):
+        for (u, v) in ((-188, 50), (-188, -60), (120, 46), (120, -60), (-60, -64), (60, 66), (-120, 52)):
+            make('Mg_HexBolt', cyl(W(u, v, sd * (BW - 0.5)), W(u, v, sd * (BW + 2.6)), 0.0046, n=6), park, bevel=0.0005)
+    # gold sheriff star painted on the left side (+x)
+    sw = 104.0; su, sv = -118.0, -6.0
+    vs = [W(su + (i - 0.5) * sw, sv + (j - 0.5) * sw, BW + 0.35) for i in (0, 1) for j in (0, 1)]
+    sb = wk.bm_from(vs, [(0, 2, 3, 1)])
     uvl = sb.loops.layers.uv.new('UVMap'); sb.verts.index_update()
+    uvs_ = [(1, 0), (1, 1), (0, 0), (0, 1)]
     for f in sb.faces:
         for lp in f.loops:
-            lp[uvl].uv = uvs[lp.vert.index]
+            lp[uvl].uv = uvs_[lp.vert.index]
     bmesh.ops.recalc_face_normals(sb, faces=sb.faces[:])
     make('Mg_Star', sb, starm.m)
-    # ---- rotor: front plate, six barrels, mid clamp, muzzle clamp, centre spindle
-    RC = 30.0                    # barrel circle radius
-    make('Mg_Spindle', lathe([(14.0, 140.0), (14.0, 640.0)], n=32), gun_dk)
-    make('Mg_RotorDrum', lathe([(0, 140.0), (46.0, 140.0), (48.0, 145.0), (48.0, 205.0), (46.0, 210.0), (0, 210.0)], n=64), gun_dk, bevel=0.0)
-    for (u, r, nm) in ((420.0, 46.0, 'Mid'), (612.0, 44.0, 'Muzzle')):
-        cl = lathe([(0, u - 9), (r, u - 9), (r + 1.5, u - 7), (r + 1.5, u + 7), (r, u + 9), (0, u + 9)], n=64)
-        co = make('Mg_Clamp' + nm, cl, gun_dk)
-        for k in range(6):
-            a = PI / 2 + k * PI / 3
-            cut(co, cyl(W(u - 20, RC * math.sin(a), RC * math.cos(a)), W(u + 20, RC * math.sin(a), RC * math.cos(a)), 0.0102, n=24), 'b%d' % k)
+    # warning stencil under the star
+    make('Mg_Stencil', profile(rounded([(-170, -50, 1), (-66, -50, 1), (-66, -40, 1), (-170, -40, 1)]), BW + 0.0, BW + 0.3),
+         wk.paint('M_MgStencil', '#d7cfb8', under='#4a0e0c', under_metal=0.0, rough=0.6, wear=2.0, scuff=2.0), bevel=0.0)
+
+    # ================= gun housing: round nose from the body to the rotor, with a clamp band
+    make('Mg_Housing', lathe([(52.0, 128.0), (56.0, 132.0), (56.0, 168.0), (54.0, 172.0), (50.0, 176.0)], n=96, axis_v=0.0, cap0=False), park)
+    make('Mg_HousingBand', lathe([(56.0, 140.0), (58.5, 141.0), (58.5, 154.0), (56.0, 155.0)], n=96, cap0=False, cap1=False), gun_dk)
+    for k in range(8):
+        a = 2 * PI * k / 8
+        make('Mg_BandBolt', sphere(W(147.5, 59.0 * math.sin(a), 59.0 * math.cos(a)), 0.0026, seg=12, rings=6), gun_dk)
+    # ================= rotor (spins): fluted drum with bolt tracks, spindle nose
+    rot = make('Mg_Rotor', lathe([(46.0, 176.0), (48.0, 178.0), (48.0, 236.0), (44.0, 240.0), (20.0, 242.0)], n=96), gun_dk)
+    RC = 29.0
+    for k in range(6):
+        a = PI / 2 + PI / 6 + k * PI / 3
+        g_ = box((0, 0, 0), (0.0090, 0.060, 0.012))
+        dirn = Vector((math.cos(a), 0, math.sin(a)))
+        transform(g_, frame(W(208, 48.0 * math.sin(a), 48.0 * math.cos(a)), Vector((0, 1, 0)).cross(dirn).normalized(), Vector((0, 1, 0)), dirn))
+        cut(rot, g_, 'track%d' % k)
+    make('Mg_Spindle', lathe([(13.0, 236.0), (13.0, 712.0)], n=40), gun_dk)
+    make('Mg_SpindleNose', lathe([(15.0, 712.0), (15.0, 722.0), (12.0, 732.0), (6.0, 740.0), (0.0, 742.0)], n=40), gun_dk, bevel=0.0)
+    # ================= six barrels: breech, taper, mid + front clamps, heat-stained muzzles
     for k in range(6):
         a = PI / 2 + k * PI / 3
         v, x = RC * math.sin(a), RC * math.cos(a)
-        bo = make('Mg_Barrel%d' % k, lathe([(11.0, 205.0), (11.0, 260.0), (10.0, 270.0), (10.0, 620.0), (10.6, 622.0), (10.6, 636.0),
-                                              (10.0, 638.0)], n=32, axis_v=v, x=x), gun)
-        cut(bo, cyl(W(600, v, x), W(645, v, x), 0.0056, n=24), 'bore')
-    # ---- carry handle on top, side grip
-    hp = [W(-150, 70, 0), W(-150, 120, 0), W(-120, 140, 0), W(60, 140, 0), W(90, 120, 0), W(90, 70, 0)]
-    make('Mg_CarryHandle', tube(wk.spline(hp, 6), 0.0110, n=20), gun_dk)
-    make('Mg_HandleGrip', lathe([(14.0, -110.0), (14.0, 50.0)], n=32, axis_v=140.0), rub)
-    sg = [W(-40, 0, -BW), W(-40, 0, -BW - 40), W(-40, -10, -BW - 70)]
-    make('Mg_SideGripArm', tube(sg, 0.0110, n=20), gun_dk)
-    g = Grip((-40.0, -10.0), (-44.0, -60.0), (-50.0, -110.0), depth=lambda t: (17.0, 19.0), width=lambda t: 16.0, e=2.4, butt=0.06)
-    R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=36, nth=48)
-    go = make('Mg_SideGrip', wk.loft([r[:-1] for r in R], closed=True, cap1=True), rub)
-    go.data.transform(Matrix.Translation((-(BW + 70) * MM, 0, 0)))
-    # ---- ammo drum on the right side + feed chute + belt of brass rounds
-    DX = -BW - 95.0
-    drum = lathe([(0, -160.0), (78.0, -160.0), (82.0, -155.0), (82.0, 30.0), (78.0, 35.0), (0, 35.0)], n=96, axis_v=-40.0, x=DX)
-    make('Mg_Drum', drum, red, bevel=0.0)
-    for k in range(5):
-        u = -140 + k * 40
-        make('Mg_DrumRib', lathe([(82.0, u), (84.5, u + 1), (84.5, u + 6), (82.0, u + 7)], n=96, axis_v=-40.0, x=DX, cap0=False, cap1=False), gun_dk)
-    make('Mg_DrumBracket', profile(rounded([(-120, -20, 6), (0, -20, 6), (0, -60, 6), (-120, -60, 6)]), -BW - 18, -BW), gun_dk, bevel=0.0015)
-    # belt: links + rounds arching from the drum top into the body
-    bp = [W(-60, 42, DX + 10), W(-55, 85, DX + 40), W(-50, 95, -BW - 30), W(-45, 70, -BW + 2)]
-    P = wk.spline(bp, 10)
-    out = bmesh.new()
-    acc = 0.0
-    samples = [P[0]]
+        prof = [(12.6, 240.0), (12.6, 262.0), (11.8, 266.0), (11.0, 300.0), (10.2, 420.0), (9.6, 560.0), (9.4, 688.0)]
+        bo = make('Mg_Barrel%d' % k, lathe(prof, n=32, axis_v=v, x=x), gun, bevel=0.0)
+        mz = lathe([(9.4, 688.0), (10.4, 690.0), (10.4, 714.0), (9.6, 716.0)], n=32, axis_v=v, x=x)
+        mo = make('Mg_Muzzle%d' % k, mz, heat, bevel=0.0)
+        cut(mo, cyl(W(680, v, x), W(720, v, x), 0.0040, n=24), 'bore')
+        for j in range(4):                                          # muzzle-brake slots on each barrel
+            aa = a + PI / 4 + j * PI / 2
+            sl = box((0, 0, 0), (0.0028, 0.012, 0.0028))
+            nrm = Vector((math.cos(aa), 0, math.sin(aa)))
+            transform(sl, frame(W(702, v + 10.4 * math.sin(aa), x + 10.4 * math.cos(aa)), Vector((0, 1, 0)).cross(nrm).normalized(),
+                                Vector((0, 1, 0)), nrm))
+            cut(mo, sl, 'slot%d' % j)
+    for (u, r, wd, nm) in ((440.0, 46.0, 18.0, 'Mid'), (676.0, 45.0, 14.0, 'Front')):
+        cl = lathe([(0, u - wd / 2), (r - 1.5, u - wd / 2), (r, u - wd / 2 + 1.5), (r, u + wd / 2 - 1.5), (r - 1.5, u + wd / 2), (0, u + wd / 2)],
+                   n=96, shape=lambda i, kk, rr, ang: rr * (1.0 - 0.10 * (0.5 + 0.5 * math.cos(6 * (ang - PI / 2) - PI))))
+        co = make('Mg_Clamp' + nm, cl, park)
+        for k in range(6):
+            a = PI / 2 + k * PI / 3
+            cut(co, cyl(W(u - 20, RC * math.sin(a), RC * math.cos(a)), W(u + 20, RC * math.sin(a), RC * math.cos(a)), 0.0102, n=24), 'b%d' % k)
+        for k in range(6):
+            a = PI / 2 + PI / 6 + k * PI / 3
+            make('Mg_ClampBolt', cyl(W(u, (r - 4.5) * math.sin(a), (r - 4.5) * math.cos(a)), W(u, (r + 1.0) * math.sin(a), (r + 1.0) * math.cos(a)),
+                                     0.0024, n=6), gun_dk)
+
+    # ================= drive motor: finned can on the upper left, gear cover, power cable
+    MU, MV, MX = 60.0, 58.0, BW + 24.0
+    mo = make('Mg_Motor', lathe([(0, -10.0), (26.0, -10.0), (28.0, -7.0), (28.0, 96.0), (26.0, 100.0), (8.0, 102.0), (0, 102.0)], n=64,
+                                axis_v=MV, x=MX), gun_dk)
+    for k in range(14):
+        u = -2.0 + k * 6.8
+        make('Mg_MotorFin', lathe([(28.0, u), (31.5, u + 0.6), (31.5, u + 2.6), (28.0, u + 3.2)], n=64, axis_v=MV, x=MX, cap0=False, cap1=False), gun_dk)
+    make('Mg_MotorMount', profile(rounded([(-4, MV - 26, 4), (96, MV - 26, 4), (96, MV - 8, 4), (-4, MV - 8, 4)]), BW - 2, MX - 4), park, bevel=0.0015)
+    make('Mg_GearCover', lathe([(0, 102.0), (34.0, 102.0), (36.0, 105.0), (36.0, 124.0), (33.0, 128.0), (0, 128.0)], n=64, axis_v=MV - 16, x=MX - 30),
+         red, bevel=0.0)
+    cp = [W(-12, MV, MX), W(-50, MV + 20, MX + 6), W(-110, MV + 26, MX - 6), W(-170, MV + 10, MX - 20), W(-210, MV - 30, MX - 34)]
+    make('Mg_Cable', tube(wk.spline(cp, 8), 0.0065, n=14), cable)
+    make('Mg_CableBoot', lathe([(0, -26.0), (9.0, -26.0), (9.0, -10.0), (12.0, -6.0), (12.0, 0.0), (0, 0.0)], n=24, axis_v=MV, x=MX), rub)
+
+    # ================= carry handle (top) with brackets
+    for u in (-150.0, 70.0):
+        make('Mg_HandleBracket', profile(rounded([(u - 12, 60, 4), (u + 12, 60, 4), (u + 8, 112, 6), (u - 8, 112, 6)]), -9.0, 9.0), park, bevel=0.0015)
+    make('Mg_HandleBar', cyl(W(-170, 120, 0), W(90, 120, 0), 0.0115, n=32), gun_dk)
+    make('Mg_HandleGrip', lathe([(14.5, -120.0), (15.2, -116.0), (15.2, 40.0), (14.5, 44.0)], n=48, axis_v=120.0,
+                                shape=lambda i, k, r, a: r * (1.0 + 0.03 * math.cos(a * 16))), rub)
+
+    # ================= rear spade grips with trigger buttons
+    for sd in (1, -1):
+        sp = [W(-200, 30, sd * 46), W(-232, 30, sd * 50), W(-250, 18, sd * 52), W(-252, -40, sd * 52), W(-236, -54, sd * 50), W(-200, -54, sd * 46)]
+        make('Mg_SpadeFrame%d' % sd, tube(wk.spline(sp, 6), 0.0075, n=16), park)
+        make('Mg_SpadeGrip%d' % sd, cyl(W(-252, 12, sd * 52), W(-252, -36, sd * 52), 0.0158, n=40), rub)
+        make('Mg_SpadeCap%d' % sd, sphere(W(-252, 14, sd * 52), 0.0160, seg=24, rings=10, scale=(1, 1, 0.45)), rub)
+    make('Mg_TriggerButton', cyl(W(-238, 34, 50), W(-244, 42, 50), 0.0070, n=24), wk.plastic('M_MgButton', '#8a1210', rough=0.35))
+    make('Mg_SafetyBox', profile(rounded([(-214, 26, 3), (-200, 26, 3), (-200, 40, 3), (-214, 40, 3)]), -16.0, 16.0), park, bevel=0.0010)
+
+    # ================= side grip: on the right, near the front
+    sg = [W(96, -6, -BW), W(96, -6, -BW - 34), W(96, -16, -BW - 54)]
+    make('Mg_SideGripArm', tube(wk.spline(sg, 6), 0.0105, n=20), park)
+    make('Mg_SideGripCap', sphere(W(96, -16, -BW - 54), 0.0128, seg=24, rings=12), park)
+    make('Mg_SideGrip', cyl(W(96, -24, -BW - 55), W(96, -128, -BW - 58), 0.0168, n=40), rub)
+    make('Mg_SideGripEnd', sphere(W(96, -130, -BW - 58), 0.0170, seg=24, rings=12, scale=(1, 1, 0.45)), rub)
+
+    # ================= ammo drum on the right, axis sideways, with crank, ribs, latch; flexible feed chute into the body
+    DU, DV, DR = -110.0, -28.0, 78.0
+    x0, x1 = -BW - 10.0, -BW - 112.0
+    make('Mg_Drum', cyl(W(DU, DV, x0), W(DU, DV, x1), DR * MM, n=128), red, bevel=0.0032, seg=4)
+    for k in range(4):
+        xx = x0 - 15 - k * 24
+        make('Mg_DrumRib', cyl(W(DU, DV, xx), W(DU, DV, xx - 5), (DR + 2.4) * MM, n=128), park, bevel=0.0008)
+    make('Mg_DrumHub', cyl(W(DU, DV, x1), W(DU, DV, x1 - 7), 0.024, n=48), park, bevel=0.0012)
+    make('Mg_DrumCrank', profile(rounded([(DU - 4, DV - 4, 2), (DU + 4, DV - 4, 2), (DU + 4, DV + 44, 3), (DU - 4, DV + 44, 3)]), x1 - 13, x1 - 7),
+         gun_dk, bevel=0.0010)
+    make('Mg_DrumCrankKnob', cyl(W(DU, DV + 40, x1 - 13), W(DU, DV + 40, x1 - 30), 0.0060, n=24), rub)
+    make('Mg_DrumLatch', profile(rounded([(DU + 60, DV + 20, 3), (DU + 80, DV + 20, 3), (DU + 80, DV + 34, 3), (DU + 60, DV + 34, 3)]),
+                                 -BW - 70, -BW - 50), park, bevel=0.0010)
+    make('Mg_DrumBracket', profile(rounded([(DU - 46, DV - 12, 6), (DU + 46, DV - 12, 6), (DU + 46, DV + 12, 6), (DU - 46, DV + 12, 6)]),
+                                   -BW - 11, -BW), park, bevel=0.0015)
+    # chute: articulated segments from the drum top over into the feed port
+    cpts = [W(DU + 10, DV + DR - 6, -BW - 60), W(DU + 20, DV + DR + 30, -BW - 60), W(DU + 40, 96, -BW - 30), W(DU + 60, 86, -BW - 6),
+            W(DU + 66, 62, -BW + 2)]
+    P = wk.spline(cpts, 24)
+    seg_len = 0.0145
+    acc = 0.0; samples = [(P[0], (P[1] - P[0]).normalized())]
     for a_, b_ in zip(P[:-1], P[1:]):
-        seg = (b_ - a_).length
-        acc += seg
-        if acc >= 0.0115:
-            samples.append(b_); acc = 0.0
-    for p in samples:
-        rnd = lathe([(0, 0.0), (5.5, 0.0), (5.5, 40.0), (4.8, 44.0), (4.6, 52.0), (3.0, 58.0), (0, 60.0)], n=16)
-        transform(rnd, Matrix.Translation(p + Vector((0, 0.030, 0))))
-        me = bpy.data.meshes.new('tmp'); rnd.to_mesh(me); rnd.free(); out.from_mesh(me); bpy.data.meshes.remove(me)
-    make('Mg_BeltRounds', out, brass)
-    links = []
-    for p in samples:
-        lb = box(p + Vector((0, 0.010, 0)), (0.0130, 0.012, 0.0030))
-        me = bpy.data.meshes.new('tmp'); lb.to_mesh(me); lb.free(); links.append(me)
-    lo = bmesh.new()
-    for me in links:
-        lo.from_mesh(me); bpy.data.meshes.remove(me)
-    make('Mg_BeltLinks', lo, gun_dk, bevel=0.0006)
-    PIVOT['Minigun'] = (-80.0, -60.0)
+        acc += (b_ - a_).length
+        if acc >= seg_len:
+            samples.append((b_, (b_ - a_).normalized())); acc = 0.0
+    ch = bmesh.new()
+    for (p, t) in samples:
+        side = Vector((0, -1, 0))                                    # chute width runs along the gun axis
+        n_ = t.cross(side).normalized()
+        sb_ = box((0, 0, 0), (0.0130, 0.050, 0.022))
+        transform(sb_, frame(p, t, side, n_))
+        me = bpy.data.meshes.new('tmp'); sb_.to_mesh(me); sb_.free(); ch.from_mesh(me); bpy.data.meshes.remove(me)
+    make('Mg_FeedChute', ch, park, bevel=0.0014, seg=2)
+    make('Mg_FeedPort', profile(rounded([(DU + 36, 40, 4), (DU + 96, 40, 4), (DU + 96, 64, 4), (DU + 36, 64, 4)]), -BW - 8, -BW), park, bevel=0.0012)
+    # a few rounds showing where the chute meets the drum
+    for k in range(4):
+        p = W(DU + 6 + k * 0.0, DV + DR - 2 + k * 6, -BW - 40 - k * 9)
+        r_ = lathe([(0, -26.0), (5.4, -26.0), (5.4, 8.0), (4.8, 12.0), (4.6, 18.0), (2.8, 24.0), (0, 26.0)], n=20)
+        transform(r_, Matrix.Translation(p))
+        make('Mg_Round', r_, brass)
+        tip = lathe([(2.9, 23.8), (0, 26.2)], n=20); transform(tip, Matrix.Translation(p))
+        make('Mg_RoundTip', tip, copper)
+
+    PIVOT['Minigun'] = (-252.0, -12.0)
     return 'Minigun'
 
 
