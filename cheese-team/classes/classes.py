@@ -633,7 +633,8 @@ def sniper(P, T):
     def soft(k, t, x, y, z):                          # softer, slightly taller front panels
         f = max(0.0, -y / b) ** 2.0
         return (x, y * (1.0 + 0.03 * f), z * (1.0 + 0.06 * f))
-    bm = A.lathe(prof, a, b, e=2.6, n=80, cap_bottom=False, shape=soft)
+    E = 3.3
+    bm = A.lathe(prof, a, b, e=E, n=96, cap_bottom=False, shape=soft)
     lin = bm.copy(); A.transform(lin, Matrix.Diagonal((0.975, 0.975, 0.975, 1.0)))
     cap = [A.make_obj('Sniper_Crown', A.transform(bm, H), blaze, 'spine_01', solid=0.004),
            A.make_obj('Sniper_CapLining', A.transform(lin, H), A.mat_plain('M_SniperLining', '#2b2a24', rough=0.85, bump=0.02), 'spine_01', solid=0.002)]
@@ -642,8 +643,9 @@ def sniper(P, T):
         ang = k / 6 * 2 * PI + PI / 6
         pts = []
         for (s, z) in prof[1:-1]:
-            fz = max(0.0, -(b * s * math.sin(ang)) / b) ** 2.0
-            pts.append(Vector((a * s * math.cos(ang) * 1.003, b * s * math.sin(ang) * (1 + 0.03 * fz) * 1.003, z * (1 + 0.06 * fz) + 0.003)))
+            cx = math.copysign(abs(math.cos(ang)) ** (2.0 / E), math.cos(ang)); cy = math.copysign(abs(math.sin(ang)) ** (2.0 / E), math.sin(ang))
+            fz = max(0.0, -cy) ** 2.0
+            pts.append(Vector((a * s * cx * 1.004, b * s * cy * (1 + 0.03 * fz) * 1.004, z * (1 + 0.06 * fz) + 0.003)))
         bm = A.tube(pts, 0.0015, n=6)
         cap.append(A.make_obj('Sniper_Seam%d' % k, A.transform(bm, H), seam, 'spine_01'))
     bm = A.lathe([(1.0, 0.0), (1.0, 0.004), (0.7, 0.0075), (0.0, 0.0085)], 0.011, 0.011, n=24)
