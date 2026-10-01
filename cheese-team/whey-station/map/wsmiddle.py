@@ -9,85 +9,89 @@ PI = math.pi
 WT = 0.4          # wall thickness
 
 
-def vat(K, x, z, r=3.0):
-    """curd vat: concrete plinth, stainless drum, cone lid, rim ring, rim rings"""
-    K.box('Conc', x - r - 0.3, 0, z - r - 0.3, x + r + 0.3, 0.5, z + r + 0.3)
-    K.cyl('Stainless', x, 0.5, z, r, 5.0, seg=28)
-    K.cyl('Stainless', x, 5.5, z, r, 1.3, seg=28, r2=0.9)
-    K.cyl('SteelG', x, 5.3, z, r + 0.08, 0.2, seg=28)
-    K.cyl('TF_Hazard', x, 1.0, z, r + 0.06, 0.25, seg=28)
-    # collision: octagon of three boxes
+def vat(K, x, z, r=3.0, T='C'):
+    """curd vat, clean TF2 look: concrete plinth, painted drum with a team-colour band, steel rims, cone lid"""
+    K.box('TF_Conc', x - r - 0.3, 0, z - r - 0.3, x + r + 0.3, 0.5, z + r + 0.3)
+    K.box('TF_Hazard', x - r - 0.32, 0.0, z - r - 0.32, x + r + 0.32, 0.12, z + r + 0.32)
+    K.cyl('TF_Machine', x, 0.5, z, r, 5.0, seg=32)
+    K.cyl('TF_Paint_' + T, x, 2.3, z, r + 0.04, 0.9, seg=32)
+    for y in (0.5, 5.3):
+        K.cyl('TF_Steel', x, y, z, r + 0.08, 0.2, seg=32)
+    K.cyl('TF_Machine', x, 5.5, z, r, 1.3, seg=32, r2=0.9)
+    K.cyl('TF_Steel', x, 6.8, z, 0.9, 0.15, seg=24)
     a, b = r * 0.94 + 0.3, r * 0.39 + 0.3
     for (u, v) in ((a, b), (b, a), (r * 0.72 + 0.25, r * 0.72 + 0.25)):
         K.col(x - u, 0, z - v, x + u, 6.8, z + v)
 
 
-def pump_skid(K, x, z):
-    K.box('Conc', x - 1.6, 0, z - 2.0, x + 1.6, 0.25, z + 2.0, col=True)
-    K.box('SteelPlate', x - 1.2, 0.25, z - 1.6, x + 1.2, 0.45, z + 1.6)
-    K.cyl('SteelT_C' if x < 0 else 'SteelT_B', x, 0.45, z - 0.8, 0.55, 1.1, axis='y', seg=16)
-    K.cyl('Steel', x - 0.9, 1.1, z + 0.6, 0.45, 1.8, axis='x', seg=16)
-    K.box('Steel', x - 0.5, 0.45, z + 0.1, x + 0.5, 1.6, z + 1.4)
-    K.col(x - 1.3, 0.25, z - 1.7, x + 1.3, 1.65, z + 1.7)
-
-
 def half(K, T):
     P = wsparts.Parts(K, T)
     # ---------------- Vat Hall (west half; the rotated pass builds the east half): x -30..30, z -24..24, roof 16 ----------------
-    K.slab('Epoxy', -30, -24, 0, 24, -0.3, 0.0, holes=[(-4.8, -8, 0, 8), (-24, -21, -20, -18)])          # hall floor with the pit hole
-    K.slab('CorrWorn', -30, -24, 0, 24, 16.0, 16.4, holes=[(-22, -6, -8, 6)], col=False)   # roof with skylight
-    for x in (-22, -15):
-        K.box('Glass', x, 16.05, -6, x + 7, 16.1, 6)
-        P.hbeam(x, x + 7, 0, 16.0, d=0.25, w=0.12)
-    for x in (-26, -19, -12, -5):
+    TP = P.tm('TF_Paint')
+    # floor: dark tile, a concrete work apron around the pit with hazard border, a team line across the hall near the end wall
+    K.slab('TF_Floor', -30, -24, 0, 24, -0.3, 0.0, holes=[(-4.8, -8, 0, 8), (-24, -21, -20, -18)])
+    for (a0, b0, a1, b1) in ((-11, -12, -5.2, 12), (-5.2, -12, 0, -8.2), (-5.2, 8.2, 0, 12)):
+        K.box('TF_Conc', a0, 0.0, b0, a1, 0.012, b1, bevel=False)
+    for (a0, b0, a1, b1) in ((-11.2, -12.2, -11, 12.2), (-11, 12, 0, 12.2), (-11, -12.2, 0, -12)):
+        K.box('TF_Hazard', a0, 0.0, b0, a1, 0.016, b1, bevel=False)
+    K.box(TP, -28.6, 0.0, -24, -28.0, 0.016, 24, bevel=False)
+    # roof: clean ceiling panels with a long skylight down the middle
+    K.slab('TF_Ceiling', -30, -24, 0, 24, 16.0, 16.4, holes=[(-27, -4, -3, 4)], col=False)
+    K.box('Glass', -27, 16.05, -4, -3, 16.1, 3)
+    for x in (-27, -23, -19, -15, -11, -7, -3):
         P.hbeam(-24, 24, x, 15.9, d=0.6, w=0.3, axis='z')
-    # long wall (north; rotated -> south), full length so both passes overlap cleanly
+    # long wall (north; rotated -> south), full length so both passes overlap cleanly; bigger windows
     WIN = (-26, -18, -10, -2, 6, 14, 22)
-    K.wall2('x', -29.8, 29.8, 24, WT, 0, 16, holes=[(x0, x0 + 4, 11.5, 14.0) for x0 in WIN])
+    K.wall2('x', -29.8, 29.8, 24, WT, 0, 16, holes=[(x0, x0 + 4, 10.5, 14.5) for x0 in WIN])
     for x0 in WIN:
-        P.window('x', x0, x0 + 4, 24, WT, 11.5, 14.0, pane=1.0)
+        P.window('x', x0, x0 + 4, 24, WT, 10.5, 14.5, pane=1.0, transom=True)
     for x in (-27.5, -20, -12, -4, 4, 12, 20, 27.5):
         K.box('TF_Conc', x - 0.35, 6.0, 23.4, x + 0.35, 16, 23.8)                    # pilasters
-    # end wall (west; rotated -> east), full width z -24..24 (v1 stopped at +-20 and left a slot to the outside)
+    K.box(TP, -29.8, 8.6, 23.75, 0, 9.4, 23.8)                                        # team colour band along the wall
+    # end wall (west; rotated -> east), full width z -24..24
     K.wall2('z', -24, 24, -30, WT, 0, 16,
            holes=[(4, 10, 0, 4.5), (18.8, 23.5, 5.8, 9), (-23.5, -18.8, 5.8, 9), (-18, -14, 0, 3.2)])
-    P.opening('z', 4, 10, -30, WT, 0, 4.5, mat=P.tm('SteelT'), w=0.18)
-    P.opening('z', -18, -14, -30, WT, 0, 3.2, mat='Steel')
-    P.opening('z', 18.8, 23.5, -30, WT, 6, 9, mat='Steel')
-    P.opening('z', -23.5, -18.8, -30, WT, 6, 9, mat='Steel')
-    # north catwalk (y 6), full length -- this is the Cheddar high route through the hall
-    K.box('Plate', -30, 5.8, 18.8, 30, 6.0, 23.8, col=True, bevel=False)
-    K.box('Steel', -30, 5.55, 18.75, 30, 5.8, 18.9)                                 # edge channel
+    P.opening('z', 4, 10, -30, WT, 0, 4.5, mat='TF_Steel', w=0.18)
+    P.opening('z', -18, -14, -30, WT, 0, 3.2, mat='TF_Steel')
+    P.opening('z', 18.8, 23.5, -30, WT, 6, 9, mat='TF_Steel')
+    P.opening('z', -23.5, -18.8, -30, WT, 6, 9, mat='TF_Steel')
+    K.box(TP, -29.8, 9.6, -23.8, -29.75, 10.4, 23.8)                                  # team band on the end wall
+    K.box(TP, -29.8, 4.9, 3.8, -29.75, 5.7, 10.2)                                     # team header over the main door
+    # north catwalk (y 6), full length -- grate deck, team-colour fascia
+    K.box('TF_Grate', -30, 5.8, 18.8, 30, 6.0, 23.8, col=True, bevel=False)
+    K.box(TP, -30, 5.45, 18.7, 30, 5.8, 18.85)                                        # fascia
     for (a, b) in ((-29.8, -9.1), (-6.9, -1.6), (1.6, 29.8)):
-        P.rail(a, 18.85, b, 18.85, 6.0, panel=None)
+        P.rail(a, 18.85, b, 18.85, 6.0, panel=None, mat='TF_Steel')
     for x in (-24, -16, -3.5, 4.5, 16, 24):
-        P.ibeam(x, 19.1, 0, 5.55, w=0.28)
+        P.ibeam(x, 19.1, 0, 5.45, w=0.28)
+    for x in (-26, -20, -14, -8):
+        K.lamp_prop(x, 5.45, 21.3, color='#fff2dc', intensity=1.2, dist=12)          # lights under the catwalk
     P.stairs(-8, 18.8 - 32 * 0.27, -PI / 2, 2.0, 0.0, 6.0, kind='steel')           # hall floor -> catwalk
-    # conveyor bridge across the pit (x -1.5..1.5), north half z 0..18.8
+    # bridge across the pit (x -1.5..1.5), north half z 0..18.8: open rails, team fascia
     K.box('TF_Grate', -1.5, 5.8, 0, 1.5, 6.0, 18.8, col=True, bevel=False)
-    for s in (-1, 1):
-        K.box('Steel', s * 1.25 - 0.12, 5.25, 0, s * 1.25 + 0.12, 5.8, 18.8)
-        P.rail(s * 1.55, 0, s * 1.55, 18.8, 6.0, panel=P.tm('TF_Paint'))
-    P.ibeam(0, 10.0, 0, 5.25, w=0.3)
+    for s_ in (-1, 1):
+        K.box(TP, s_ * 1.5 - 0.06, 5.45, 0, s_ * 1.5 + 0.06, 5.8, 18.8)
+        P.rail(s_ * 1.55, 0, s_ * 1.55, 18.8, 6.0, panel=None, mat='TF_Steel')
+    P.ibeam(0, 10.0, 0, 5.45, w=0.3)
     # brine pit: channel x -5..5, z -16..16 at y -4 (open to the hall for |z|<8)
     K.slab('TF_Floor', -5, -16, 0, 16, -4.3, -4.0)
-    K.wall2('z', -16, 16, -5, WT, -4.0, -0.3, holes=[(-16, -12, -4.0, -1.0)], lower='TF_Tile', upper='TF_Conc', band=1.3)   # top stays under the floor slab (no z-fight strip)
+    K.wall2('z', -16, 16, -5, WT, -4.0, -0.3, holes=[(-16, -12, -4.0, -1.0)], lower='TF_Tile', upper='TF_Conc', band=1.3)   # top stays under the floor slab
     K.wall2('x', -5, 5, 16, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
     K.box('TF_Grate', -4.6, -4.02, -15.6, -0.2, -3.98, 15.6)
     P.stairs(-3.75, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')            # clear of the pit wall
-    P.rail(-5.05, -8, -5.05, 8, 0.0)
-    P.rail(-3.0, 8.05, 5.0, 8.05, 0.0)
-    K.box('TF_Hazard', -5.2, 0.0, -8.2, -4.95, 0.08, 8.2)
-    K.box('TF_Hazard', -5.0, 0.0, 7.9, 5.0, 0.08, 8.2)
-    # cover: vats and a pump skid
-    vat(K, -18, 10.5); vat(K, -18, -10.5); vat(K, -10, -13.5, 2.4)
-    # cover in the middle of each half: library barrels + crates (replaces the old home-made pump skid)
-    for (x, z) in ((-13.0, -0.6), (-12.3, 0.2), (-13.4, 0.5)):
+    P.rail(-5.05, -8, -5.05, 8, 0.0, mat='TF_Steel')
+    P.rail(-3.0, 8.05, 5.0, 8.05, 0.0, mat='TF_Steel')
+    # cover: vats, a shipping container and stacked crates/barrels (library props)
+    vat(K, -18, 10.5, T=T); vat(K, -18, -10.5, T=T); vat(K, -10, -13.5, 2.4, T=T)
+    K.prop('container', -13.0, 0, 0.0, 0.0, col=(-3.0, 0, -1.2, 3.0, 2.9, 1.2))
+    K.prop('container', -24.0, 0, -3.0, PI / 2, col=(-3.0, 0, -1.2, 3.0, 2.9, 1.2))
+    K.prop('crate', -9.0, 0, 1.6, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    K.prop('crate', -9.0, 1.2, 1.6, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    for (x, z) in ((-16.8, -1.8), (-16.2, -2.4)):
         K.prop('barrel', x, 0, z, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
-    K.prop('crate', -14.8, 0, -1.2, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
-    K.prop('crate', -14.8, 1.2, -1.2, 0.6, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
-    K.prop('crate', -14.9, 0, 1.6, 0.9, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
-    K.light(-18, 14.5, 0, '#ffe7c4', 2.4, 34); K.light(-8, 4.5, 21, '#ffd9a8', 1.2, 14); K.light(0, -1.2, 0, '#bfe3ff', 1.0, 12)
+    for x in (-24, -12):
+        K.light(x, 13.5, 0, '#fff0d8', 2.2, 30)
+    K.light(-18, 9.0, 16, '#ffe9cc', 1.2, 16); K.light(-18, 9.0, -16, '#ffe9cc', 1.2, 16); K.light(0, -1.2, 0, '#bfe3ff', 1.0, 12)
 
     # ---------------- Cheddar-side hallways (x -40..-30), Turbine-style: nothing lines up with the base doors ----------------
     K.slab('Conc', -40, -24, -30, 24, 10.0, 10.3, col=False)                        # roof over the hallways
