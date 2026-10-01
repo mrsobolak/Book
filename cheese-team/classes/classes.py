@@ -404,11 +404,15 @@ def rocketguy(P, T):
     H = hat_frame(T, fwd=math.radians(-2), side=math.radians(-11), lift=0.0, shift=(0.004, 0.004))
     prof0 = [(1.0, -0.080), (1.0, -0.040), (0.997, 0.0), (0.965, 0.034), (0.90, 0.064), (0.80, 0.090), (0.665, 0.109),
              (0.49, 0.121), (0.27, 0.128), (0.0, 0.130)]
-    prof = []
-    for (s0, z0), (s1, z1) in zip(prof0[:-1], prof0[1:]):      # dense rings so the opening edge can follow its curve
-        k = max(1, int(abs(z1 - z0) / 0.005) + (2 if s0 - s1 > 0.2 else 0))
-        for i in range(k):
-            prof.append((s0 + (s1 - s0) * i / k, z0 + (z1 - z0) * i / k))
+    prof = []                                                  # Catmull-Rom resample: dense, smooth rings
+    P0 = [prof0[0]] + prof0 + [prof0[-1]]
+    for k in range(1, len(P0) - 2):
+        p0, p1, p2, p3 = [Vector(p) for p in P0[k - 1:k + 3]]
+        m = max(2, int((p2 - p1).length / 0.005))
+        for i in range(m):
+            t = i / m
+            q = 0.5 * ((2 * p1) + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t * t + (-p0 + 3 * p1 - 3 * p2 + p3) * t ** 3)
+            prof.append((q.x, q.y))
     prof.append(prof0[-1])
     shell = A.lathe(prof, a, b, e=4.0, n=128, cap_bottom=False)
     def cut_z(fx, fy):                       # opening: brow edge high at the front, cheek guards, low at the back
