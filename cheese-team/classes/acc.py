@@ -690,4 +690,6 @@ def local_uv(bm, name='Local', fn=None):
 
 
 def bvh_of(bm):
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    bm.normal_update()                       # FromBMesh hit normals are zero without this
     return BVHTree.FromBMesh(bm)
