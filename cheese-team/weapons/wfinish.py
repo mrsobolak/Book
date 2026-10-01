@@ -57,6 +57,16 @@ def apply_all(ob):
     old = ob.data; ob.modifiers.clear(); ob.data = me
     if old.users == 0:
         bpy.data.meshes.remove(old)
+    # boolean cut walls inherit the (material-less) cutter's empty slot: give them the part's own material
+    mats = list(me.materials)
+    good = next((i for i, m in enumerate(mats) if m is not None), None)
+    if good is not None and any(m is None for m in mats):
+        for p in me.polygons:
+            if mats[p.material_index] is None:
+                p.material_index = good
+        for i in reversed(range(len(mats))):
+            if mats[i] is None:
+                me.materials.pop(index=i)
 
 
 def join(obs, name):
