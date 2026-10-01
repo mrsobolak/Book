@@ -137,8 +137,8 @@ def cloth_wrap(name, g, t0, t1, mat, pad=1.8, seed=3):
 
 # ================================================================== 1. REVOLVER (Outlaw, primary)
 def revolver():
-    blued = wk.steel('M_RevBlued', base='#15171c', bare='#9ea2a8', rough=0.28, wear=1.0, scratch=0.8)
-    blued_dk = wk.steel('M_RevBluedDark', base='#0f1013', bare='#8d9197', rough=0.34, wear=0.7, scratch=0.5)
+    blued = wk.steel('M_RevBlued', base='#14171d', bare='#b4b7bc', rough=0.27, wear=1.6, scratch=1.0, edge_gain=14.0)
+    blued_dk = wk.steel('M_RevBluedDark', base='#0f1013', bare='#a6a9ae', rough=0.32, wear=1.2, scratch=0.6, edge_gain=14.0)
     walnut = wk.wood('M_RevWalnut', light='#3f2111', dark='#1a0b05', rough=0.36, ring=22.0, axis='Z', grain=0.45)
     lead = wk.steel('M_RevLead', base='#606266', bare='#7b7e82', rough=0.55, wear=0.0, scratch=0.0, metallic=0.85)
     fabric = wk.fabric_img('M_RevBandana', 'bandana_paisley.png', sat=1.35, val=0.85)
@@ -155,8 +155,8 @@ def revolver():
     top = make('Rev_Topstrap', profile(ts, -8.2, 8.2), blued, bevel=0.0026, seg=5, angle=30)
     cut(top, box(W(-1.5, 13.6, 0), (0.0022, 0.009, 0.0034)), 'rearsight')
     # bottom strap under the cylinder, sweeping up into the front ring
-    bs = rounded([(-2.0, -36.0, 0), (44.0, -36.0, 0), (48.5, -22.0, 6), (48.5, -30.0, 0), (42.0, -40.5, 9), (20.0, -42.2, 14),
-                  (-2.0, -42.5, 0)], n=8)
+    bs = rounded([(-2.0, -36.0, 0), (41.4, -36.0, 0), (41.4, -21.0, 0), (48.5, -21.0, 0), (48.5, -30.0, 5), (42.0, -40.5, 9),
+                  (20.0, -42.2, 14), (-2.0, -42.5, 0)], n=8)
     make('Rev_BottomStrap', profile(bs, -11.5, 11.5), blued, bevel=0.0026, seg=5, angle=30)
     # front ring round the barrel shank + base-pin housing
     fr = rounded([(41.6, 12.5, 3), (48.5, 12.5, 3), (48.5, -21.0, 4), (41.6, -21.0, 2)])

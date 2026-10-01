@@ -406,13 +406,13 @@ class NT:
         self.val(self.bs.inputs[name], v)
 
 
-def steel(name, base='#16181d', bare='#a2a5aa', rough=0.33, wear=1.0, scratch=1.0, metallic=1.0, tint_var=0.06):
+def steel(name, base='#16181d', bare='#a2a5aa', rough=0.33, wear=1.0, scratch=1.0, metallic=1.0, tint_var=0.06, edge_gain=9.0):
     """blued / blackened / bare steel: mottled finish, worn bright edges, fine scratches, smudgy roughness"""
     g = NT(name)
     mot = g.noise(14, 6, 0.6)
     b0 = srgb(base)
     basec = g.ramp(mot, 0.3, 0.8, tuple(c * (1 - tint_var) for c in b0), tuple(min(1, c * (1 + tint_var * 2)) for c in b0))
-    e = g.edges(breakup=0.6) if wear > 0 else 0.0
+    e = g.edges(radius=0.0012, gain=edge_gain, breakup=0.6) if wear > 0 else 0.0
     s = g.scratches(scratch) if scratch > 0 else 0.0
     m = g.math('MAXIMUM', g.math('MULTIPLY', e, wear, clamp=True), g.math('MULTIPLY', s, 0.7 * scratch, clamp=True)) if wear or scratch else 0.0
     g.set('Base Color', g.mix(m, basec, bare))
