@@ -263,6 +263,11 @@ class Kit:
         if light:
             self.light(x, yl - 0.3, z, color, intensity, dist)
 
+    def lamp_prop(self, x, y, z, color='#ffe7c2', intensity=1.6, dist=18):
+        """library lamp model hanging at height y (light just below it)"""
+        self.prop('lamp', x, y, z)
+        self.light(x, y - 0.4, z, color, intensity, dist)
+
     # ---------- helpers ----------
     @staticmethod
     def rect_minus(x0, z0, x1, z1, holes, fn):
@@ -313,7 +318,10 @@ class Kit:
         col: optional local AABB (x0,y0,z0,x1,y1,z1) added as a collider"""
         p = self.M[-1] @ Vector((x, y, z))
         yaw = math.atan2(self.M[-1][0][2], self.M[-1][0][0])   # rotation of the current frame about Y
-        self.props.append({'src': src, 'p': [round(p.x, 3), round(p.y, 3), round(p.z, 3)], 'ry': round(ry - yaw, 4), 'scale': scale})
+        e = {'src': src, 'p': [round(p.x, 3), round(p.y, 3), round(p.z, 3)], 'ry': round(ry - yaw, 4), 'scale': scale}
+        if col:
+            e['fit'] = [round(col[3] - col[0], 3), round(col[4] - col[1], 3), round(col[5] - col[2], 3)]   # local x, y(up), z size
+        self.props.append(e)
         if col:
             self.at(x, y, z, ry); self.col(*col); self.pop()
 

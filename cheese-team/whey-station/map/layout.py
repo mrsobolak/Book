@@ -1,18 +1,17 @@
-# Whey Station (v2, simple TF2-style layout) -- shared constants. Game frame: X right, Y up, Z lateral, metres.
-#  Base (local d 0..44 toward the middle, z -19..19): Spawn d0-12 | vestibule d12-16 | FLAG ROOM d16-44 z-13..13.
-#  Cheddar base at x=-72 facing +x; Bleu = same base rotated 180 deg at x=+72. Middle hall x -28..28, z -19..19.
-#  Levels: -4 bottom corridor (LOW), 0 ground (MAIN), 6 upper corridor / catwalks (HIGH).
+# Whey Station v4 (simple) -- shared constants. Game frame: X right, Y up, Z lateral, metres.
+#  Base (local d 0..36 toward the middle, z -16..16): FLAG ROOM d0-18 (spawn in its back corner) | FRONT ROOM d18-36.
+#  Cheddar base at x=-64 facing +x; Bleu = same base rotated 180 deg at x=+64. Middle hall x -28..28, z -16..16.
+#  Three lanes: MAIN ground doors, HIGH bridge (y 6) straight through the middle, LOW tunnel (y -4) under it, z -9..-5 / cross / 5..9.
 import math
 PI = math.pi
 FLOORS = [-4.0, 0.0, 6.0]
-BASE_FRAME = {'C': (-72.0, 0.0), 'B': (72.0, PI)}
-SPAWNS = {'C': [-66.0, 0.1, 14.0], 'B': [66.0, 0.1, -14.0]}
-FLAGS = {'C': [-60.0, 0.5, -11.0], 'B': [60.0, 0.5, 11.0]}
-ROUTES = {   # Cheddar attacking the Bleu flag (Bleu base = Cheddar base rotated: world = (72 - d, -z))
-    'main': [[-66, 0, 14], [-58, 0, 13.5], [-36, 0, 11], [-34, 0, 7], [-29, 0, 6], [-27, 0, 0], [0, 0, 5.5], [27, 0, 0],
-             [31, 0, 6.5], [36, 0, 11], [44, 0, 14], [60, 0.5, 11]],
-    'high': [[-66, 0, 14], [-58, 0, 13.5], [-46, 0, 11], [-38, 6, 11.5], [-30, 6, 16], [0, 6, 16], [0, 6, -16],
-             [28, 6, -16], [49, 6, -16], [49, 6, 0], [49, 6, 5], [60, 0.5, 11]],
-    'low':  [[-66, 0, 14], [-67.5, 0, 9], [-61.5, 0, -3], [-50, 0, -10], [-46, -4, -16], [-28, -4, -14.5], [0, -4, -14.5],
-             [0, -4, 14.5], [28, -4, 14.5], [46, -4, 14.5], [52, 0, 16], [60, 0.5, 11]],
+BASE_FRAME = {'C': (-64.0, 0.0), 'B': (64.0, PI)}
+SPAWNS = {'C': [-60.0, 0.1, 12.5], 'B': [60.0, 0.1, -12.5]}
+FLAGS = {'C': [-56.0, 0.5, 0.0], 'B': [56.0, 0.5, 0.0]}
+ROUTES = {   # Cheddar attacking the Bleu flag (Bleu base = Cheddar base rotated: world = (64 - d, -z))
+    'main': [[-60, 0, 12.5], [-56.5, 0, 8], [-46, 0, -7.5], [-28, 0, -6], [-28, 0, 0], [28, 0, 0], [46, 0, 7.5], [56, 0.5, 0]],
+    'high': [[-60, 0, 12.5], [-56.5, 0, 8], [-60, 0, 4], [-52, 6, 4], [-50, 6, 0], [28, 6, 0], [50, 6, 0], [52, 6, -4],
+             [60, 0, -4], [56, 0.5, 0]],
+    'low':  [[-60, 0, 12.5], [-56.5, 0, 8], [-55, 0, -5], [-55, 0, -7], [-48, -4, -7], [-28, -4, -7], [0, -4, -7],
+             [0, -4, 7], [48, -4, 7], [55, 0, 7], [56, 0.5, 0]],
 }
