@@ -345,10 +345,12 @@ def lineup(export_root, path):
         ld = bpy.data.lights.new(nm_, 'AREA'); ld.energy = en; ld.size = size
         lo = bpy.data.objects.new(nm_, ld); sc.collection.objects.link(lo); lo.location = loc
         lo.rotation_euler = (Vector((0, 0, 0.7)) - lo.location).to_track_quat('-Z', 'Y').to_euler()
-    bpy.ops.mesh.primitive_plane_add(size=30)
+    gme = bpy.data.meshes.new('Ground')
+    gme.from_pydata([(-15, -15, 0), (15, -15, 0), (15, 15, 0), (-15, 15, 0)], [], [(0, 1, 2, 3)])
+    ground = bpy.data.objects.new('Ground', gme); sc.collection.objects.link(ground)
     gm = bpy.data.materials.new('Ground'); gm.use_nodes = True
     principled(gm).inputs['Base Color'].default_value = (0.42, 0.36, 0.28, 1); principled(gm).inputs['Roughness'].default_value = 0.9
-    bpy.context.active_object.data.materials.append(gm)
+    gme.materials.append(gm)
     w = bpy.data.worlds.new('LineWorld'); w.use_nodes = True
     bg = next(n for n in w.node_tree.nodes if n.type == 'BACKGROUND')
     bg.inputs['Color'].default_value = (0.55, 0.47, 0.38, 1); bg.inputs['Strength'].default_value = 0.7
