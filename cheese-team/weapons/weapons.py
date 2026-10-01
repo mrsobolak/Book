@@ -1379,6 +1379,118 @@ def snubnose():
 BUILDERS['SnubNose'] = snubnose
 
 
+# ====================================================================== AMMO
+# Real-size cartridges / projectiles (mm), muzzle direction = +u (-Y), origin at the base of each piece.
+# Per calibre: <C>_Bullet (what flies), <C>_Round (loaded cartridge), <C>_Casing (fired, empty).
+def _ammo_mats():
+    return dict(brass=wk.steel('M_AmBrass', base='#9c7a35', bare='#e0c27a', rough=0.28, wear=0.6, scratch=0.5, edge_gain=6.0),
+                nickel=wk.steel('M_AmNickel', base='#8d8f92', bare='#d5d7da', rough=0.25, wear=0.4, scratch=0.4, edge_gain=6.0),
+                copper=wk.steel('M_AmCopper', base='#a4562c', bare='#d99263', rough=0.30, wear=0.3, scratch=0.3, edge_gain=5.0),
+                lead=wk.steel('M_AmLead', base='#55585d', bare='#8c8f94', rough=0.55, wear=0.2, scratch=0.2, metallic=0.55),
+                primer=wk.steel('M_AmPrimer', base='#b0b2b5', bare='#d0d2d4', rough=0.3, wear=0.0, scratch=0.0))
+
+
+# calibre: case profile (r, u) outside, case length, bullet profile from its base, seat depth, metals
+CALIBRES = {
+    'Ammo45': dict(case=[(6.75, 0.0), (6.75, 1.5), (6.05, 1.5), (6.05, 2.4), (5.95, 32.6)], inner=5.55,
+                   bullet=[(5.72, 0.0), (5.72, 9.0), (5.4, 11.5), (4.6, 14.2), (3.3, 16.4), (1.6, 17.6), (0.0, 18.0)],
+                   seat=8.0, case_m='brass', bullet_m='lead', rim=True),
+    'Ammo9mm': dict(case=[(4.95, 0.0), (4.95, 0.9), (4.4, 0.9), (4.4, 1.6), (4.95, 2.4), (4.82, 19.15)], inner=4.5,
+                    bullet=[(4.5, 0.0), (4.5, 6.5), (4.25, 9.0), (3.6, 11.6), (2.5, 13.6), (1.2, 14.8), (0.0, 15.2)],
+                    seat=5.0, case_m='brass', bullet_m='copper'),
+    'Ammo3006': dict(case=[(6.0, 0.0), (6.0, 1.2), (5.2, 1.2), (5.2, 2.2), (6.0, 3.2), (5.85, 43.0), (5.6, 44.2), (4.4, 48.6),
+                           (4.25, 49.4), (4.25, 63.3)], inner=3.9,
+                     bullet=[(3.4, 0.0), (3.9, 3.2), (3.9, 15.0), (3.6, 20.0), (2.9, 24.5), (1.8, 28.6), (0.6, 31.4), (0.0, 32.0)],
+                     seat=8.0, case_m='brass', bullet_m='copper'),
+    'Ammo3030': dict(case=[(7.3, 0.0), (7.3, 1.6), (6.5, 1.6), (6.3, 36.0), (5.9, 37.5), (4.6, 40.6), (4.45, 41.5), (4.45, 51.8)],
+                     inner=3.9, bullet=[(3.9, 0.0), (3.9, 14.0), (3.5, 18.0), (2.6, 21.5), (1.9, 23.0), (0.0, 23.3)],
+                     seat=9.0, case_m='nickel', bullet_m='lead', rim=True),
+}
+
+
+def _case(c, m, mats, fired=False):
+    prof = list(c['case']); L = prof[-1][1]
+    mouth = [(c['inner'], L), (c['inner'], 4.0), (0.0, 4.0)]
+    make('Case', lathe([(0.0, 0.0)] + prof + mouth, n=40, cap0=False, cap1=False), mats[m], bevel=0.0)
+    make('Primer', lathe([(0.0, -0.15), (2.2 if prof[0][0] < 6 else 2.6, -0.15), (2.2 if prof[0][0] < 6 else 2.6, 0.4), (0.0, 0.4)],
+                         n=24, cap0=False, cap1=False), mats['primer'], bevel=0.0)
+    if fired:                                                        # firing-pin dent
+        make('Dent', lathe([(0.0, -0.4), (0.7, -0.4), (0.9, -0.1)], n=16, cap0=False, cap1=False), mats['primer'], bevel=0.0)
+    return L
+
+
+def _bullet(c, mats, base_u=0.0):
+    prof = [(0.0, base_u)] + [(r, u + base_u) for (r, u) in c['bullet']]
+    make('Bullet', lathe(prof, n=40, cap0=False, cap1=False), mats[c['bullet_m']], bevel=0.0)
+
+
+def _ammo_builder(cal, kind):
+    def b():
+        mats = _ammo_mats(); c = CALIBRES[cal]
+        if kind == 'Bullet':
+            _bullet(c, mats)
+        elif kind == 'Casing':
+            _case(c, c['case_m'], mats, fired=True)
+        else:
+            L = _case(c, c['case_m'], mats)
+            _bullet(c, mats, base_u=L - c['seat'])
+        PIVOT[cal + '_' + kind] = (0.0, 0.0)
+        return cal + '_' + kind
+    return b
+
+
+for _cal in CALIBRES:
+    for _k in ('Bullet', 'Round', 'Casing'):
+        BUILDERS['%s_%s' % (_cal, _k)] = _ammo_builder(_cal, _k)
+
+
+def shotshell():
+    """12 gauge buckshot shell: red plastic hull, tall brass head, 6-point fold crimp"""
+    hull = wk.plastic('M_AmHull', '#a3201a', rough=0.5)
+    m = _ammo_mats()
+    make('Ss_Head', lathe([(0.0, 0.0), (11.2, 0.0), (11.2, 1.4), (10.6, 1.4), (10.6, 15.0), (10.25, 15.6), (0.0, 15.6)],
+                          n=48, cap0=False, cap1=False), m['brass'], bevel=0.0)
+    make('Ss_Primer', lathe([(0.0, -0.15), (3.0, -0.15), (3.0, 0.4), (0.0, 0.4)], n=24, cap0=False, cap1=False), m['primer'])
+    def crimp(i, k, r, a):
+        return r * (1.0 - (0.06 if k == 3 else 0.0) * (0.5 + 0.5 * math.cos(6 * a)))
+    make('Ss_Hull', lathe([(10.25, 15.0), (10.3, 64.0), (9.6, 67.5), (5.0, 69.0), (0.0, 69.4)], n=48, cap0=False, cap1=False,
+                          shape=crimp), hull, bevel=0.0)
+    PIVOT['Shotgun12_Shell'] = (0.0, 0.0)
+    return 'Shotgun12_Shell'
+
+
+def buckshot():
+    make('Pellet', sphere(W(4.2, 0, 0), 0.0042, seg=20, rings=10), _ammo_mats()['lead'])
+    PIVOT['Shotgun12_Pellet'] = (0.0, 0.0)
+    return 'Shotgun12_Pellet'
+
+
+def rocket():
+    """RPG-style rocket for the launcher (tube ID 89 mm): finned tail boom, sustainer motor, fat olive warhead + fuze spike"""
+    olive = wk.paint('M_RkOlive', '#4b5530', under='#7c7f82', rough=0.55, wear=1.2, scuff=1.0)
+    black = wk.paint('M_RkBlack', '#1a1b1c', under='#6d6f72', rough=0.6, wear=1.0, scuff=0.8)
+    steel = wk.steel('M_RkSteel', base='#2a2c2f', bare='#a9acb1', rough=0.4, wear=1.0, scratch=0.8)
+    band = wk.paint('M_RkBand', '#b38a1c', under='#555555', rough=0.5, wear=0.8, scuff=0.6)
+    make('Rk_Boom', lathe([(0.0, 0.0), (9.0, 0.0), (11.0, 4.0), (11.0, 150.0), (18.0, 160.0)], n=32, cap0=False, cap1=False), steel)
+    make('Rk_Motor', lathe([(18.0, 160.0), (20.0, 170.0), (20.0, 400.0), (24.0, 420.0)], n=40, cap0=False, cap1=False), black)
+    make('Rk_Head', lathe([(24.0, 420.0), (41.0, 440.0), (42.0, 452.0), (42.0, 560.0), (39.0, 600.0), (31.0, 640.0), (20.0, 676.0),
+                           (9.0, 700.0), (6.0, 704.0)], n=56, cap0=False, cap1=False), olive)
+    make('Rk_Band', lathe([(42.3, 470.0), (42.6, 472.0), (42.6, 488.0), (42.3, 490.0)], n=56, cap0=False, cap1=False), band, bevel=0.0)
+    make('Rk_Fuze', lathe([(6.0, 704.0), (5.0, 760.0), (3.5, 770.0), (0.0, 774.0)], n=20, cap0=False, cap1=False), steel)
+    for k in range(4):                                               # folded-out stabiliser fins
+        fin = profile(rounded([(14.0, 9.0, 1), (70.0, 9.0, 1), (40.0, 46.0, 2), (14.0, 46.0, 2)], n=3), -0.9, 0.9)
+        bmesh.ops.rotate(fin, verts=fin.verts[:], cent=Vector((0, 0, 0)), matrix=Matrix.Rotation(PI / 2 * k + PI / 4, 3, 'Y'))
+        make('Rk_Fin%d' % k, fin, steel, bevel=0.0004)
+    PIVOT['Rocket'] = (0.0, 0.0)
+    return 'Rocket'
+
+
+BUILDERS['Shotgun12_Shell'] = shotshell
+BUILDERS['Shotgun12_Pellet'] = buckshot
+BUILDERS['Rocket'] = rocket
+AMMO = [k for k in BUILDERS if k.startswith(('Ammo', 'Shotgun12', 'Rocket'))]
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
