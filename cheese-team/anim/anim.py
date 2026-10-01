@@ -898,3 +898,30 @@ def test(cls, wname, only=None, step=1):
     res = {a.name: check(rig, a, step=step) for a in acts}
     LAST.update(rig=rig, res=res, misses=list(IK_MISSES))
     return {k: (len(v), v[:6]) for k, v in res.items()}, len(IK_MISSES)
+
+
+def probe(rig, act, frames):
+    """per frame: which body groups each arm / the gun overlaps (wedge, hats, gun, legs) -- for tuning"""
+    rig.arm.animation_data.action = bpy.data.actions[act] if isinstance(act, str) else act
+    mw = rig.arm.matrix_world; out = []
+    wobjs = [o for w in rig.weapons.values() for o in w['objs']]
+    for f in frames:
+        bpy.context.scene.frame_set(f)
+        wb = _bvh(wobjs)
+        wedge = _bvh([rig.body], only_groups=('spine_01', 'pelvis', 'aim', 'root'))
+        hats = _bvh(rig.acc, only_groups=('spine_01', 'aim')) if rig.acc else None
+        hs = [(mw @ rig.arm.pose.bones[b].tail, 0.034 * rig.s) for b in ('lowerarm_l', 'lowerarm_r')]
+        sh = [(mw @ rig.arm.pose.bones[b].head, 0.05 * rig.s) for b in ('upperarm_l', 'upperarm_r')]
+        row = {}
+        for g in ('spine_01', 'thigh_l', 'thigh_r', 'calf_l', 'calf_r', 'upperarm_l', 'lowerarm_l', 'hand_l',
+                  'upperarm_r', 'lowerarm_r', 'hand_r'):
+            t = _bvh([rig.body], only_groups=(g,))
+            if not t:
+                continue
+            arm = 'arm' in g or 'hand' in g
+            v = (_ov(wb, t, hs), _ov(wedge, t, sh) if arm else 0, _ov(hats, t, sh) if (hats and arm) else 0)
+            if any(v):
+                row[g] = v
+        P = lambda b: tuple(round(c, 3) for c in rig.C(rig.arm.pose.bones[b].tail))
+        out.append((f, row, 'hL', P('lowerarm_l'), 'hR', P('lowerarm_r')))
+    return out
