@@ -551,3 +551,57 @@ def screw(center, normal, r=0.0022, mat=None, name='Screw', slot_ang=0.4):
     transform(sl, F @ Matrix.Translation((0, 0, r * 0.85)) @ Matrix.Rotation(slot_ang, 4, 'Z'))
     cut(ob, sl, 'slot')
     return ob
+
+
+def loft(rings, closed=True, cap0=False, cap1=False, uvs=None):
+    """skin a list of rings (lists of world Vectors, equal length). closed: rings wrap around."""
+    n = len(rings[0]); m = len(rings)
+    verts = [p for r in rings for p in r]; faces = []
+    span = n if closed else n - 1
+    for k in range(m - 1):
+        for i in range(span):
+            j = (i + 1) % n
+            faces.append((k * n + i, k * n + j, (k + 1) * n + j, (k + 1) * n + i))
+    if cap0:
+        c = len(verts); verts.append(sum(rings[0], Vector()) / n)
+        for i in range(span):
+            faces.append((c, (i + 1) % n, i))
+    if cap1:
+        c = len(verts); verts.append(sum(rings[-1], Vector()) / n)
+        for i in range(span):
+            faces.append((c, (m - 1) * n + i, (m - 1) * n + (i + 1) % n))
+    bm = bm_from(verts, faces)
+    if uvs is not None:
+        uvl = bm.loops.layers.uv.new('UVMap'); bm.verts.index_update()
+        for f in bm.faces:
+            for lp in f.loops:
+                lp[uvl].uv = uvs[lp.vert.index] if lp.vert.index < len(uvs) else (0.5, 0.5)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    return bm
+
+
+def studio(strength=1.0):
+    """neutral product-shot lighting + world for checking weapons (not exported)"""
+    sc = bpy.context.scene
+    c = coll('STUDIO')
+    for nm_, loc, en, size, col in (('Key', (0.9, -0.7, 0.9), 220.0, 0.9, (1.0, 0.96, 0.9)),
+                                    ('Fill', (-1.0, -0.4, 0.3), 70.0, 1.2, (0.85, 0.9, 1.0)),
+                                    ('Rim', (-0.3, 1.0, 0.8), 160.0, 0.8, (1.0, 1.0, 1.0)),
+                                    ('Top', (0.0, 0.0, 1.3), 60.0, 1.5, (1.0, 1.0, 1.0))):
+        ld = bpy.data.lights.new(nm_, 'AREA'); ld.energy = en * strength; ld.size = size; ld.color = col
+        lo = bpy.data.objects.new(nm_, ld); c.objects.link(lo); lo.location = loc
+        lo.rotation_euler = (Vector((0, 0, 0)) - lo.location).to_track_quat('-Z', 'Y').to_euler()
+    w = bpy.data.worlds.new('StudioWorld'); w.use_nodes = True
+    bg = next(n for n in w.node_tree.nodes if n.type == 'BACKGROUND')
+    bg.inputs['Color'].default_value = (0.32, 0.31, 0.30, 1); bg.inputs['Strength'].default_value = 0.35
+    sc.world = w
+    sc.render.engine = 'CYCLES'
+    sc.cycles.samples = 48; sc.cycles.preview_samples = 32
+    try:
+        sc.cycles.use_preview_denoising = True; sc.cycles.device = 'GPU'
+    except Exception:
+        pass
+    try:
+        sc.view_settings.view_transform = 'AgX'
+    except TypeError:
+        pass
