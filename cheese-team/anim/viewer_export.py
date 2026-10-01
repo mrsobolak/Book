@@ -42,6 +42,9 @@ def export(cls, dst):
     arm.data.pose_position = 'POSE'
     bpy.context.view_layer.update()
     path = os.path.join(dst, cls + '.glb')
-    bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', export_animations=True,
-                              export_animation_mode='ACTIONS')
+    win = bpy.context.window_manager.windows[0]
+    area = next((a for a in win.screen.areas if a.type == 'VIEW_3D'), win.screen.areas[0])
+    with bpy.context.temp_override(window=win, screen=win.screen, area=area, active_object=arm, object=arm):
+        bpy.ops.export_scene.gltf(filepath=path, export_format='GLB', export_animations=True,
+                                  export_animation_mode='ACTIONS')
     return path
