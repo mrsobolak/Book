@@ -685,17 +685,15 @@ reload_lever = keyed([
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
-SMAG = ('w', 120, 0, 250)                                            # (gun rolled: the side mag stands up on top)
-reload_smg = keyed([                                                 # left hand keeps the fore-end, right hand swaps the mag
+reload_smg = keyed([                                                 # left hand keeps the fore-end; mag rolled under, right swaps
     (0.00, {}),
-    (0.06, dict(dg=(0.03, -0.07, 0.02))),                                                    # push it out first
-    (0.14, dict(dr=(0, 4, -90), rh=('w', 120, 0, 270), rel=(-1, 0.2, 0.6))),
-    (0.22, dict(rh=('w', 120, 0, 330), ease=snap)),                                           # yank it up
+    (0.12, dict(dg=(0, 0, 0.06), dr=(0, 4, 90), rh=('w', 120, 0, 262), rel=(-1, 0.4, -0.6))),
+    (0.20, dict(rh=('w', 120, 0, 320), ease=snap)),                                           # yank it down
     (0.36, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
     (0.40, dict()),
-    (0.54, dict(rh=('w', 120, 0, 330), rel=(-1, 0.2, 0.6))),
-    (0.62, dict(rh=('w', 120, 0, 268), dg=(0.03, -0.07, 0.016), ease=snap)),                  # seat
-    (0.70, dict(dg=(0.03, -0.07, 0.02))),
+    (0.54, dict(rh=('w', 120, 0, 320), rel=(-1, 0.4, -0.6))),
+    (0.62, dict(rh=('w', 120, 0, 262), dg=(0, 0, 0.066), ease=snap)),                         # seat
+    (0.70, dict(dg=(0, 0, 0.06))),
     (0.84, dict(rh='grip', dr=(0, 0, 0), dg=(0, 0, 0), rel=REL_T)),
     (1.00, {}),
 ])
@@ -703,21 +701,25 @@ reload_smg = keyed([                                                 # left hand
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
 _VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
 RFREE = Vector((-0.30, -0.04, 0.50))                                 # right hand parked low at the back-right
-_LEVEL = dict(dg=(0.15, -0.05, -0.05), dr=(-55, 0, 0), tw=55)       # squared up, tube level and pointing ahead
-reload_launcher = keyed([                                            # left hand steadies it, right drops a rocket in the top
+_SIDE = dict(dg=(-0.06, 0.0, -0.11), dr=(0, 90, 0), tw=0)            # stood up beside the right hip (outside the wedge)
+_CORNER = dict(dg=(-0.18, -0.03, -0.11), dr=(-55, 90, 0), tw=55)     # squared up, walked round the front-right corner
+_HANDOFF = dict(dg=(0.094, -0.094, -0.11), dr=(-55, 90, 0), tw=55)   # front, where both hands reach it
+reload_launcher = keyed([                                            # stand it up, left hand steadies, right drops a rocket in
     (0.00, {}),
-    (0.07, dict(rh=RFREE, rel=(-1, 0.4, -0.3))),                                              # let go first
-    (0.17, dict(_LEVEL, lh=('w', 560, 0, 86), lel=(1, 0.2, -0.6))),                          # square up, palm on the tube
-    (0.28, dict(_VERT, lh=('w', 500, 0, 86))),                                                # stand it up
-    (0.36, dict(rh=BELT_R, rel=(-1, 0.5, -0.2))),
-    (0.42, dict()),
-    (0.56, dict(rh=('w', 1064, 0, -86), rel=(-1, 0.2, -0.4))),                                # rocket over the muzzle
-    (0.64, dict(rh=('w', 1004, 0, -86), dg=(0.15, -0.107, -0.12), ease=snap)),               # drop it in
+    (0.06, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.15, dict(_SIDE)),
+    (0.25, dict(_CORNER)),
+    (0.31, dict(_HANDOFF, lh=('w', 500, 0, 86), lel=(1, 0.2, -0.6))),
+    (0.36, dict(_VERT, rh=RFREE, rel=(-1, 0.4, -0.3))),
+    (0.42, dict(rh=BELT_R, rel=(-1, 0.5, -0.2))),
+    (0.47, dict()),
+    (0.58, dict(rh=('w', 1064, 0, -86), rel=(-1, 0.2, -0.4))),                                # rocket over the muzzle
+    (0.65, dict(rh=('w', 1004, 0, -86), dg=(0.15, -0.107, -0.12), ease=snap)),               # drop it in
     (0.70, dict(rh=('w', 1064, 0, -86), dg=(0.15, -0.107, -0.11))),
-    (0.76, dict(rh=RFREE, rel=(-1, 0.4, -0.3))),
-    (0.84, dict(_LEVEL, lh=('w', 560, 0, 86))),
-    (0.94, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, lh=None, rh='grip', rel=REL_T, lel=(1, -0.2, -0.6))),
-    (1.00, {}),
+    (0.76, dict(_HANDOFF, rh='grip', rel=REL_T)),
+    (0.82, dict(_CORNER, lh='rest', lel=(0.4, 1, -0.1))),
+    (0.90, dict(_SIDE)),
+    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, lh=None, lel=(1, 0.0, -0.8))),
 ])
 
 # ---- blueprint: present it (fire), flip the page (reload)
