@@ -254,10 +254,13 @@ def forearm_cuff(rig, side):
     return cache[side]
 
 
-def wedge_tree_rest(rig):
-    """the wedge (spine / pelvis groups of the body) as a BVH in REST char space, built once per rig"""
-    if getattr(rig, '_wedge_rest', None) is not None:
-        return rig._wedge_rest
+def wedge_tree_rest(rig, groups=('spine_01', 'aim')):
+    """body parts (by dominant group) as a BVH in REST char space, cached per rig + group set"""
+    cache = getattr(rig, '_wedge_rest', None)
+    if cache is None:
+        cache = rig._wedge_rest = {}
+    if groups in cache:
+        return cache[groups]
     rig.arm.data.pose_position = 'REST'; bpy.context.view_layer.update()
     C = (rig.arm.matrix_world @ Matrix.Scale(100.0, 4)).inverted()
     dg = bpy.context.evaluated_depsgraph_get()
@@ -266,14 +269,14 @@ def wedge_tree_rest(rig):
     keep = set()
     for v in o.data.vertices:
         ws = {gi.get(g.group): g.weight for g in v.groups}
-        if ws and max(ws, key=ws.get) in ('spine_01', 'aim', 'pelvis', 'root'):
+        if ws and max(ws, key=ws.get) in groups:
             keep.add(v.index)
     verts = [M @ v.co for v in me.vertices]
     polys = [tuple(p.vertices) for p in me.polygons if all(i in keep for i in p.vertices)]
     ev.to_mesh_clear()
     rig.arm.data.pose_position = 'POSE'; bpy.context.view_layer.update()
-    rig._wedge_rest = BVHTree.FromPolygons(verts, polys)
-    return rig._wedge_rest
+    cache[groups] = BVHTree.FromPolygons(verts, polys) if polys else None
+    return cache[groups]
 
 
 def arm_ik(rig, side, target, pole, b3, wtree=None):
@@ -290,6 +293,7 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
     p0 = to_rest.to_3x3() @ Vector(pole)
     p0 = (p0 - u * p0.dot(u)); p0 = p0.normalized() if p0.length > 1e-6 else u.orthogonal().normalized()
     back = to_rest.inverted()
+    pel_rest = rig.arm.data.bones['pelvis'].matrix_local @ rig.pb['pelvis'].matrix.inverted()
     best = None; least = (99, p0)
     for k in range(0, 49):
         ang = math.radians(((k + 1) // 2) * 7.5 * (1 if k % 2 else -1))
@@ -298,6 +302,10 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
         Sa = S + (E - S).normalized() * 0.05             # the stick roots into the wedge side at the shoulder
         wtr = wedge_tree_rest(rig)
         nh = _seg_hits_tree(wtr, Sa, E, ARM_R) + _seg_hits_tree(wtr, E, W, ARM_R)
+        ptr = wedge_tree_rest(rig, ('pelvis', 'root'))
+        if nh == 0 and ptr is not None:                           # the pelvis doesn't twist: test it in its own frame
+            Pp = [rig.C(pel_rest @ back @ rig.A(q)) for q in (Sa, E, W)]
+            nh = _seg_hits_tree(ptr, Pp[0], Pp[1], ARM_R) + _seg_hits_tree(ptr, Pp[1], Pp[2], ARM_R)
         atree = acc_tree_rest(rig)
         if nh == 0 and atree is not None:
             nh = 5 * (_seg_hits_tree(atree, Sa, E, ARM_R) + _seg_hits_tree(atree, E, W, ARM_R))
