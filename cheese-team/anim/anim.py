@@ -230,6 +230,29 @@ def acc_tree_rest(rig):
     return rig._acc_rest
 
 
+def forearm_radius(rig, side):
+    """stick radius, or the radius of whatever accessory is skinned to the forearm (spiked wristbands...)"""
+    cache = getattr(rig, '_fr', None)
+    if cache is None:
+        cache = rig._fr = {}
+        rig.arm.data.pose_position = 'REST'; bpy.context.view_layer.update()
+        C = (rig.arm.matrix_world @ Matrix.Scale(100.0, 4)).inverted()
+        for sd in ('l', 'r'):
+            b = rig.arm.data.bones['lowerarm_' + sd]
+            h = rig.C(b.head_local); t = rig.C(b.tail_local); ax = (t - h).normalized()
+            r = ARM_R
+            for o in rig.acc:
+                gi = {g.index: g.name for g in o.vertex_groups}; M = C @ o.matrix_world
+                for v in o.data.vertices:
+                    ws = {gi.get(g.group): g.weight for g in v.groups}
+                    if ws and max(ws, key=ws.get) == 'lowerarm_' + sd:
+                        p = M @ v.co - h
+                        r = max(r, (p - ax * p.dot(ax)).length + 0.002)
+            cache[sd] = r
+        rig.arm.data.pose_position = 'POSE'; bpy.context.view_layer.update()
+    return cache[side]
+
+
 def wedge_tree_rest(rig):
     """the wedge (spine / pelvis groups of the body) as a BVH in REST char space, built once per rig"""
     if getattr(rig, '_wedge_rest', None) is not None:
@@ -280,7 +303,7 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
         if nh == 0 and wtree is not None:
             Ep, Wp, Sp = (rig.C(back @ rig.A(q)) for q in (E, W, Sa))
             Wc = Wp - (Wp - Ep).normalized() * 0.026          # the stick ends inside the hand ball, which holds the gun
-            nh = 10 * (_seg_hits_tree(wtree, Sp, Ep, ARM_R) + _seg_hits_tree(wtree, Ep, Wc, ARM_R))
+            nh = 10 * (_seg_hits_tree(wtree, Sp, Ep, ARM_R) + _seg_hits_tree(wtree, Ep, Wc, forearm_radius(rig, side)))
         if nh == 0:
             best = pv; break
         if nh < least[0]:
