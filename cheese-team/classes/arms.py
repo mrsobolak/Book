@@ -5,8 +5,8 @@
 import bpy
 from mathutils import Vector
 
-KU = 2.2           # upper arm length factor  (0.17 -> 0.374 m)
-KL = 2.2           # lower arm length factor  (0.14 -> 0.308 m)
+KU = 1.8           # upper arm length factor  (0.17 -> 0.306 m)
+KL = 1.8           # lower arm length factor  (0.14 -> 0.252 m)
 DY = -0.11         # shoulders moved forward to the front corners of the wedge (m): long guns are held in front of a
                    # forward-facing body, and the support arm has to reach across the front
 

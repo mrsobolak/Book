@@ -151,6 +151,7 @@ def revolver():
     fob = make('Rev_Frame', profile(fo, -14.6, 14.6, holes=[win]), blued, bevel=0.0019, seg=5, angle=30)
     cut(fob, box(W(-1.5, 13.6, 0), (0.0022, 0.009, 0.0034)), 'rearsight')
     cut(fob, cyl(W(40.0, 0, 0), W(60, 0, 0), 0.0096, n=48), 'barrelseat')
+    cut(fob, cyl(W(-12.0, cax, -14.0), W(2.0, cax, -14.0), 0.0062, n=32), 'loadchannel')   # behind the gate: rounds go in here
     # hammer housing / top of the grip frame, narrower than the shield
     hh = rounded([(-7.0, 9.5, 2), (-14, 10.5, 7), (-27, 3.0, 8), (-33, -8.0, 6), (-29, -26.0, 0), (-20, -42.5, 0), (-7.0, -42.5, 0)], n=8)
     house = make('Rev_HammerHousing', profile(hh, -10.6, 10.6), blued, bevel=0.0024, seg=5, angle=30)
@@ -751,6 +752,14 @@ def semiauto():
         wk.screw(W(-20, -94, sd * 13.4), Vector((sd, 0, 0)), r=0.0022, mat=blk_dk, name='Sa_GripScrew')
     mb = rounded([(-42, -106, 2), (-4, -106, 2), (-4, -112, 2.5), (-44, -112, 2.5)])
     make('Sa_MagBase', profile(mb, -9.0, 9.0), blk_dk, bevel=0.0010)
+    # magazine body: hidden inside the grip until the reload pulls it out (follows the grip's rake)
+    mbd = rounded([(-31, -26, 2), (-3, -26, 2), (-7, -106, 1), (-41, -106, 1)])
+    mbo = make('Sa_MagBody', profile(mbd, -7.6, 7.6), blk_dk, bevel=0.0008)
+    for sd in (1, -1):
+        for k in range(4):
+            cut(mbo, box(W(-20 - k * 1.5, -46 - k * 15, sd * 7.6), (0.0030, 0.0080, 0.0030)), 'win%d%d' % (sd, k))
+    make('Sa_MagRound', lathe([(0, -27.0), (4.6, -27.0), (4.6, -13.0), (4.2, -9.0), (2.6, -6.0), (0, -5.0)], n=20, axis_v=-21.6),
+         wk.steel('M_SaRoundBrass', base='#a1803c', bare='#d4b06a', rough=0.3, wear=0.2, scratch=0.2), bevel=0.0)
     PIVOT['SemiAuto'] = (-22.0, -62.0)
     return 'SemiAuto'
 
@@ -865,7 +874,8 @@ def boltrifle():
     make('Br_ButtSpacer', profile(rounded([(-380, 22, 0), (-378, 22, 0), (-378, -119, 0), (-380, -119, 0)]), -21.2, 21.2),
          wk.plastic('M_BrSpacer', '#e8e2d4', rough=0.5), bevel=0.0004)
     # ---- receiver, bolt, trigger, guard, magazine floorplate
-    make('Br_Receiver', lathe([(15.8, -60.0), (16.5, -55.0), (16.5, 130.0), (15.0, 140.0)], n=48, axis_v=8.0), blued, bevel=0.0)
+    rcv = make('Br_Receiver', lathe([(15.8, -60.0), (16.5, -55.0), (16.5, 130.0), (15.0, 140.0)], n=48, axis_v=8.0), blued, bevel=0.0)
+    cut(rcv, box(W(28, 22, -6), (0.024, 0.066, 0.020)), 'action')     # open top / right: loading + ejection (bolt covers it)
     make('Br_RecvTang', profile(rounded([(-90, 0, 4), (-55, 4, 0), (-55, 14, 0), (-85, 6, 4)]), -6.0, 6.0), blued, bevel=0.0010)
     make('Br_Bolt', lathe([(9.5, -66.0), (9.5, 70.0)], n=32, axis_v=8.0, x=-1.0), blued_dk)
     make('Br_BoltShroud', lathe([(0, -86.0), (9.0, -86.0), (11.5, -80.0), (12.0, -66.0)], n=32, axis_v=8.0), blued_dk)
@@ -930,6 +940,7 @@ def leverrifle():
     rc = rounded([(-14, 16, 6), (96, 16, 4), (100, 12, 2), (100, -16, 3), (94, -22, 2), (2, -22, 2), (-14, -12, 6)], n=8)
     recv = make('Lv_Receiver', profile(rc, -10.5, 10.5), blued, bevel=0.0018, seg=5)
     cut(recv, box(W(60, -2, -10.5), (0.0020, 0.030, 0.010)), 'gate')
+    cut(recv, box(W(55, 16, 0), (0.016, 0.060, 0.010)), 'ejtop')       # top ejection slot
     make('Lv_LoadingGate', profile(rounded([(48, -7, 2), (76, -7, 2), (76, 3, 2), (48, 3, 2)]), -11.2, -10.0), blued_dk, bevel=0.0004)
     for (u, v) in ((10, -6), (84, -12)):
         for sd in (1, -1):
@@ -1026,8 +1037,8 @@ def smg():
     rcv = make('Smg_Receiver', lathe([(R, -40.0), (R, 230.0)], n=64, axis_v=0.0), blk)
     cut(rcv, box(W(80, 0, -R), (0.008, 0.110, 0.006)), 'cockslot')
     cut(rcv, box(W(150, 6, R - 1), (0.010, 0.050, 0.020)), 'ejport')
-    make('Smg_CockHandle', cyl(W(40, 0, -R + 2), W(40, 0, -R - 14), 0.0042, n=20), blk_dk)
-    make('Smg_CockKnob', sphere(W(40, 0, -R - 16), 0.0062, seg=24, rings=12, scale=(1, 1, 0.8)), blk_dk)
+    make('Smg_CockHandle', cyl(W(112, 0, -R + 2), W(112, 0, -R - 14), 0.0042, n=20), blk_dk)     # forward: racks back 80 mm
+    make('Smg_CockKnob', sphere(W(112, 0, -R - 16), 0.0062, seg=24, rings=12, scale=(1, 1, 0.8)), blk_dk)
     make('Smg_RearCap', lathe([(0, -52.0), (R - 2, -52.0), (R + 1.5, -49.0), (R + 1.5, -38.0), (R, -36.0)], n=64), blk_dk, bevel=0.0005)
     # ---- ribbed barrel shroud with cooling holes, short barrel
     # perforated shroud: a thin shell with rows of round-ish cooling holes cut from the quads, then solidified
@@ -1402,6 +1413,9 @@ CALIBRES = {
                            (4.25, 49.4), (4.25, 63.3)], inner=3.9,
                      bullet=[(3.4, 0.0), (3.9, 3.2), (3.9, 15.0), (3.6, 20.0), (2.9, 24.5), (1.8, 28.6), (0.6, 31.4), (0.0, 32.0)],
                      seat=8.0, case_m='brass', bullet_m='copper'),
+    'Ammo38': dict(case=[(5.5, 0.0), (5.5, 1.4), (4.85, 1.4), (4.8, 29.3)], inner=4.45,
+                   bullet=[(4.5, 0.0), (4.5, 8.5), (4.2, 10.6), (3.4, 13.2), (2.2, 15.0), (1.0, 15.9), (0.0, 16.1)],
+                   seat=6.0, case_m='nickel', bullet_m='lead', rim=True),
     'Ammo3030': dict(case=[(7.3, 0.0), (7.3, 1.6), (6.5, 1.6), (6.3, 36.0), (5.9, 37.5), (4.6, 40.6), (4.45, 41.5), (4.45, 51.8)],
                      inner=3.9, bullet=[(3.9, 0.0), (3.9, 14.0), (3.5, 18.0), (2.6, 21.5), (1.9, 23.0), (0.0, 23.3)],
                      seat=9.0, case_m='nickel', bullet_m='lead', rim=True),
@@ -1502,10 +1516,50 @@ def rocket():
     return 'Rocket'
 
 
+def speedloader():
+    """5-round .38 speedloader (snub-nose): knurled knob + body disc; the rounds are a separate piece (they stay in the
+    cylinder). Origin = cylinder axis on the rear face, rounds point +u."""
+    blk = wk.steel('M_SlBody', base='#1b1c1e', bare='#8e9196', rough=0.45, wear=0.8, scratch=0.6, edge_gain=8.0)
+    make('Sl_Disc', lathe(_closed([(15.5, -9.0), (16.5, -8.0), (16.5, -2.0), (15.0, -0.6), (6.0, -0.6)]), n=48, cap0=False, cap1=False), blk)
+    kn = make('Sl_Knob', lathe(_closed([(6.5, -26.0), (7.5, -24.5), (7.5, -12.0), (6.0, -9.0)]), n=40, cap0=False, cap1=False), blk)
+    for k in range(16):
+        a = 2 * PI * k / 16
+        cut(kn, cyl(W(-27.0, 7.6 * math.sin(a), 7.6 * math.cos(a)), W(-11.0, 7.6 * math.sin(a), 7.6 * math.cos(a)), 0.0009, n=8), 'kn%d' % k)
+    PIVOT['Speedloader38'] = (0.0, 0.0)
+    return 'Speedloader38'
+
+
+def speedloader_rounds():
+    m = _ammo_mats(); c = CALIBRES['Ammo38']
+    for k in range(5):
+        a = PI / 2 + 2 * PI * k / 5
+        v, x = 11.8 * math.sin(a), 11.8 * math.cos(a)
+        prof = list(c['case']); L = prof[-1][1]
+        make('Slr_Case%d' % k, lathe(_closed(prof), n=24, axis_v=v, x=x, cap0=False, cap1=False), m['nickel'], bevel=0.0)
+        bp = [(r, u + L - c['seat']) for (r, u) in c['bullet']]
+        make('Slr_Bullet%d' % k, lathe(_closed(bp), n=24, axis_v=v, x=x, cap0=False, cap1=False), m['lead'], bevel=0.0)
+    PIVOT['Speedloader38_Rounds'] = (0.0, 0.0)
+    return 'Speedloader38_Rounds'
+
+
+def casings38():
+    """the five fired .38 cases the snub-nose's ejector throws out together (same layout as the speedloader rounds)"""
+    m = _ammo_mats(); c = CALIBRES['Ammo38']
+    for k in range(5):
+        a = PI / 2 + 2 * PI * k / 5
+        make('Cs_Case%d' % k, lathe(_closed(list(c['case'])), n=24, axis_v=11.8 * math.sin(a), x=11.8 * math.cos(a), cap0=False, cap1=False),
+             m['nickel'], bevel=0.0)
+    PIVOT['Casings38'] = (0.0, 0.0)
+    return 'Casings38'
+
+
+BUILDERS['Casings38'] = casings38
+BUILDERS['Speedloader38'] = speedloader
+BUILDERS['Speedloader38_Rounds'] = speedloader_rounds
 BUILDERS['Shotgun12_Shell'] = shotshell
 BUILDERS['Shotgun12_Pellet'] = buckshot
 BUILDERS['Rocket'] = rocket
-AMMO = [k for k in BUILDERS if k.startswith(('Ammo', 'Shotgun12', 'Rocket'))]
+AMMO = [k for k in BUILDERS if k.startswith(('Ammo', 'Shotgun12', 'Rocket', 'Speedloader', 'Casings'))]
 
 
 def build(name):

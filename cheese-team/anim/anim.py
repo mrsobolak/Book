@@ -116,6 +116,8 @@ class Rig:
         for p in self.pb:
             p.keyframe_insert('location', frame=frame)
             p.keyframe_insert('rotation_quaternion', frame=frame)
+            if p.name.startswith('wp_'):                          # moving parts / ammo hide by scaling to ~0
+                p.keyframe_insert('scale', frame=frame)
 
     # ---------------------------------------------------------- weapons
     def attach(self, wname, bone='weapon', key=None, part=None):
@@ -147,9 +149,10 @@ class Rig:
         pu, pv = self.weapons[key]['pivot']
         return (W(u, v, x) - W(pu, pv, 0.0)) * WS
 
-    def place_weapon(self, bone, grip, rot):
-        """put the weapon socket so the weapon origin (grip) sits at char-space `grip` with rotation `rot` (3x3, char space)"""
-        M = rot.to_4x4()
+    def place_weapon(self, bone, grip, rot, s=1.0):
+        """put the weapon socket so the weapon origin (grip) sits at char-space `grip` with rotation `rot` (3x3, char space);
+        s < 1 hides a part / ammo piece (bone scale, ~0 = not there)"""
+        M = (rot * s).to_4x4()
         M.translation = self.A(grip)
         self.set_matrix(bone, M)
 
@@ -190,7 +193,9 @@ def weapon_tree(rig):
     bpy.context.view_layer.update()
     C = (rig.arm.matrix_world @ Matrix.Scale(100.0, 4)).inverted()
     verts = []; polys = []
-    for w in rig.weapons.values():
+    for key, w in rig.weapons.items():
+        if key in rig.pb and rig.pb[key].scale.x < 0.5:             # hidden part / ammo
+            continue
         for o in w['objs']:
             M = C @ o.matrix_world; base = len(verts)
             verts += [M @ v.co for v in o.data.vertices]
@@ -357,7 +362,7 @@ def _arm_hits(rig, side):
     n = _ov(wedge, arm, sh)
     if rig.acc:
         n += _ov(_bvh(rig.acc, only_groups=('spine_01', 'aim')), arm, sh)
-    wobjs = [o for w in rig.weapons.values() for o in w['objs']]
+    wobjs = [o for key, w in rig.weapons.items() if rig.pb[key].scale.x >= 0.5 for o in w['objs']]
     if wobjs:
         n += _ov(_bvh(wobjs), _bvh([rig.body], only_groups=groups[:2]), hs)
     return n
@@ -383,33 +388,35 @@ def _mesh_pick(rig, side, target, b3, to_rest, u, p0, fallback):
 
 # ------------------------------------------------------------------ hold definitions
 def R(yaw=0.0, pitch=0.0, roll=0.0):
-    """weapon orientation in char space: yaw (+ turns muzzle toward char left), pitch (+ muzzle up), roll (+ top to char right)"""
+    """weapon orientation in char space: yaw (+ turns muzzle toward char left), pitch (+ muzzle up), roll (+ top to char left,
+    so the gun's right side comes up)"""
     return (Matrix.Rotation(math.radians(yaw), 3, 'Z') @ Matrix.Rotation(math.radians(-pitch), 3, 'X') @
             Matrix.Rotation(math.radians(roll), 3, 'Y'))
 
 
 # holds are authored in BODY space (the wedge frame after the stance twist); see pose_frame
 HOLDS = {
-    # one-handed pistol: right hand out front-right, left hand relaxed at the side
-    'pistol': dict(twist=0, grip=Vector((-0.25, -0.36, 0.62)), rot=dict(yaw=3, pitch=0, roll=0),
-                   lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
+    # arms 1.8x (classes/arms.py): every hold keeps the hand at a natural reach (an arm is never folded up with the
+    # elbow poking out sideways) and the elbows hang down / out
+    # one-handed pistol: arm out in front at shoulder height, left arm hanging relaxed
+    'pistol': dict(twist=0, grip=Vector((-0.16, -0.56, 0.70)), rot=dict(yaw=3, pitch=0, roll=0),
+                   lhand=Vector((0.30, -0.10, 0.30)), relbow=Vector((-0.7, 0.1, -1)), lelbow=Vector((0.5, 0.6, -0.2))),
     # two pistols, mirrored
-    'dual': dict(twist=0, grip=Vector((-0.25, -0.36, 0.60)), rot=dict(yaw=3, pitch=0, roll=0),
-                 grip2=Vector((0.25, -0.36, 0.60)), rot2=dict(yaw=-3, pitch=0, roll=0),
-                 relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((1, 0.3, -0.7))),
-    # long guns: body faces forward (arms 2.2x, shoulders at the wedge's front corners); gun low and in front, the
-    # support arm reaches across under the face (hold3 reach solver)
-    'rifle': dict(twist=0, grip=Vector((-0.125, -0.375, 0.50)), rot=dict(yaw=0, pitch=-8, roll=0),
-                  relbow=Vector((-1, 0.2, -0.6)), lelbow=Vector((1, -0.2, -0.8))),
+    'dual': dict(twist=0, grip=Vector((-0.17, -0.54, 0.68)), rot=dict(yaw=3, pitch=0, roll=0),
+                 grip2=Vector((0.17, -0.54, 0.68)), rot2=dict(yaw=-3, pitch=0, roll=0),
+                 relbow=Vector((-0.7, 0.1, -1)), lelbow=Vector((0.7, 0.1, -1))),
+    # long guns: body faces forward, gun low in front, support arm across under the face (nat2 reach solver)
+    'rifle': dict(twist=0, grip=Vector((-0.06, -0.37, 0.54)), rot=dict(yaw=0, pitch=0, roll=0),
+                  relbow=Vector((-0.8, 0.2, -1)), lelbow=Vector((0.6, -0.1, -1))),
     # minigun at the hip: right hand on the rear grip, left hand on the top carry bar
-    'heavy': dict(twist=0, sway=0.5, grip=Vector((-0.05, -0.20, 0.36)), rot=dict(yaw=0, pitch=0, roll=0),
+    'heavy': dict(twist=0, sway=0.5, grip=Vector((-0.08, -0.30, 0.36)), rot=dict(yaw=0, pitch=0, roll=0),
                   relbow=Vector((-1, 0.3, -0.5)), lelbow=Vector((1, -0.2, -0.7))),
     # launcher on the right shoulder, beside the head
     'shoulder': dict(twist=0, sway=0.6, grip=Vector((-0.34, -0.30, 0.70)), rot=dict(yaw=0, pitch=2, roll=0),
-                     relbow=Vector((-1, 0.3, -0.8)), lelbow=Vector((0.6, -0.4, -1))),
+                     relbow=Vector((-0.6, 0.2, -1)), lelbow=Vector((0.4, -0.4, -1))),
     # clipboard: held by its right edge, face tilted up toward the eyes (and the over-the-shoulder camera)
-    'board': dict(twist=0, grip=Vector((-0.12, -0.30, 0.54)), rot=dict(yaw=180, pitch=35, roll=0),
-                  lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
+    'board': dict(twist=0, grip=Vector((-0.14, -0.40, 0.52)), rot=dict(yaw=180, pitch=35, roll=0),
+                  lhand=Vector((0.30, -0.10, 0.30)), relbow=Vector((-0.7, 0.1, -1)), lelbow=Vector((0.5, 0.6, -0.2))),
 }
 
 # ------------------------------------------------------------------ gait
@@ -522,7 +529,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     rig.set_matrix('spine_01', sp)
     piv = rig.C(hd); B3 = Bm.to_3x3()
     body = lambda p: piv + B3 @ (p - piv)
-    ctx = {}
+    ctx = {'B3': B3, 'parts': {}, 'pdef': H.get('pdef', {})}
 
     def put(key, grip_b, rot_d):
         Rw = B3 @ R(**rot_d); gw = body(grip_b)
@@ -533,7 +540,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     if dgun is not None:
         grip = grip + R(**rot) @ dgun                                   # recoil along the gun's own axes
     put('weapon', grip, rot)
-    if 'wp_02' in rig.weapons:                                      # spinning part (minigun barrels) about the bore axis
+    if 'wp_02' in rig.weapons and 'wp_02' not in ctx['pdef']:      # spinning part (minigun barrels) about the bore axis
         org, Rw, _ = ctx['weapon']
         P0 = rig.wlocal('weapon', 0.0, 0.0, 0.0); Rs = Matrix.Rotation(math.radians(spin), 3, 'Y')
         rig.place_weapon('wp_02', org + Rw @ (P0 - Rs @ P0), Rw @ Rs)
@@ -542,12 +549,15 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
             grip2 = grip2 + R(**rot2) @ dgun2
         put('wp_01', grip2, rot2)
     lrest = body(lhand)
+    pspecs = e.get('parts', {}) if extra else {}
+    place_parts(rig, ctx, pspecs)                                   # parts on the gun first: hands may grab them
     # ---- arms
     ldef = 'grip2' if two else (('w',) + tuple(H['support']) if H.get('support') else 'rest')
     rh = hand_pos(rig, rspec, ctx, ctx['weapon'][2], 'grip')
     lh = hand_pos(rig, lspec, ctx, lrest, ldef)
-    if 'wp_03' in rig.weapons:                                      # the launcher's rocket: loaded / in the hand / spent
+    if 'wp_03' in rig.weapons and 'wp_03' not in ctx['pdef']:      # the launcher's rocket: loaded / in the hand / spent
         place_rocket(rig, ctx, lh, e.get('rocket') if extra else None)
+    place_parts(rig, ctx, pspecs, {'l': lh, 'r': rh})                # then whatever is held in a hand
     wt = weapon_tree(rig)
     arm_ik(rig, 'r', rh, relbow, 'hand_r', wt)
     arm_ik(rig, 'l', lh, lelbow, 'hand_l', wt)
@@ -572,6 +582,126 @@ def place_rocket(rig, ctx, lh, spec):
     rig.place_weapon('wp_03', o, Rr)
 
 
+# ------------------------------------------------------------------ moving parts / ammo in the hands
+# Split weapon parts (cylinder, mag, bolt, lever, slide, pump, ...) share the gun's origin, so "at rest" = placed exactly like
+# the gun. Ammo pieces have their origin at the base, nose along +u. A part spec says where a socket bone is this frame:
+#   ('g', key, pivot_uvx, axis, deg, d_uvx)  split part moved on gun `key`: turned `deg` about design axis u/v/x through
+#                                            the pivot (design mm), then slid by d (design mm)
+#   ('at', key, pos_uvx, ypr)                piece sitting at a point of gun `key`, rotated (yaw, pitch, roll) gun-relative
+#   ('on', bone, pos_uvx, ypr)               piece riding another part (pos in that part's design mm)
+#   ('h', side, grab_uvx, ypr, key)          held in hand 'l' / 'r' by its own point grab; ypr gun-relative (key) or body
+#   ('c', pos, ypr)                          free in char space (falling / lying on the floor)
+#   ('hide', spec)                           same place, scaled to ~0 (not there yet / gone)
+AXES = {'u': Vector((0, -1, 0)), 'v': Vector((0, 0, 1)), 'x': Vector((1, 0, 0))}
+
+
+def G(piv=(0, 0, 0), ax='u', deg=0.0, d=(0, 0, 0), key='weapon'):
+    return ('g', key, piv, ax, deg, d)
+
+
+def AT(pos, ypr=(0, 0, 0), key='weapon'):
+    return ('at', key, pos, ypr)
+
+
+def ON(bone, pos, ypr=(0, 0, 0)):
+    return ('on', bone, pos, ypr)
+
+
+def HAND(side, grab=(0, 0, 0), ypr=(0, 0, 0), key='weapon'):
+    return ('h', side, grab, ypr, key)
+
+
+def FREE(pos, ypr=(0, 0, 0)):
+    return ('c', Vector(pos), ypr)
+
+
+def HID(spec):
+    return ('hide', spec)
+
+
+def DROP(spec, off=(0, 0, 0), ypr=(0, 0, 0), mid=(0, 0, 0)):
+    """spec moved by a char-space offset and turned (ypr) about its own point `mid`: tumbling / falling pieces"""
+    return ('drop', spec, off, ypr, mid)
+
+
+def fall(t):
+    t = max(0.0, min(1.0, t))
+    return t * t
+
+
+REST = G()
+
+
+def part_xf(rig, ctx, bone, spec, hands=None):
+    """(origin, 3x3, scale) of a part bone in char space, or None while it needs hand positions that aren't known yet"""
+    if spec is None:
+        spec = ctx['pdef'].get(bone, REST)
+    k = spec[0]
+    if k == 'mix':
+        sa = spec[1] if spec[1] is not None else ctx['pdef'].get(bone, REST)
+        sb = spec[2] if spec[2] is not None else ctx['pdef'].get(bone, REST)
+        if sa[0] == sb[0] == 'g' and sa[1:4] == sb[1:4]:            # same hinge: blend the angle (spins past 180 deg)
+            t = spec[3]
+            return part_xf(rig, ctx, bone, ('g', sa[1], sa[2], sa[3], lerp(sa[4], sb[4], t),
+                                            tuple(lerp(p, q, t) for p, q in zip(sa[5], sb[5]))), hands)
+        a = part_xf(rig, ctx, bone, sa, hands); b = part_xf(rig, ctx, bone, sb, hands)
+        if a is None or b is None:
+            return None
+        t = spec[3]
+        return (a[0].lerp(b[0], t), a[1].to_quaternion().slerp(b[1].to_quaternion(), t).to_matrix(), lerp(a[2], b[2], t))
+    if k == 'hide':
+        x = part_xf(rig, ctx, bone, spec[1], hands)
+        return None if x is None else (x[0], x[1], 1e-3)
+    if k == 'drop':                                                 # spec, moved by a char-space offset + extra turn
+        x = part_xf(rig, ctx, bone, spec[1], hands)
+        if x is None:
+            return None
+        Rr = R(*spec[3]) @ x[1]
+        mid = x[0] + x[1] @ rig.wlocal(bone, *spec[4]) + Vector(spec[2])   # turns about the piece's own middle
+        mid.z = max(mid.z, 0.012)                                    # lands on the floor, not through it
+        return (mid - Rr @ rig.wlocal(bone, *spec[4]), Rr, x[2])
+    if k == 'g':
+        _, key, piv, ax, deg, d = spec
+        org, Rw, _ = ctx[key]
+        P = rig.wlocal(bone, *piv); Rs = Matrix.Rotation(math.radians(deg), 3, AXES[ax])
+        return (org + Rw @ (P - Rs @ P + W(*d) * WS), Rw @ Rs, 1.0)
+    o0 = None
+    if k == 'at':
+        _, key, pos, ypr = spec
+        org, Rw, _ = ctx[key]
+        Rr = Rw @ R(*ypr); o0 = org + Rw @ rig.wlocal(key, *pos)
+    elif k == 'on':
+        _, pb, pos, ypr = spec
+        if pb not in ctx['parts']:
+            return None
+        po, pR, _ = ctx['parts'][pb]
+        Rr = pR @ R(*ypr); o0 = po + pR @ rig.wlocal(pb, *pos)
+    elif k == 'h':
+        if hands is None:
+            return None
+        _, side, grab, ypr, key = spec
+        Rr = (ctx[key][1] if key else ctx['B3']) @ R(*ypr)
+        return (hands[side] - Rr @ rig.wlocal(bone, *grab), Rr, 1.0)
+    elif k == 'c':
+        _, pos, ypr = spec
+        Rr = R(*ypr); o0 = Vector(pos)
+    else:
+        raise ValueError(spec)
+    return (o0 - Rr @ rig.wlocal(bone, 0.0, 0.0, 0.0), Rr, 1.0)
+
+
+def place_parts(rig, ctx, specs, hands=None):
+    """place every part bone that can be placed now (parts riding parts resolve in a few passes)"""
+    for _ in range(3):
+        for b in ctx['pdef']:
+            if b in ctx['parts']:
+                continue
+            x = part_xf(rig, ctx, b, specs.get(b), hands)
+            if x is not None:
+                ctx['parts'][b] = x
+                rig.place_weapon(b, *x)
+
+
 def hand_pos(rig, spec, ctx, rest, default='rest'):
     """hand target from a spec: None/'rest', 'grip' / 'grip2' (the held point of gun 1 / 2), ('w', u, v, x) /
     ('w2', u, v, x) a point on gun 1 / 2 (design mm, hand-ball centre), a char-space Vector, or ('mix', a, b, k)"""
@@ -591,6 +721,9 @@ def hand_pos(rig, spec, ctx, rest, default='rest'):
         return org + Rw @ rig.wlocal(key, *spec[1:])
     if spec[0] == 'mix':
         return hand_pos(rig, spec[1], ctx, rest, default).lerp(hand_pos(rig, spec[2], ctx, rest, default), spec[3])
+    if spec[0] == 'p':                                              # a point on a moving part (bolt knob, lever loop, ...)
+        o, Rp, _ = ctx['parts'][spec[1]]
+        return o + Rp @ rig.wlocal(spec[1], *spec[2:])
     raise ValueError(spec)
 
 
@@ -598,9 +731,11 @@ def keyed(keys):
     """key-pose timeline -> extra(rig, t). keys: [(t, dict(dg=(x,y,z), dr=(yaw,pitch,roll), lh=spec, rh=spec,
     lel=pole, rel=pole, ease=fn))]; missing fields carry over from the previous key. Hand specs blend in place on the gun."""
     full = []; cur = dict(dg=(0, 0, 0), dr=(0, 0, 0), dg2=(0, 0, 0), dr2=(0, 0, 0), tw=0.0, lb=0.0, lh=None, rh='grip',
-                          lel=None, rel=None, rk=None)
+                          lel=None, rel=None, rk=None, pt={})
     for t, k in keys:
-        cur = dict(cur, **{a: b for a, b in k.items() if a != 'ease'}); cur['ease'] = k.get('ease', ease)
+        pt = dict(cur['pt'], **k.get('pt', {}))
+        cur = dict(cur, **{a: b for a, b in k.items() if a not in ('ease', 'pt')}); cur['ease'] = k.get('ease', ease)
+        cur['pt'] = pt
         full.append((t, cur))
 
     def ex(rig, t):
@@ -623,6 +758,8 @@ def keyed(keys):
         for n in ('lel', 'rel'):
             if a[n] is not None or b[n] is not None:                     # None = the hold's own pole (resolved later)
                 out['lelbow' if n == 'lel' else 'relbow'] = ('pole', a[n], b[n], k)
+        if a['pt'] or b['pt']:
+            out['parts'] = {bn: ('mix', a['pt'].get(bn), b['pt'].get(bn), k) for bn in set(a['pt']) | set(b['pt'])}
         return out
     return ex
 
@@ -674,6 +811,8 @@ def combo(*fns):
                     out[k] = d
                 elif k == 'rocket':
                     out[k] = v
+                elif k == 'parts':
+                    out[k] = dict(out.get(k, {}), **v)
                 elif k in ('dtwist', 'dlean', 'spin'):
                     out[k] = out.get(k, 0.0) + v
                 else:
@@ -682,77 +821,85 @@ def combo(*fns):
     return ex
 
 
-# the side-mounted shoulders keep the hands >= ~0.14 m apart in front of the wedge, so the gun bridges the gap: flick it
-# muzzle-up to dump the shells, the left hand takes it under the barrel while the right hand fetches rounds from the
-# belt and thumbs them into the open cylinder (gun lying on its right side, cylinder up), then a flick shut.
-_HAND = dict(dg=(0.16, 0.09, -0.02), dr=(88, -10, -90))           # grip (-0.09, -0.27, 0.60), muzzle to the left
-_UNDER = ('w', 232, -10, -50)                                      # left palm under the barrel
-reload_revolver = keyed([
-    (0.00, {}),
-    (0.10, dict(dg=(-0.01, 0.07, 0.03), dr=(10, 68, -40))),                                   # flick up: dump
-    (0.14, dict(dg=(-0.01, 0.07, 0.045), dr=(10, 78, -44), ease=snap)),
-    (0.19, dict(dg=(-0.01, 0.07, 0.03), dr=(10, 66, -40))),
-    (0.30, dict(_HAND, lh=_UNDER, lel=(1, -0.5, -0.8))),                                     # into the left palm
-    (0.34, dict(rh='grip')),
-    (0.44, dict(rh=Vector((-0.30, -0.08, 0.45)), rel=(-1, 0.5, -0.2))),                      # right hand to the belt
-    (0.48, dict()),
-    (0.58, dict(rh=('w', 18, -12, 72), rel=(-0.6, -0.2, 0.8))),                               # over the cylinder
-    (0.62, dict(rh=('w', 18, -12, 54), dg=(0.16, 0.09, -0.026))),                           # thumb them in
-    (0.66, dict(rh=('w', 18, -12, 70), dg=(0.16, 0.09, -0.02))),
-    (0.72, dict(rh='grip', rel=(-1, 0.3, -0.7))),                                            # regrip
-    (0.80, dict(dg=(0.10, 0.05, 0.0), dr=(30, 4, 15), lh='rest', lel=(0.4, 1, -0.1), ease=snap)),  # flick shut
-    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
-])
+def tracks(keys):
+    """key-pose timeline where every channel interpolates between ITS OWN keys (a channel not named at a key keeps
+    moving toward its next key). Same channels as keyed() plus pt={bone: part spec}; repeat a value to hold it.
+    A channel starts at its rest value at t=0 unless keyed there."""
+    rest = dict(dg=(0, 0, 0), dr=(0, 0, 0), dg2=(0, 0, 0), dr2=(0, 0, 0), tw=0.0, lb=0.0, lh=None, rh='grip',
+                lel=None, rel=None, rk=None)
+    ch = {}
+    for t, k in sorted(keys, key=lambda x: x[0]):
+        e = k.get('ease', ease)
+        for n, v in k.items():
+            if n == 'ease':
+                continue
+            for name, val in (((('pt', b), sp) for b, sp in v.items()) if n == 'pt' else ((n, v),)):
+                lst = ch.setdefault(name, [])
+                if not lst and t > 0:
+                    lst.append((0.0, rest.get(name) if isinstance(name, str) else None, ease))
+                lst.append((t, val, e))
+
+    def at(lst, t):
+        if t <= lst[0][0]:
+            return lst[0][1], lst[0][1], 0.0
+        for (t0, a, _), (t1, b, e) in zip(lst, lst[1:]):
+            if t <= t1:
+                return a, b, e((t - t0) / max(1e-6, t1 - t0))
+        return lst[-1][1], lst[-1][1], 1.0
+
+    def ex(rig, t):
+        out = {}
+        for name, lst in ch.items():
+            a, b, k = at(lst, t)
+            if isinstance(name, tuple):
+                out.setdefault('parts', {})[name[1]] = ('mix', a, b, k)
+            elif name in ('dg', 'dg2'):
+                out['dgrip' + name[2:]] = Vector(a).lerp(Vector(b), k)
+            elif name in ('dr', 'dr2'):
+                out['drot' + name[2:]] = {n: lerp(a[j], b[j], k) for j, n in enumerate(('yaw', 'pitch', 'roll'))}
+            elif name in ('tw', 'lb'):
+                out['dtwist' if name == 'tw' else 'dlean'] = lerp(a, b, k)
+            elif name == 'rh':
+                out['rhand'] = ('mix', a, b, k)
+            elif name == 'lh':
+                if a is not None or b is not None:
+                    out['lhand'] = ('mix', a, b, k)
+            elif name in ('lel', 'rel'):
+                if a is not None or b is not None:
+                    out['lelbow' if name == 'lel' else 'relbow'] = ('pole', a, b, k)
+            elif name == 'rk':
+                if b is not None:
+                    ra = a or b
+                    out['rocket'] = (b[0], lerp(ra[1], b[1], k)) if ra[0] == b[0] else b
+        return out
+    return ex
 
 
-# small guns can't bridge the hand gap in front of the wedge, but just under it (in front of the hips) the hands get
-# within ~8 cm: the derringer / snub-nose / semi-auto reloads happen down there.
-_LOW = (0.20, 0.20, -0.135)                                          # grip ~(-0.05, -0.16, 0.485), gun across the belly
-_LOWd = (0.20, 0.20, -0.141)
-BELT_L = Vector((0.30, -0.07, 0.40))                                 # left hand dips to the belt
-LEL = (1, -0.3, -0.7)                                                # left elbow out and down for the low work
-reload_derringer = keyed([
-    (0.00, {}),
-    (0.10, dict(dg=(0.0, 0.02, -0.01), dr=(0, -55, 0), ease=snap)),                           # snap muzzle-down
-    (0.24, dict(dg=_LOW, dr=(90, -12, 0), lh=('w', 134, -6, 0), lel=LEL)),                     # palm under the muzzle
-    (0.30, dict(lh=('w', 130, 18, 0), ease=snap)),                                            # tip the barrels open
-    (0.44, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.48, dict()),
-    (0.62, dict(lh=('w', 136, 2, 0), lel=LEL)),                                               # rounds in
-    (0.66, dict(lh=('w', 138, 2, 0), dg=_LOWd)),
-    (0.70, dict(lh=('w', 138, 2, 0), dg=_LOW)),
-    (0.82, dict(dg=(0.02, 0.03, 0.02), dr=(8, 30, 0), lh='rest', lel=(0.4, 1, -0.1), ease=snap)),  # flick shut
-    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
-])
+def _show(bone, t, spec, hidden_before=None):
+    """a piece pops into existence at t (hidden just before, at the same place unless told otherwise)"""
+    return [(t - 0.004, dict(pt={bone: HID(hidden_before or spec)})), (t, dict(pt={bone: spec}))]
 
-reload_snubnose = keyed([
-    (0.00, {}),
-    (0.14, dict(dg=_LOW, dr=(90, 25, -70), lh=('w', 132, -16, 0), lel=LEL)),                  # cylinder out, palm on the rod tip
-    (0.20, dict(dg=(0.20, 0.20, -0.125), lh=('w', 122, -16, 0), ease=snap)),                   # punch the ejector rod
-    (0.26, dict(dg=_LOW, dr=(90, -35, -70), lh=('w', 140, -30, 0))),                          # tip down, empties fall
-    (0.40, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.45, dict()),
-    (0.58, dict(lh=('w', 134, -6, 22), lel=LEL)),                                            # speedloader
-    (0.63, dict(lh=('w', 126, -6, 22), dg=_LOWd)),
-    (0.67, dict(lh=('w', 138, -6, 24), dg=_LOW)),
-    (0.76, dict(dr=(80, 0, 10), lh=('w', 132, -6, 30), ease=snap)),                           # palm it shut
-    (0.86, dict(dg=(0.04, 0.03, 0.0), dr=(10, 6, 0), lh='rest', lel=(0.4, 1, -0.1))),
-    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
-])
 
-reload_semiauto = keyed([                                            # one-handed mag swap off the hip pouch, rack up front
-    (0.00, {}),
-    (0.08, dict(dg=(0.0, 0.02, 0.02), dr=(0, 20, -30), ease=snap)),                           # thumb the release: mag drops
-    (0.26, dict(dg=(-0.05, 0.27, -0.10), dr=(0, 90, 0), rel=(-1, 0.4, 0.2))),                 # muzzle up over the right pouch
-    (0.34, dict(dg=(-0.05, 0.27, -0.13), ease=snap)),                                         # seat it on the fresh mag
-    (0.40, dict(dg=(-0.05, 0.27, -0.10))),
-    (0.48, dict(dg=(0.06, 0.06, -0.07), dr=(45, 40, 0))),                                      # swing out front
-    (0.56, dict(dg=_LOW, dr=(90, 0, 0), lh=('w', 152, 12, -46), lel=LEL, rel=(-1, 0.3, -0.7))),  # across the belly
-    (0.62, dict(lh=('w', 122, 12, -46))),                                                     # rack
-    (0.65, dict(lh=('w', 152, 12, -60), ease=snap)),
-    (0.82, dict(dg=(0.03, 0.02, 0.0), dr=(4, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
-    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
-])
+def _gone(bone, t, spec):
+    return [(t, dict(pt={bone: spec})), (t + 0.004, dict(pt={bone: HID(spec)}))]
+
+
+def _eject(bone, seat, out, t0, t1, t2, off=(-0.04, 0.03, -0.8), ypr=(70, 160, 40), mid=(16, 0, 0), ease_out=ease):
+    """spent case: there (inside the gun) from t0, pulled out to `out` by t1, falls to the floor by t2, gone"""
+    land = DROP(out, off, ypr, mid)
+    return (_show(bone, t0, seat) + [(t1, dict(pt={bone: out}, ease=ease_out)),
+                                     (t1 + 0.004, dict(pt={bone: DROP(out, (0, 0, 0), (0, 0, 0), mid)})),
+                                     (t2, dict(pt={bone: land}, ease=fall))] + _gone(bone, t2 + 0.03, land))
+
+
+# shared reload spots (body space, arms 1.8x): pouches on the hips, the work spot in front of the chest
+BELT_L = Vector((0.26, -0.14, 0.40))
+BELT_R = Vector((-0.26, -0.14, 0.40))
+LEL = (1, -0.3, -0.7)                                                # left elbow out and down for front work
+LEL_BELT = (0.6, 0.5, -0.3)
+REL_BELT = (-0.6, 0.5, -0.3)
+REL_T = None                                                         # (None = the hold's own elbow pole)
+_RW = (0.08, 0.20, -0.15)                                            # pistol grip -> (-0.08, -0.36, 0.55), close to the chest
 
 
 def shake(n, amp=0.004, ang=1.5, cycles=4, guns=(1,)):
@@ -767,94 +914,310 @@ def shake(n, amp=0.004, ang=1.5, cycles=4, guns=(1,)):
     return ex
 
 
-BELT_R = Vector((-0.25, -0.10, 0.44))                                # right hip pouch (below the wedge)
-BELT_RB = BELT_R
-REL_T = None                                                         # (None = the hold's own elbow pole)
+# ---- revolver (single action): gate open, half-cock, punch out two empties with the ejector rod, thumb in two rounds
+# from the left pouch, gate shut, spin. Gun on its left side (gate up), right hand keeps the grip.
+REV_SEAT = AT((1, -14, -14)); REV_OUT = AT((-40, -14, -14)); REV_LINE = AT((-44, -14, -14))
+REV_GRAB = (-8, 0, -40)                                              # hand centre in round coords: behind it, gate side
+_cyl = lambda a: {'wp_04': G((0, -14, 0), 'u', a)}
+_gate = lambda a: {'wp_02': G((-3.6, -22, -14.85), 'u', a)}
+_rod = lambda du: {'wp_03': G(d=(du, 0, 0))}
+
+
+def _rev_round(bone, t_show, t_line, t_seat):
+    return (_show(bone, t_show, HAND('l', REV_GRAB)) +
+            [(t_line, dict(pt={bone: REV_LINE}, lh=('w', -44 - 8, -14, -54), lel=LEL)),
+             (t_seat, dict(pt={bone: REV_SEAT}, lh=('w', 1 - 8, -14, -54)))] + _gone(bone, t_seat + 0.004, REV_SEAT))
+
+
+reload_revolver = tracks([
+    (0.00, dict(pt=dict(_gate(0), **_cyl(0), **_rod(0)))),
+    (0.10, dict(dg=_RW, dr=(10, 30, 75), lh=('w', -3.6, -8, -58), lel=LEL)),
+    (0.11, dict(pt=_gate(0))),
+    (0.15, dict(pt=_gate(100), lh=('w', -3.6, -30, -62), ease=snap)),                       # flick the gate open
+    (0.16, dict(pt=_cyl(0))), (0.19, dict(pt=_cyl(30))),                                   # half-cock: chamber at the gate
+    (0.21, dict(lh=('w', 186, -8.6, -40), pt=_rod(0))),
+    (0.25, dict(lh=('w', 140, -8.6, -40), pt=_rod(-46))), (0.29, dict(lh=('w', 186, -8.6, -40), pt=_rod(0))),
+    (0.30, dict(pt=_cyl(30))), (0.33, dict(pt=_cyl(90))),
+    (0.34, dict(lh=('w', 186, -8.6, -40), pt=_rod(0))),
+    (0.38, dict(lh=('w', 140, -8.6, -40), pt=_rod(-46))), (0.42, dict(lh=('w', 186, -8.6, -40), pt=_rod(0))),
+    (0.43, dict(pt=_cyl(90))), (0.46, dict(pt=_cyl(150))),
+    (0.44, dict(dr=(10, 30, 75))),
+    (0.50, dict(dr=(10, -15, 75), lh=BELT_L, lel=LEL_BELT)),                                 # muzzle down, hand at the pouch
+    (0.52, dict(lh=BELT_L)),
+    (0.65, dict(pt=_cyl(150))), (0.68, dict(pt=_cyl(210))),
+    (0.70, dict(lh=BELT_L, lel=LEL_BELT)), (0.72, dict(lh=BELT_L)),
+    (0.86, dict(pt=_cyl(210), lh=('w', -3.6, -30, -62), lel=LEL)),
+    (0.88, dict(pt=_gate(100))), (0.91, dict(pt=_gate(0), lh=('w', -3.6, -6, -58), ease=snap)),   # gate shut
+    (0.92, dict(pt=_cyl(210))), (0.97, dict(pt=_cyl(600), ease=snap)),                      # spin it (ends on a chamber)
+    (0.94, dict(dg=_RW, dr=(10, -15, 75), lh=None, lel=None)),
+    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+] + _eject('wp_05', REV_SEAT, REV_OUT, 0.21, 0.25, 0.40)
+  + _eject('wp_06', REV_SEAT, REV_OUT, 0.34, 0.38, 0.52, off=(-0.02, 0.05, -0.8), ypr=(-40, 140, 70))
+  + _rev_round('wp_07', 0.53, 0.60, 0.64) + _rev_round('wp_08', 0.73, 0.80, 0.84))
+fire_revolver = combo(kick(18, 0.022, 0.012, 16), tracks([(0.0, dict(pt=_cyl(0))), (0.12, dict(pt=_cyl(60), ease=snap))]))
+
+
+# ---- derringer: thumb the lever, tip the barrels up, pull both empties, two rounds in, snap shut
+_dbar = lambda a: {'wp_02': G((0.5, 14.5, 0), 'x', a)}
+_dlev = lambda a: {'wp_03': G((-1.5, 4.0, -8.9), 'x', a)}
+DER_SEAT = (ON('wp_02', (2, 6.2, 0)), ON('wp_02', (2, -6.7, 0)))
+DER_OUT = (ON('wp_02', (-28, 6.2, 0)), ON('wp_02', (-28, -6.7, 0)))
+DER_LINE = (ON('wp_02', (-36, 6.2, 0)), ON('wp_02', (-36, -6.7, 0)))
+DER_GRAB = ((-30, -6.2, 40), (-30, 6.7, 40))                          # one hand carries both rounds side by side
+reload_derringer = tracks([
+    (0.00, dict(pt=dict(_dbar(0), **_dlev(0)))),
+    (0.10, dict(dg=_RW, dr=(50, 10, 0), pt=_dlev(0))),
+    (0.14, dict(pt=_dlev(-90), ease=snap)),                                                # thumb the lever round
+    (0.16, dict(lh=('w', 70, -26, 0), lel=LEL, pt=_dbar(0))),
+    (0.22, dict(lh=('p', 'wp_02', 70, -26, 0), pt=_dbar(-55))),                            # tip the barrels up
+    (0.26, dict(lh=('p', 'wp_02', -30, 0, 40))),
+    (0.32, dict(lh=('p', 'wp_02', -58, 0, 40))),                                           # pull the empties
+    (0.40, dict(lh=BELT_L, lel=LEL_BELT)), (0.44, dict(lh=BELT_L)),
+    (0.56, dict(lh=('p', 'wp_02', -66, 0, 40), lel=LEL)),
+    (0.62, dict(lh=('p', 'wp_02', -28, 0, 40))),                                           # both rounds in
+    (0.66, dict(lh=('p', 'wp_02', 40, 40, 0), pt=_dbar(-55))),
+    (0.72, dict(lh=('w', 40, 40, 0), pt=_dbar(0), ease=snap)),                             # snap shut
+    (0.74, dict(pt=_dlev(-90))), (0.78, dict(pt=_dlev(0))),
+    (0.82, dict(lh=None, lel=None, dg=_RW, dr=(50, 10, 0))),
+    (0.94, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+] + _eject('wp_04', DER_SEAT[0], DER_OUT[0], 0.24, 0.32, 0.46, mid=(14, 0, 0))
+  + _eject('wp_05', DER_SEAT[1], DER_OUT[1], 0.24, 0.32, 0.47, off=(-0.01, 0.05, -0.8), ypr=(-60, 120, 20), mid=(14, 0, 0))
+  + [kv for i, b in enumerate(('wp_06', 'wp_07')) for kv in
+     _show(b, 0.45, HAND('l', DER_GRAB[i])) + [(0.56, dict(pt={b: DER_LINE[i]})), (0.62, dict(pt={b: DER_SEAT[i]}))]
+     + _gone(b, 0.63, DER_SEAT[i])])
+
+
+# ---- snub-nose: cylinder swings out, muzzle up, slap the ejector (five empties fall), speedloader in, twist, close
+_scyl = lambda a: {'wp_02': G((0, -31, 13), 'u', a)}
+SN_SEAT = ON('wp_02', (0.3, -12, 0)); SN_OUT = ON('wp_02', (-34, -12, 0)); SN_LINE = ON('wp_02', (-32, -12, 0))
+SL_GRAB = (-62, 0, 0)                                                # hand centre behind the knob
+reload_snubnose = tracks([
+    (0.00, dict(pt=_scyl(0))),
+    (0.10, dict(dg=_RW, dr=(20, 10, -70), lh=('w', 18, -12, 52), lel=LEL)),
+    (0.11, dict(pt=_scyl(0))),
+    (0.16, dict(pt=_scyl(-100), lh=('p', 'wp_02', 18, -12, 52))),                          # swing it out
+    (0.21, dict(dr=(20, 60, -70), lh=('p', 'wp_02', 74, -12, 0))),                         # muzzle up
+    (0.26, dict(lh=('p', 'wp_02', 52, -12, 0), ease=snap)),                                # slap the ejector
+    (0.32, dict(dr=(20, -30, -70))),                                                       # muzzle down to load
+    (0.40, dict(lh=BELT_L, lel=LEL_BELT)), (0.44, dict(lh=BELT_L)),
+    (0.56, dict(lh=('p', 'wp_02', -32 - 62, -12, 0), lel=LEL)),
+    (0.62, dict(lh=('p', 'wp_02', 0.3 - 62, -12, 0))),                                     # speedloader home
+    (0.66, dict(lh=('p', 'wp_02', 0.3 - 62, -12, 0))),
+    (0.70, dict(lh=('p', 'wp_02', -110, -12, 0), pt=_scyl(-100))),                          # pull it off
+    (0.76, dict(pt=_scyl(0), dr=(10, -10, -20), ease=snap)),                               # flick the cylinder shut
+    (0.78, dict(lh=BELT_L, lel=LEL_BELT)),
+    (0.86, dict(lh=None, lel=None, dg=_RW, dr=(10, -10, -20))),
+    (0.96, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+] + _eject('wp_03', SN_SEAT, SN_OUT, 0.22, 0.26, 0.38, mid=(-14, 0, 0), ease_out=snap)
+  + _show('wp_04', 0.45, HAND('l', SL_GRAB)) + _show('wp_05', 0.45, HAND('l', SL_GRAB))
+  + [(0.56, dict(pt={'wp_04': SN_LINE, 'wp_05': SN_LINE})), (0.62, dict(pt={'wp_04': SN_SEAT, 'wp_05': SN_SEAT})),
+     (0.66, dict(pt={'wp_04': ON('wp_02', (0.3, -12, 0), (0, 0, 25))})),
+     (0.70, dict(pt={'wp_04': HAND('l', SL_GRAB, (0, 0, 25))})), (0.78, dict(pt={'wp_04': HAND('l', SL_GRAB, (0, 0, 25))}))]
+  + _gone('wp_04', 0.79, HAND('l', SL_GRAB, (0, 0, 25))) + _gone('wp_05', 0.84, SN_SEAT))
+fire_snubnose = combo(kick(16, 0.024, 0.014, 20, decay=2.8), tracks([(0.0, dict(pt=_scyl(0))), (0.14, dict(pt=_scyl(72), ease=snap))]))
+
+
+# ---- semi-auto: slide locked back on the empty mag, mag drops, fresh one from the pouch, slide release
+def _magd(k):                                                        # down the grip's rake
+    return (-0.089 * k, -0.996 * k, 0.0)
+
+
+SA_GRAB = (-27.6, -149, 0)                                           # palm under the baseplate
+_sl = lambda du: {'wp_03': G(d=(du, 0, 0))}
+_SA_FALL = DROP(G(d=_magd(120)), (0.02, -0.03, -0.7), (40, 70, 90), (-24, -60, 0))
+reload_semiauto = tracks([
+    (0.00, dict(pt=_sl(0))), (0.04, dict(pt=_sl(-40), ease=snap)),                        # locked open (empty)
+    (0.10, dict(dg=_RW, dr=(25, 15, 0))),
+    (0.12, dict(pt={'wp_02': G()})), (0.17, dict(pt={'wp_02': G(d=_magd(120))}, ease=fall)),  # mag drops free
+    (0.175, dict(pt={'wp_02': DROP(G(d=_magd(120)), (0, 0, 0), (0, 0, 0), (-24, -60, 0))})),
+    (0.32, dict(pt={'wp_02': _SA_FALL}, ease=fall)), (0.324, dict(pt={'wp_02': HID(_SA_FALL)})),
+    (0.60, dict(pt={'wp_02': HID(G())})),
+    (0.14, dict(lh=BELT_L, lel=LEL_BELT)), (0.20, dict(lh=BELT_L)),
+    (0.32, dict(lh=('w', SA_GRAB[0] - 6.2, SA_GRAB[1] - 69.7, 0), lel=LEL, pt={'wp_04': G(d=_magd(70))})),
+    (0.38, dict(lh=('w', *SA_GRAB), pt={'wp_04': G()}, ease=snap)),                        # seat it
+    (0.42, dict(pt=_sl(-40))), (0.45, dict(pt=_sl(0), ease=snap)),                         # slide release
+    (0.44, dict(lh=('w', *SA_GRAB))),
+    (0.54, dict(lh=None, lel=None)),
+    (0.62, dict(dg=_RW, dr=(25, 15, 0))),
+    (0.76, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+] + _show('wp_04', 0.204, HAND('l', SA_GRAB)))
+fire_semiauto = combo(kick(10, 0.016, 0.008, 10, decay=1.8), tracks([(0.0, dict(pt=_sl(0))), (0.1, dict(pt=_sl(-40), ease=snap)),
+                                                                     (0.3, dict(pt=_sl(0)))]))
+
+
+# ---- machine pistol: long mag drops, new one up the grip, rack the top charging knob
+MP_GRAB = (32, -310, 0)
+_ch = lambda du: {'wp_03': G(d=(du, 0, 0))}
+_MP_FALL = DROP(G(d=(0, -175, 0)), (0.02, -0.03, -0.62), (30, 80, 70), (32, -180, 0))
+reload_mpistol = tracks([
+    (0.10, dict(dg=_RW, dr=(25, 15, 0))),
+    (0.12, dict(pt={'wp_02': G()})), (0.17, dict(pt={'wp_02': G(d=(0, -175, 0))}, ease=fall)),
+    (0.175, dict(pt={'wp_02': DROP(G(d=(0, -175, 0)), (0, 0, 0), (0, 0, 0), (32, -180, 0))})),
+    (0.32, dict(pt={'wp_02': _MP_FALL}, ease=fall)), (0.324, dict(pt={'wp_02': HID(_MP_FALL)})),
+    (0.60, dict(pt={'wp_02': HID(G())})),
+    (0.14, dict(lh=BELT_L, lel=LEL_BELT)), (0.20, dict(lh=BELT_L)),
+    (0.32, dict(lh=('w', 32, -310 - 90, 0), lel=LEL, pt={'wp_04': G(d=(0, -90, 0))})),
+    (0.38, dict(lh=('w', *MP_GRAB), pt={'wp_04': G()}, ease=snap)),
+    (0.46, dict(lh=('p', 'wp_03', 70, 100, 0), pt=_ch(0))),                                 # hand on the charging knob
+    (0.52, dict(lh=('p', 'wp_03', 70, 100, 0), pt=_ch(-40))),
+    (0.55, dict(pt=_ch(0), lh=('w', 40, 110, 0), ease=snap)),                              # let it fly
+    (0.64, dict(lh=None, lel=None)),
+    (0.66, dict(dg=_RW, dr=(25, 15, 0))),
+    (0.80, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+] + _show('wp_04', 0.204, HAND('l', MP_GRAB)))
+fire_mpistol = combo(kick(18, 0.012, 0.006, 6, 1.0, decay=1.6, shots=(0, 3, 6)),
+                     tracks([(0.0, dict(pt=_ch(0)))] + [kv for s in (0, 3, 6) for kv in
+                            ((s / 18 + 0.02, dict(pt=_ch(0))), ((s + 1) / 18, dict(pt=_ch(-30), ease=snap)), ((s + 2) / 18, dict(pt=_ch(0))))]))
+
 
 # ---- dual sawed-offs: right-left double blast, each rocks the body back and toward that gun, muzzles climb hard
 fire_dual = kick(30, 0.045, 0.020, 34, 3.0, decay=3.4, guns=(1, 2), stagger=5, body=5.0, turn=4.0)
-reload_dual = keyed([
-    (0.00, {}),
-    (0.14, dict(dg=(-0.02, 0.10, 0.10), dr=(0, 70, 0), dg2=(0.02, 0.10, 0.10), dr2=(0, 70, 0))),   # both up by the hat
-    (0.22, dict(dg=(-0.02, 0.08, 0.04), dr=(0, 30, 0), ease=snap)),                                 # rack right
-    (0.30, dict(dg=(-0.02, 0.10, 0.10), dr=(0, 70, 0), dg2=(0.02, 0.08, 0.04), dr2=(0, 30, 0), ease=snap)),  # rack left
-    (0.38, dict(dg2=(0.02, 0.10, 0.10), dr2=(0, 70, 0))),
-    (0.70, dict(dg=(0.0, 0.0, 0.02), dr=(0, 10, 360), dg2=(0.0, 0.0, 0.02), dr2=(0, 10, -360))),   # barrel-roll twirl
-    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 360), dg2=(0, 0, 0), dr2=(0, 0, -360))),
-])
 
-# ---- machine pistol: 3-round burst; long mag seated off the hip pouch, rack up front
-reload_mpistol = keyed([
-    (0.00, {}),
-    (0.08, dict(dg=(0.0, 0.02, 0.02), dr=(0, 20, -30), ease=snap)),                           # release: mag drops
-    (0.26, dict(dg=(-0.05, 0.27, 0.015), dr=(0, 90, 0), rel=(-1, 0.4, 0.2))),                 # muzzle up over the pouch
-    (0.34, dict(dg=(-0.05, 0.27, -0.015), ease=snap)),                                        # seat the long mag
-    (0.40, dict(dg=(-0.05, 0.27, 0.015))),
-    (0.48, dict(dg=(0.06, 0.06, -0.02), dr=(45, 40, 0))),
-    (0.58, dict(dg=_LOW, dr=(90, 0, 0), lh=('w', 214, 30, -50), lel=LEL, rel=(-1, 0.3, -0.7))),  # across the belly
-    (0.64, dict(lh=('w', 184, 30, -50))),                                                     # rack
-    (0.67, dict(lh=('w', 214, 30, -64), ease=snap)),
-    (0.84, dict(dg=(0.03, 0.02, 0.0), dr=(4, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
-    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
-])
+# ---- dual sawed-offs (pump): one gun tucked in the waistband while the free hand feeds a shell up the loading port
+# and racks the pump, then the other gun
+SO_LINE = (118, -44, 0); SO_IN = (128, -24.5, 0); SO_HOME = (168, -24.5, 0)
+SO_GRAB = (-10, -40, 0)                                              # hand behind / under the shell base
+_TUCK_L = dict(dg2=(-0.04, 0.36, -0.12), dr2=(0, -80, 0))            # gun 2 down the left waistband
+_TUCK_R = dict(dg=(0.04, 0.36, -0.12), dr=(0, -80, 0))
+_LOAD_1 = dict(dg=(0.09, 0.16, -0.10), dr=(20, 10, 150))             # gun 1 upside down-ish in front: port up
+_LOAD_2 = dict(dg2=(-0.09, 0.16, -0.10), dr2=(-20, 10, -150))
+_pump = lambda du, b=('wp_02', 'wp_03'), key='weapon': {b[0]: G(d=(du, 0, 0), key=key), b[1]: G(d=(du * 44 / 60, 0, 0), key=key)}
 
-# ---- bolt rifle: boom (body rocks), then the right hand works the bolt (knob on the gun's right side)
-BOLT = ('w', -64, 12, -96)
-def _bolt(t0, t1):                                                                           # open-back-forward-close
+
+def _shell(t_show, side, t_line, t_in, t_home, key):
+    w = 'w' if key == 'weapon' else 'w2'
+    hk = 'lh' if side == 'l' else 'rh'
+    return (_show('wp_06', t_show, HAND(side, SO_GRAB, key=key)) +
+            [(t_line, {'pt': {'wp_06': AT(SO_LINE, (0, 20, 0), key)}, hk: (w, SO_LINE[0] - 10, SO_LINE[1] - 40, 0)}),
+             (t_in, {'pt': {'wp_06': AT(SO_IN, key=key)}, hk: (w, SO_IN[0] - 10, SO_IN[1] - 40, 0)}),
+             (t_home, {'pt': {'wp_06': AT(SO_HOME, key=key)}, hk: (w, SO_HOME[0] - 10, SO_HOME[1] - 40, 0)})]
+            + _gone('wp_06', t_home + 0.002, AT(SO_HOME, key=key)))
+
+
+reload_dual = tracks([
+    (0.00, dict(pt=dict(_pump(0), **_pump(0, ('wp_04', 'wp_05'), 'wp_01')))),
+    (0.08, dict(_TUCK_L)), (0.48, dict(_TUCK_L)),
+    (0.12, dict(_LOAD_1, lh=BELT_L, lel=LEL_BELT)), (0.15, dict(lh=BELT_L)),
+    (0.34, dict(dr=(20, 10, 150))), (0.38, dict(dr=(10, 0, 0), lh=('p', 'wp_02', 242, -70, 0), lel=LEL)),
+    (0.39, dict(pt=_pump(0))), (0.42, dict(pt=_pump(-60), ease=snap)), (0.46, dict(pt=_pump(0), ease=snap)),   # rack
+    (0.47, dict(lh=('p', 'wp_02', 242, -70, 0))),
+    (0.50, dict(lh='grip2', lel=None, dg=(0.09, 0.16, -0.10), dr=(10, 0, 0))),
+    (0.54, dict(_TUCK_R)), (0.90, dict(_TUCK_R)),
+    (0.56, dict(_LOAD_2)), (0.92, dict(dg2=_LOAD_2['dg2'])),
+    (0.57, dict(rh='grip', rel=None)), (0.60, dict(rh=BELT_R, rel=REL_BELT)), (0.63, dict(rh=BELT_R)),
+    (0.80, dict(dr2=(-20, 10, -150))), (0.84, dict(dr2=(-10, 0, 0), rh=('p', 'wp_04', 242, -70, 0), rel=(-1, -0.3, -0.7))),
+    (0.85, dict(pt=_pump(0, ('wp_04', 'wp_05'), 'wp_01'))), (0.88, dict(pt=_pump(-60, ('wp_04', 'wp_05'), 'wp_01'), ease=snap)),
+    (0.91, dict(pt=_pump(0, ('wp_04', 'wp_05'), 'wp_01'), ease=snap)),
+    (0.92, dict(rh=('p', 'wp_04', 242, -70, 0))), (0.95, dict(rh='grip', rel=None)),
+    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0), dg2=(0, 0, 0), dr2=(0, 0, 0))),
+] + _shell(0.16, 'l', 0.24, 0.28, 0.32, 'weapon') + _shell(0.64, 'r', 0.71, 0.75, 0.79, 'wp_01'))
+
+
+# ---- bolt rifle: boom, then lift-back-forward-down on the bolt (empty flips out the port); reload two rounds down
+# into the open action from the right hip pouch
+_bolt = lambda deg, du: {'wp_02': G((0, 8, 0), 'u', deg, (du, 0, 0))}
+KNOB = ('p', 'wp_02', -60, -10, -90)
+
+
+def _cycle(t0, t1, casing=True):
     d = (t1 - t0) / 6
-    return [(t0 + d, dict(rh=BOLT, rel=(-1, 0.3, -0.4))), (t0 + 2 * d, dict(rh=('w', -64, 44, -96))),
-            (t0 + 3 * d, dict(rh=('w', -132, 44, -96))), (t0 + 4 * d, dict(rh=('w', -64, 44, -96))),
-            (t0 + 5 * d, dict(rh=BOLT)), (t1, dict(rh='grip', rel=REL_T))]
-fire_bolt = combo(kick(40, 0.03, 0.012, 9, 1.0, decay=3.0, body=3.0), keyed([(0.0, {}), (0.26, {})] + _bolt(0.26, 0.92) + [(1.0, {})]))
-reload_bolt = keyed([(0.0, {})] + _bolt(0.04, 0.30)[:3] + [
-    (0.38, dict(rh=BELT_R, rel=(-1, 0.4, -0.3))),                                             # rounds from the hip pouch
-    (0.42, dict()),
-    (0.48, dict(rh=('w', -60, 120, -110), rel=(-1, 0.3, 0.2))),                              # up and outside the stock
-    (0.54, dict(rh=('w', -24, 76, -10), rel=(-1, 0.2, 0.3))),                                 # over the open action
-    (0.59, dict(rh=('w', -24, 58, -10), dg=(0, 0, -0.005))),
-    (0.64, dict(rh=('w', -24, 76, -10), dg=(0, 0, 0))),
-    (0.69, dict(rh=('w', -24, 58, -10), dg=(0, 0, -0.005))),
-    (0.74, dict(rh=('w', -24, 76, -10), dg=(0, 0, 0))),
-    (0.80, dict(rh=('w', -132, 44, -96), rel=(-1, 0.3, -0.4))),
-    (0.86, dict(rh=('w', -64, 44, -96))), (0.90, dict(rh=BOLT)), (0.97, dict(rh='grip', rel=REL_T)), (1.0, {})])
+    k = [(t0, dict(rh='grip', pt=_bolt(0, 0))), (t0 + d, dict(rh=KNOB, rel=(-1, 0.3, -0.4), pt=_bolt(0, 0))),
+         (t0 + 2 * d, dict(pt=_bolt(-80, 0))), (t0 + 3 * d, dict(pt=_bolt(-80, -75))),
+         (t0 + 4 * d, dict(pt=_bolt(-80, 0))), (t0 + 5 * d, dict(pt=_bolt(0, 0), rh=KNOB)), (t1, dict(rh='grip', rel=REL_T))]
+    if casing:                                                       # rides the bolt back, kicked out the right
+        out = AT((-3, 8, 0)); fly = DROP(out, (-0.10, 0.02, 0.06), (0, 60, 20), (30, 0, 0))
+        land = DROP(out, (-0.16, 0.10, -0.8), (40, 170, 60), (30, 0, 0))
+        k += _show('wp_03', t0 + d, ON('wp_02', (72, 8, 0))) + [
+            (t0 + 3 * d, dict(pt={'wp_03': ON('wp_02', (72, 8, 0))})), (t0 + 3 * d + 0.004, dict(pt={'wp_03': out})),
+            (t0 + 3.6 * d, dict(pt={'wp_03': fly}, ease=snap)), (t0 + 3.6 * d + 0.2, dict(pt={'wp_03': land}, ease=fall))
+        ] + _gone('wp_03', t0 + 3.6 * d + 0.21, land)
+    return k
 
-# ---- lever rifle: boom, lever down-up; reload thumbs rounds into the right-side gate
-LEVER_DN = ('w', 6, -100, -30)
-fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8, body=2.5),
-                   keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.3, 0.0))),
-                          (0.62, dict(rh='grip', dr=(0, 0, 0))), (0.80, dict(rel=REL_T)), (1.0, {})]))
-# shouldered (Aim): the stock is against the face, so the kick goes into the whole body rocking back, not the gun
-aimfire_bolt = combo(kick(40, 0.0, 0.004, 7, 1.0, decay=3.0, body=5.0), keyed([(0.0, {}), (0.26, {})] + _bolt(0.26, 0.92) + [(1.0, {})]))
-aimfire_lever = combo(kick(32, 0.0, 0.004, 8, 1.0, decay=2.8, body=4.5),
-                      keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.3, 0.0))),
-                             (0.62, dict(rh='grip', dr=(0, 0, 0))), (0.80, dict(rel=REL_T)), (1.0, {})]))
-GATE = ('w', 14, -16, -62)
-reload_lever = keyed([
-    (0.00, {}),
-    (0.10, dict(dr=(0, 0, 40))),                                                              # roll the gate up
-    (0.22, dict(rh=BELT_R, rel=(-1, 0.4, -0.3))),
-    (0.26, dict()),
-    (0.38, dict(rh=GATE, rel=(-1, 0.3, 0.0))),
-    (0.43, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.48, dict(rh=GATE, dg=(0, 0, 0))),
-    (0.53, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.58, dict(rh=GATE, dg=(0, 0, 0))),
-    (0.63, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.68, dict(rh=GATE, dg=(0, 0, 0))),
-    (0.76, dict(rh='grip', dr=(0, 0, 0), rel=REL_T)),
-    (0.84, dict(rh=LEVER_DN, rel=(-1, 0.3, 0.0))), (0.92, dict(rh='grip')), (0.97, dict(rel=REL_T)), (1.00, {}),
-])
 
-# ---- SMG: side mag sticks out the left; roll the gun so it hangs down, left hand swaps it from the belt
-reload_smg = keyed([
-    (0.00, {}),
-    (0.14, dict(dr=(0, 4, 90), lh=('w', 120, 0, 266), lel=(1, -0.2, -0.6))),
-    (0.22, dict(lh=('w', 120, 0, 320), ease=snap)),                                           # yank it down
-    (0.38, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.42, dict()),
-    (0.56, dict(lh=('w', 120, 0, 320), lel=(1, -0.2, -0.6))),
-    (0.64, dict(lh=('w', 120, 0, 266), dg=(0, 0, 0.006), ease=snap)),                          # seat
-    (0.70, dict(dg=(0, 0, 0))),
-    (0.86, dict(lh=None, lel=None, dr=(0, 0, 0))),
-    (1.00, {}),
-])
+fire_bolt = combo(kick(40, 0.03, 0.012, 9, 1.0, decay=3.0, body=3.0), tracks(_cycle(0.24, 0.80)))
+aimfire_bolt = combo(kick(40, 0.0, 0.004, 7, 1.0, decay=3.0, body=5.0), tracks(_cycle(0.24, 0.80)))
+BR_GRAB = (30, 20, -45)                                              # fingers on the round's right side (under the scope)
+
+
+def _bolt_round(bone, t_show, t_line, t_in):
+    return (_show(bone, t_show, HAND('r', BR_GRAB)) +
+            [(t_line, dict(pt={bone: AT((-5, 30, -16))}, rh=('w', 25, 50, -61), rel=(-1, 0.2, 0.2))),
+             (t_in, dict(pt={bone: AT((-5, 10, 0))}, rh=('w', 25, 30, -45)))] + _gone(bone, t_in + 0.004, AT((-5, 10, 0))))
+
+
+reload_bolt = tracks(_cycle(0.0, 0.30, casing=False)[:4] + [
+    (0.22, dict(rh=KNOB)), (0.26, dict(rh=BELT_R, rel=REL_BELT)), (0.30, dict(rh=BELT_R)),
+    (0.46, dict(rh=('w', 25, 50, -61))), (0.48, dict(rh=BELT_R, rel=REL_BELT)), (0.52, dict(rh=BELT_R)),
+    (0.70, dict(rh=('w', 25, 50, -61), rel=(-1, 0.2, 0.2))), (0.74, dict(rh=KNOB, rel=(-1, 0.3, -0.4), pt=_bolt(-80, -75))),
+    (0.80, dict(pt=_bolt(-80, 0))), (0.86, dict(pt=_bolt(0, 0), rh=KNOB)), (0.94, dict(rh='grip', rel=REL_T)),
+] + _bolt_round('wp_04', 0.31, 0.38, 0.43) + _bolt_round('wp_05', 0.53, 0.60, 0.65))
+
+
+# ---- lever rifle: boom, lever down (empty pops out the top) and up; reload thumbs two rounds into the side gate
+_lev = lambda a: {'wp_02': G((92, -23, 0), 'x', a)}
+LOOP = ('p', 'wp_02', 4, -58, 0)
+
+
+def _lever(t0, t1, casing=True):
+    d = (t1 - t0) / 4
+    k = [(t0, dict(rh='grip', pt=_lev(0))), (t0 + d, dict(rh=LOOP, rel=(-1, 0.3, 0.0), pt=_lev(0))),
+         (t0 + 2 * d, dict(pt=_lev(-50), dr=(0, -4, 0))), (t0 + 3 * d, dict(pt=_lev(0), dr=(0, 0, 0), rh=LOOP)),
+         (t1, dict(rh='grip', rel=REL_T))]
+    if casing:
+        top = AT((40, 26, 0)); fly = DROP(top, (-0.04, 0.06, 0.14), (0, 90, 30), (25, 0, 0))
+        land = DROP(top, (-0.12, 0.16, -0.75), (60, 200, 40), (25, 0, 0))
+        k += _show('wp_03', t0 + d, AT((100, 4, 0))) + [
+            (t0 + 1.5 * d, dict(pt={'wp_03': AT((100, 4, 0))})), (t0 + 2 * d, dict(pt={'wp_03': top})),
+            (t0 + 2 * d + 0.06, dict(pt={'wp_03': fly}, ease=snap)), (t0 + 2 * d + 0.26, dict(pt={'wp_03': land}, ease=fall))
+        ] + _gone('wp_03', t0 + 2 * d + 0.27, land)
+    return k
+
+
+fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8, body=2.5), tracks(_lever(0.28, 0.80)))
+aimfire_lever = combo(kick(32, 0.0, 0.004, 8, 1.0, decay=2.8, body=4.5), tracks(_lever(0.28, 0.80)))
+LV_GRAB = (-30, 0, -35)                                              # thumb behind the round's base
+
+
+def _gate_round(bone, t_show, t_line, t_in):
+    return (_show(bone, t_show, HAND('r', LV_GRAB)) +
+            [(t_line, dict(pt={bone: AT((30, -2, -18))}, rh=('w', 0, -2, -53))),
+             (t_in, dict(pt={bone: AT((64, -2, -12))}, rh=('w', 34, -2, -47)))] + _gone(bone, t_in + 0.004, AT((64, -2, -12))))
+
+
+reload_lever = tracks([
+    (0.08, dict(dr=(0, 0, 40))), (0.60, dict(dr=(0, 0, 40))),                               # roll the gate up
+    (0.10, dict(rh='grip', rel=REL_T)), (0.14, dict(rh=BELT_R, rel=REL_BELT)), (0.18, dict(rh=BELT_R)),
+    (0.34, dict(rh=('w', 34, -2, -60), rel=(-1, 0.3, 0.0))), (0.38, dict(rh=BELT_R, rel=REL_BELT)), (0.42, dict(rh=BELT_R)),
+    (0.58, dict(rh=('w', 34, -2, -60), rel=(-1, 0.3, 0.0))),
+    (0.66, dict(dr=(0, 0, 0), rh='grip', rel=REL_T)),
+] + _gate_round('wp_04', 0.19, 0.26, 0.31) + _gate_round('wp_05', 0.43, 0.50, 0.55) + _lever(0.66, 0.96, casing=False))
+
+
+# ---- SMG: roll the side mag down, strip it and toss it, new one from the pouch, rack the cocking handle
+SMG_GRAB = (140, 55, 140)                                            # palm on the mag (top side once it hangs down)
+_ck = lambda du: {'wp_03': G(d=(du, 0, 0))}
+_SMG_FALL = DROP(G(d=(0, 0, 200)), (0.05, -0.04, -0.5), (60, 30, 80), (140, 0, 125))
+reload_smg = tracks([
+    (0.10, dict(dr=(0, 4, 90), lh=('w', *SMG_GRAB), lel=LEL)),
+    (0.12, dict(pt={'wp_02': G()})),
+    (0.17, dict(pt={'wp_02': G(d=(0, 0, 200))}, lh=('w', SMG_GRAB[0], SMG_GRAB[1], SMG_GRAB[2] + 200), ease=snap)),  # strip it
+    (0.174, dict(pt={'wp_02': DROP(G(d=(0, 0, 200)), (0, 0, 0), (0, 0, 0), (140, 0, 125))})),
+    (0.32, dict(pt={'wp_02': _SMG_FALL}, ease=fall)), (0.324, dict(pt={'wp_02': HID(_SMG_FALL)})),
+    (0.62, dict(pt={'wp_02': HID(G())})),
+    (0.24, dict(lh=BELT_L, lel=LEL_BELT)), (0.28, dict(lh=BELT_L)),
+    (0.40, dict(lh=('w', SMG_GRAB[0], SMG_GRAB[1], SMG_GRAB[2] + 90), lel=LEL, pt={'wp_04': G(d=(0, 0, 90))})),
+    (0.46, dict(lh=('w', *SMG_GRAB), pt={'wp_04': G()}, ease=snap)),                       # seat it
+    (0.48, dict(dr=(0, 4, 90))),
+    (0.56, dict(dr=(0, 0, 0), lh=('w', 112, 0, -82))),
+    (0.58, dict(lh=('p', 'wp_03', 112, 0, -82), pt=_ck(0))),
+    (0.64, dict(lh=('p', 'wp_03', 112, 0, -82), pt=_ck(-80))),                             # rack it
+    (0.67, dict(pt=_ck(0), lh=('w', 70, 0, -82), ease=snap)),
+    (0.80, dict(lh=None, lel=None)),
+] + _show('wp_04', 0.284, HAND('l', SMG_GRAB)))
+fire_smg = combo(shake(12, 0.003, 1.2, 4), tracks([(0.0, dict(pt=_ck(0)))] + [kv for s in range(4) for kv in
+                 ((s / 4 + 0.02, dict(pt=_ck(0))), (s / 4 + 1 / 12, dict(pt=_ck(-45), ease=snap)), (s / 4 + 2 / 12, dict(pt=_ck(0))))]
+                 + [(1.0, dict(pt=_ck(0)))]))
+
 
 # ---- minigun: barrels spin while firing (6 barrels: 300 deg per 12-frame loop = a seamless 25 deg/frame), light buzz
 def spin_fire(n, per_frame=25.0):
@@ -900,23 +1263,41 @@ reload_board = keyed([
 ])
 
 
-# per weapon: hold (+ overrides), fire = (frames, modifier, loop), reload = (frames, modifier) or None
+# per weapon: hold (+ overrides), fire = (frames, modifier, loop), reload = (frames, modifier) or None,
+# parts = (part, bone[, default spec]): split moving parts ('Cylinder' -> <W>_Cylinder.glb) and ammo ('ammo:Ammo45_Round')
+_HID = HID(AT((0, 0, 0)))                                            # ammo waits hidden inside the gun hand
 WDEF = {
-    'Revolver':  dict(hold='pistol', fire=(18, kick(18, 0.022, 0.012, 16), False), reload=(78, reload_revolver)),
-    'Derringer': dict(hold='pistol', fire=(16, kick(16, 0.026, 0.014, 24, decay=2.6), False), reload=(64, reload_derringer)),
-    'SnubNose':  dict(hold='pistol', fire=(16, kick(16, 0.024, 0.014, 20, decay=2.8), False), reload=(70, reload_snubnose)),
-    'SemiAuto':  dict(hold='pistol', fire=(10, kick(10, 0.016, 0.008, 10, decay=1.8), False), reload=(58, reload_semiauto)),
-    'MachinePistol': dict(hold='pistol', fire=(18, kick(18, 0.012, 0.006, 6, 1.0, decay=1.6, shots=(0, 3, 6)), False),
-                          reload=(60, reload_mpistol)),
-    'SawedOff':  dict(hold='dual', dual=True, fire=(30, fire_dual, False), reload=(66, reload_dual)),
-    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -27, 0)), aim=Vector((-0.07, -0.39, 0.67)), aimfire=aimfire_bolt,
-                      fire=(40, fire_bolt, False), reload=(90, reload_bolt)),
-    'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.125, -0.35, 0.50)), rot=dict(yaw=0, pitch=0, roll=0),
-                                               support=(160, -40, 0)), aim=Vector((-0.07, -0.37, 0.70)), aimfire=aimfire_lever,
-                       fire=(32, fire_lever, False), reload=(84, reload_lever)),
-    'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.10, -0.425, 0.52)), rot=dict(yaw=0, pitch=-5, roll=0),
+    'Revolver':  dict(hold='pistol', fire=(18, fire_revolver, False), reload=(114, reload_revolver),
+                      parts=(('Gate', 'wp_02', REST), ('Rod', 'wp_03', REST), ('Cylinder', 'wp_04', REST),
+                             ('ammo:Ammo45_Casing', 'wp_05', _HID), ('ammo:Ammo45_Casing', 'wp_06', _HID),
+                             ('ammo:Ammo45_Round', 'wp_07', _HID), ('ammo:Ammo45_Round', 'wp_08', _HID))),
+    'Derringer': dict(hold='pistol', fire=(16, kick(16, 0.026, 0.014, 24, decay=2.6), False), reload=(84, reload_derringer),
+                      parts=(('Barrels', 'wp_02', REST), ('Lever', 'wp_03', REST),
+                             ('ammo:Ammo38_Casing', 'wp_04', _HID), ('ammo:Ammo38_Casing', 'wp_05', _HID),
+                             ('ammo:Ammo38_Round', 'wp_06', _HID), ('ammo:Ammo38_Round', 'wp_07', _HID))),
+    'SnubNose':  dict(hold='pistol', fire=(16, fire_snubnose, False), reload=(96, reload_snubnose),
+                      parts=(('Cylinder', 'wp_02', REST), ('ammo:Casings38', 'wp_03', _HID),
+                             ('ammo:Speedloader38', 'wp_04', _HID), ('ammo:Speedloader38_Rounds', 'wp_05', _HID))),
+    'SemiAuto':  dict(hold='pistol', fire=(10, fire_semiauto, False), reload=(66, reload_semiauto),
+                      parts=(('Mag', 'wp_02', REST), ('Slide', 'wp_03', REST), ('Mag', 'wp_04', HID(REST)))),
+    'MachinePistol': dict(hold='pistol', fire=(18, fire_mpistol, False), reload=(72, reload_mpistol),
+                          parts=(('Mag', 'wp_02', REST), ('Charger', 'wp_03', REST), ('Mag', 'wp_04', HID(REST)))),
+    'SawedOff':  dict(hold='dual', dual=True, fire=(30, fire_dual, False), reload=(150, reload_dual),
+                      parts=(('Pump', 'wp_02', REST), ('Bolt', 'wp_03', REST), ('Pump', 'wp_04', G(key='wp_01')),
+                             ('Bolt', 'wp_05', G(key='wp_01')), ('ammo:Shotgun12_Shell', 'wp_06', _HID))),
+    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -27, 0)), aim=Vector((-0.07, -0.40, 0.67)), aimfire=aimfire_bolt,
+                      fire=(40, fire_bolt, False), reload=(90, reload_bolt),
+                      parts=(('Bolt', 'wp_02', REST), ('ammo:Ammo3006_Casing', 'wp_03', _HID),
+                             ('ammo:Ammo3006_Round', 'wp_04', _HID), ('ammo:Ammo3006_Round', 'wp_05', _HID))),
+    'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.38, 0.54)), rot=dict(yaw=0, pitch=0, roll=0),
+                                               support=(160, -40, 0)), aim=Vector((-0.07, -0.42, 0.70)), aimfire=aimfire_lever,
+                       fire=(32, fire_lever, False), reload=(84, reload_lever),
+                       parts=(('Lever', 'wp_02', REST), ('ammo:Ammo3030_Casing', 'wp_03', _HID),
+                              ('ammo:Ammo3030_Round', 'wp_04', _HID), ('ammo:Ammo3030_Round', 'wp_05', _HID))),
+    'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.08, -0.40, 0.56)), rot=dict(yaw=0, pitch=-5, roll=0),
                                               support=(240, -40, 0)),
-                      fire=(12, shake(12, 0.003, 1.2, 4), True), reload=(64, reload_smg)),
+                      fire=(12, fire_smg, True), reload=(72, reload_smg),
+                      parts=(('Mag', 'wp_02', REST), ('Cock', 'wp_03', REST), ('Mag', 'wp_04', HID(REST)))),
     'RocketLauncher': dict(hold='shoulder', over=dict(support=(520, -66, 0)), parts=(('ammo:Rocket', 'wp_03'),),
                            fire=(30, fire_launcher, False), reload=(84, reload_launcher)),
     'Minigun':   dict(hold='heavy', over=dict(support=(100, 196, 0)), parts=(('Barrels', 'wp_02'),),
@@ -928,6 +1309,7 @@ WDEF = {
 def hold_of(wname):
     d = WDEF[wname]; H = dict(HOLDS[d['hold']])
     H.update(d.get('over', {}))
+    H['pdef'] = {p[1]: p[2] for p in d.get('parts', ()) if len(p) > 2}    # bone -> where it sits when nothing moves it
     return H
 
 
@@ -960,8 +1342,8 @@ def attach_set(rig, wname):
     rig.attach(wname, 'weapon')
     if d.get('dual'):
         rig.attach(wname, 'wp_01')
-    for part, bone in d.get('parts', ()):
-        rig.attach(wname, bone, part=part)
+    for p in d.get('parts', ()):
+        rig.attach(wname, p[1], part=p[0])
 
 
 def bake_set(rig, wname, only=None, prefix=None):
@@ -1049,9 +1431,9 @@ def check(rig, act, step=1):
     f0, f1 = int(act.frame_range[0]), int(act.frame_range[1])
     hands = ('hand_l', 'hand_r')
     worst = []
-    wobjs = [o for w in rig.weapons.values() for o in w['objs']]
     for f in range(f0, f1 + 1, step):
         sc.frame_set(f)
+        wobjs = [o for key, w in rig.weapons.items() if rig.pb[key].scale.x >= 0.5 for o in w['objs']]
         wb = _bvh(wobjs)
         body = _bvh([rig.body], exclude_groups=hands)
         acc = _bvh(rig.acc) if rig.acc else None
@@ -1101,10 +1483,9 @@ def probe(rig, act, frames):
     """per frame: which body groups each arm / the gun overlaps (wedge, hats, gun, legs) -- for tuning"""
     rig.arm.animation_data.action = bpy.data.actions[act] if isinstance(act, str) else act
     mw = rig.arm.matrix_world; out = []
-    wobjs = [o for w in rig.weapons.values() for o in w['objs']]
     for f in frames:
         bpy.context.scene.frame_set(f)
-        wb = _bvh(wobjs)
+        wb = _bvh([o for key, w in rig.weapons.items() if rig.pb[key].scale.x >= 0.5 for o in w['objs']])
         wedge = _bvh([rig.body], only_groups=('spine_01', 'pelvis', 'aim', 'root'))
         hats = _bvh(rig.acc, only_groups=('spine_01', 'aim')) if rig.acc else None
         hs = [(mw @ rig.arm.pose.bones[b].tail, 0.034 * rig.s) for b in ('lowerarm_l', 'lowerarm_r')]

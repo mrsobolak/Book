@@ -186,8 +186,20 @@ def preview(path, res=(1600, 900), samples=128):
     wpull.back()
 
 
-SPIN_WEAPONS = {'Minigun'}
-SPIN = re.compile(r'^Mg_(Rotor|Spindle|SpacerRing|Barrel\d|Muzzle\d)')
+# moving parts: baked with the gun (one texture set), then split off into <Weapon>_<Part>.glb / .fbx. Every part keeps the gun's
+# origin, so in engine it goes on its own socket bone with the gun's transform and the animation moves it from there.
+MOVING = {
+    'Minigun': [('Barrels', r'^Mg_(Rotor|Spindle|SpacerRing|Barrel\d|Muzzle\d)')],
+    'Revolver': [('Gate', r'^Rev_LoadingGate'), ('Rod', r'^Rev_Ejector(Rod|Head)'), ('Cylinder', r'^Rev_(Cylinder|Bullet\d)')],
+    'SnubNose': [('Cylinder', r'^Sn_(Cylinder|Bullet\d)')],
+    'Derringer': [('Barrels', r'^Der_(Barrel_|Bore_|Web|Rib|FrontSight|HingeLug)'), ('Lever', r'^Der_Lever')],
+    'SawedOff': [('Pump', r'^Sg_(Pump|ActionBar)'), ('Bolt', r'^Sg_Bolt')],
+    'MachinePistol': [('Mag', r'^Mp_(Magazine|MagBase|MagRounds)'), ('Charger', r'^Mp_(ChargeKnob|ChargeStem|Bolt)')],
+    'SemiAuto': [('Mag', r'^Sa_(MagBase|MagBody|MagRound)'), ('Slide', r'^Sa_(Slide(\.\d+)?$|FrontSight|RearSight|Bushing)')],
+    'BoltRifle': [('Bolt', r'^Br_Bolt')],
+    'LeverRifle': [('Lever', r'^Lv_Lever')],
+    'SMG': [('Mag', r'^Smg_(Magazine|MagBase|MagRib)'), ('Cock', r'^Smg_Cock')],
+}
 
 
 def split_group(ob, group, name):
@@ -203,7 +215,8 @@ def split_group(ob, group, name):
         kill = [v for v in bm.verts if ((gi in v[dl]) if dl else False) != keep_in]
         bmesh.ops.delete(bm, geom=kill, context='VERTS')
         bm.to_mesh(o.data); bm.free()
-        o.vertex_groups.clear()
+    new.vertex_groups.clear()
+    ob.vertex_groups.remove(ob.vertex_groups[group])                  # other parts' groups stay for their own split
     return new
 
 
@@ -221,9 +234,14 @@ def finish(name, export_root, res=2048, logp=None):
         bpy.data.objects.remove(c)
     decals = [o for o in obs if uses_alpha(o)]
     solid = [o for o in obs if o not in decals]
-    spin = [o for o in solid if SPIN.match(o.name)] if name in SPIN_WEAPONS else []
-    for o in spin:                                   # parts that rotate (minigun barrel cluster): tagged, split after the bake
-        vg = o.vertex_groups.new(name='spin'); vg.add(list(range(len(o.data.vertices))), 1.0, 'REPLACE')
+    moving = []
+    for part, rx in MOVING.get(name, ()):            # parts that move: tagged, split off after the bake
+        hit = [o for o in solid if re.match(rx, o.name)]
+        for o in hit:
+            vg = o.vertex_groups.new(name='mv_' + part); vg.add(list(range(len(o.data.vertices))), 1.0, 'REPLACE')
+        if hit:
+            moving.append(part)
+        log('  %s: part %s = %d objects' % (name, part, len(hit)), logp)
     W = join(solid, 'SM_%s' % name)
     smart_uv(W)
     me = W.data
@@ -252,7 +270,7 @@ def finish(name, export_root, res=2048, logp=None):
         me.uv_layers.remove(l)
     me.uv_layers['BakeUV'].name = 'UVMap'
     me.uv_layers['UVMap'].active_render = True
-    Sp = split_group(W, 'spin', 'SM_%s_Barrels' % name) if spin else None
+    parts = [(p, split_group(W, 'mv_' + p, 'SM_%s_%s' % (name, p))) for p in moving]
     if decals:
         D = join(decals, 'SM_%s_Decals' % name)
         for m in D.data.materials:
@@ -270,14 +288,14 @@ def finish(name, export_root, res=2048, logp=None):
     for o in vl.objects:
         o.select_set(o in exp)
     vl.objects.active = W
-    if Sp is not None:                               # the spinning cluster ships as its own file (same origin as the gun)
+    for part, Sp in parts:                           # each moving part ships as its own file (same origin as the gun)
         for o in vl.objects:
             o.select_set(o is Sp)
         vl.objects.active = Sp
         with bpy.context.temp_override(**ov(Sp, [Sp])):
-            bpy.ops.export_scene.fbx(filepath=os.path.join(outd, '%s_Barrels.fbx' % name), use_selection=True, object_types={'MESH'},
+            bpy.ops.export_scene.fbx(filepath=os.path.join(outd, '%s_%s.fbx' % (name, part)), use_selection=True, object_types={'MESH'},
                                      path_mode='COPY', embed_textures=True, apply_unit_scale=True, mesh_smooth_type='FACE')
-            bpy.ops.export_scene.gltf(filepath=os.path.join(outd, '%s_Barrels.glb' % name), export_format='GLB', use_selection=True)
+            bpy.ops.export_scene.gltf(filepath=os.path.join(outd, '%s_%s.glb' % (name, part)), export_format='GLB', use_selection=True)
         for o in vl.objects:
             o.select_set(o in exp)
         vl.objects.active = W

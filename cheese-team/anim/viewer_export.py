@@ -13,7 +13,16 @@ CLASS_WEAPONS = {'Outlaw': ('Revolver', 'Derringer'), 'MrShotgun': ('SawedOff', 
                  'RocketGuy': ('RocketLauncher', 'SemiAuto'), 'Sniper': ('BoltRifle', 'LeverRifle'),
                  'Mechanic': ('SMG', 'Blueprint'), 'Greg': ('Minigun', 'SnubNose')}
 DUAL = {'SawedOff'}
-PARTS = {'Minigun': (('Barrels', 'wp_02'),), 'RocketLauncher': (('ammo:Rocket', 'wp_03'),)}            # extra spinning parts on spare socket bones
+PARTS = {'Minigun': (('Barrels', 'wp_02'),), 'RocketLauncher': (('ammo:Rocket', 'wp_03'),)}            # fallback if anim isn't loaded
+
+
+def parts_of(w):
+    """moving parts + ammo pieces on spare socket bones, straight from anim.WDEF (the animations drive these bones)"""
+    try:
+        import anim
+        return tuple((p[0], p[1]) for p in anim.WDEF.get(w, {}).get('parts', ()))
+    except Exception:
+        return PARTS.get(w, ())
 
 
 def export(cls, dst, tex=1024, fmt='WEBP'):
@@ -24,7 +33,7 @@ def export(cls, dst, tex=1024, fmt='WEBP'):
     bpy.context.view_layer.update()
     for w in CLASS_WEAPONS[cls]:
         jobs = [(w, b) for b in (('weapon', 'wp_01') if w in DUAL else ('weapon',))]
-        jobs += [(w + '_' + part, b) for part, b in PARTS.get(w, ())]
+        jobs += [(w + '_' + part, b) for part, b in parts_of(w)]
         for fn, bone in jobs:
             before = set(bpy.data.objects)
             if '_ammo:' in fn:                                      # a round from the ammo set (the loaded rocket)
