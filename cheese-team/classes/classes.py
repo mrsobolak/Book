@@ -616,7 +616,7 @@ def camo_stripe(P, name, z_mid, height, mat, x0=-0.198, x1=0.198, seed=1, wobble
     ph1, ph2 = rng.uniform(0, 6), rng.uniform(0, 6)
     for i in range(n + 1):
         x = x0 + (x1 - x0) * i / n
-        e = 0.62 + 0.38 * math.sin(PI * i / n) ** 0.35
+        e = 0.62 + 0.38 * max(0.0, math.sin(PI * i / n)) ** 0.35
         h = height * e
         zz = z_mid + 0.004 * math.sin(x * 22 + ph1)
         top.append((x, zz + h / 2 + wobble * math.sin(x * 61 + ph2) * rng.uniform(0.4, 1.0)))
