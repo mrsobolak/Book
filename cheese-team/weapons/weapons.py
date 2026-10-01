@@ -712,7 +712,7 @@ def semiauto():
                              cap0=False, cap1=False), blk_dk, bevel=0.0)
     make('Sa_Barrel', lathe([(5.4, 30.0), (5.4, 168.0)], n=32), wk.steel('M_SaBarrel', base='#5d6065', bare='#b2b5ba', rough=0.3), bevel=0.0)
     bore = make('Sa_Bore', lathe([(5.5, 120.0), (5.5, 169.0)], n=32, cap0=True, cap1=False),
-                wk.steel('M_SaBore', base='#0b0b0c', bare='#222', rough=0.5, wear=0, scratch=0))
+                wk.steel('M_SaBore', base='#0b0b0c', bare='#222222', rough=0.5, wear=0, scratch=0))
     make('Sa_EjBarrelHood', profile(rounded([(42, 2.0, 1), (82, 2.0, 1), (82, 12.0, 1), (42, 12.0, 1)]), -9.4, -6.0),
          wk.steel('M_SaHood', base='#5d6065', bare='#b2b5ba', rough=0.28), bevel=0.0004)
     fs = rounded([(155, 18.0, 0), (162, 18.0, 0), (161, 24.0, 1.5), (157, 24.0, 1.5)])
