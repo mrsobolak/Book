@@ -21,18 +21,26 @@ def _noise(x, z):
 
 def natural(x, z):
     mx, mz = L.MESA
-    r = np.hypot(x - mx, z - mz)
-    h = L.PLATEAU_Y * _smooth(L.FOOT_R, L.PLATEAU_R, r) ** 1.15
-    # mesa strata: pull the slope toward 6 m terraces so it reads as ledges and red rock bands, not a smooth dome
-    t = h / 6.0; terr = (np.floor(t) + _smooth(0.55, 0.95, t - np.floor(t))) * 6.0
-    h = h + 0.75 * (terr - h) * _smooth(L.PLATEAU_R - 2, L.PLATEAU_R + 10, r)
-    h += 1.4 * _noise(x, z) * _smooth(L.PLATEAU_R + 4, L.PLATEAU_R + 20, r)          # plateau stays flat
+    ang = np.arctan2(z - mz, x - mx)
+    # warped radius: lobes, spurs and gullies so the mesa outline is irregular (not a cake)
+    warp = 14.0 * np.sin(3 * ang + 0.8) + 8.0 * np.sin(5 * ang - 1.2) + 6.0 * _noise(x * 0.8, z * 0.8)
+    r = np.hypot(x - mx, z - mz) + warp * _smooth(L.PLATEAU_R - 10, L.PLATEAU_R + 25, np.hypot(x - mx, z - mz))
+    h = L.PLATEAU_Y * _smooth(L.FOOT_R + 10, L.PLATEAU_R, r) ** 1.05
+    # strata: terraces whose height drifts round the mountain, blended in only partly -> broken ledges + rock bands
+    ph = 1.8 * _noise(x * 0.6 + 40, z * 0.6 - 20)
+    t = (h + ph) / 7.0; terr = (np.floor(t) + _smooth(0.5, 0.95, t - np.floor(t))) * 7.0 - ph
+    h = h + 0.6 * (terr - h) * _smooth(L.PLATEAU_R - 2, L.PLATEAU_R + 10, r)
+    h += 1.6 * _noise(x, z) * _smooth(L.PLATEAU_R + 4, L.PLATEAU_R + 20, r)          # plateau stays flat
+    # foothills, buttes and spires round the base
+    for (bx, bz, br, bh) in ((-120, -40, 26, 14), (-150, 40, 30, 22), (-60, 110, 22, 16), (40, -150, 30, 12), (125, -120, 20, 18)):
+        h += bh * _smooth(br, br * 0.55, np.hypot(x - bx, z - bz))
     h += 15.0 * np.exp(-(((x - 4) / 34.0) ** 2 + ((z + 104) / 22.0) ** 2))             # Hogback Hill
     h -= 15.0 * np.exp(-((z + 24) / 7.5) ** 2) * _smooth(70, 92, x)                    # the gully under the trestle
-    h += 30.0 * _smooth(-155, -180, z) + 30.0 * _smooth(-200, -225, x)                 # mesa walls (S, W)
-    h -= 50.0 * _smooth(124, 140, z) * _smooth(-40, 0, x)                              # canyon drop (N)
-    h -= 50.0 * _smooth(138, 152, x)                                                   # canyon drop (E)
-    return np.maximum(h, -40.0)
+    h += 34.0 * _smooth(-150, -178, z) + 34.0 * _smooth(-195, -222, x)                 # mesa walls (S, W)
+    h += 3.0 * _noise(x * 2.3, z * 2.1) * _smooth(-150, -170, z)
+    h -= 60.0 * _smooth(124, 140, z) * _smooth(-40, 0, x)                              # canyon drop (N)
+    h -= 60.0 * _smooth(138, 152, x)                                                   # canyon drop (E)
+    return np.maximum(h, -50.0)
 
 
 def grid():
