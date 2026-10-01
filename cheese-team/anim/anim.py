@@ -192,14 +192,15 @@ def weapon_tree(rig):
 
 
 def _seg_hits_tree(tree, p0, p1, r):
-    d = p1 - p0; L = d.length
-    if L < 1e-6:
+    """exact-ish: a hexagonal prism of radius r around the segment, overlapped against the tree"""
+    d = p1 - p0
+    if d.length < 1e-6:
         return False
-    n = d / L; a = n.orthogonal().normalized(); b = n.cross(a)
-    for o in (Vector(), a * r, -a * r, b * r, -b * r):
-        if tree.ray_cast(p0 + o, n, L)[0] is not None or tree.ray_cast(p1 + o, -n, L)[0] is not None:
-            return True
-    return False
+    n = d.normalized(); a = n.orthogonal().normalized(); b = n.cross(a)
+    ring = [a * (r * math.cos(k * PI / 3)) + b * (r * math.sin(k * PI / 3)) for k in range(6)]
+    verts = [p0 + o for o in ring] + [p1 + o for o in ring]
+    faces = [(k, (k + 1) % 6, 6 + (k + 1) % 6, 6 + k) for k in range(6)] + [tuple(range(6)), tuple(range(11, 5, -1))]
+    return bool(tree.overlap(BVHTree.FromPolygons(verts, faces)))
 
 
 def arm_ik(rig, side, target, pole, b3, wtree=None):
@@ -226,7 +227,7 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
                  for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
         if nh == 0 and wtree is not None:
             Ep, Wp, Sp = (rig.C(back @ rig.A(q)) for q in (E, W, Sa))
-            Wc = Wp - (Wp - Ep).normalized() * 0.027          # the stick ends inside the hand ball, which holds the gun
+            Wc = Wp - (Wp - Ep).normalized() * 0.026          # the stick ends inside the hand ball, which holds the gun
             nh = 10 * (_seg_hits_tree(wtree, Sp, Ep, ARM_R) + _seg_hits_tree(wtree, Ep, Wc, ARM_R))
         if nh == 0:
             best = pv; break
