@@ -152,7 +152,7 @@ class Rig:
 # the wedge (rest char space, metres): main block + the googly-eye bulge on the front face
 WEDGE_BOXES = [(Vector((-0.215, -0.115, 0.575)), Vector((0.203, 0.155, 1.0))),
                (Vector((-0.18, -0.156, 0.675)), Vector((0.17, -0.10, 0.885)))]
-ARM_R = 0.016                                     # stick radius + a hair of air
+ARM_R = 0.012                                     # stick radius + a hair of air
 
 
 def _seg_hits_box(p0, p1, lo, hi):
@@ -191,7 +191,7 @@ def arm_ik(rig, side, target, pole, b3):
         ang = math.radians(((k + 1) // 2) * 7.5 * (1 if k % 2 else -1))
         pv = Matrix.Rotation(ang, 3, u) @ p0
         E = S + u * a + pv * h; W = S + u * d
-        Sa = S + (E - S).normalized() * 0.045            # the stick roots into the wedge side at the shoulder
+        Sa = S + (E - S).normalized() * 0.05             # the stick roots into the wedge side at the shoulder
         hit = any(_seg_hits_box(q0, q1, lo_ - Vector((ARM_R,) * 3), hi_ + Vector((ARM_R,) * 3))
                   for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
         if not hit:
@@ -376,24 +376,25 @@ def fire_revolver(rig, t):
     return {'dgrip': Vector((0, 0.022 * k, 0.018 * k)), 'drot': {'pitch': 16 * k, 'yaw': -2 * k}}
 
 
-# two-handed: swing out, slap the ejector rod muzzle-up, tip muzzle-down, thumb rounds in from the belt, close
-_UP = dict(dg=(0.17, 0.05, -0.10), dr=(38, 62, -62))
-_DN = dict(dg=(0.18, 0.06, -0.14), dr=(40, -38, -75))
-LDN = (0.6, -0.2, -1)                                   # left elbow out + down: forearm comes up from below
+# the side-mounted shoulders keep the hands >= ~0.14 m apart in front of the wedge, so the gun bridges the gap: flick it
+# muzzle-up to dump the shells, the left hand takes it under the barrel while the right hand fetches rounds from the
+# belt and thumbs them into the open cylinder (gun lying on its right side, cylinder up), then a flick shut.
+_HAND = dict(dg=(0.15, 0.09, -0.06), dr=(85, -12, -90))           # grip (-0.05, -0.27, 0.64), muzzle to the left
+_UNDER = ('w', 200, -10, -50)                                      # left palm under the barrel
 reload_revolver = keyed([
     (0.00, {}),
-    (0.10, dict(_UP, lh=('w', 150, -50, 8), lel=LDN)),                                        # muzzle up, palm under rod
-    (0.15, dict(dg=(0.17, 0.05, -0.088), lh=('w', 95, -50, 8), ease=snap)),                 # slap: shells out
-    (0.20, dict(dg=(0.17, 0.05, -0.10), lh=('w', 140, -58, 20))),
-    (0.30, dict(_DN, lh=Vector((0.30, -0.10, 0.40)), lel=(0.6, 0.4, -0.4))),                 # tip down, hand to belt
-    (0.36, dict()),
-    (0.46, dict(lh=('w', 0, 8, 58), lel=LDN)),                                                # over the open cylinder
-    (0.51, dict(lh=('w', 4, 0, 46), dg=(0.18, 0.06, -0.146))),                              # thumb in
-    (0.56, dict(lh=('w', 0, 8, 58), dg=(0.18, 0.06, -0.14))),
-    (0.61, dict(lh=('w', 4, 0, 46), dg=(0.18, 0.06, -0.146))),                              # thumb in
-    (0.66, dict(lh=('w', 20, -10, 62), dg=(0.18, 0.06, -0.14))),
-    (0.72, dict(dg=(0.15, 0.04, -0.10), dr=(30, 5, -10), lh=('w', 20, -10, 30), ease=snap)),  # swipe it shut
-    (0.82, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.10, dict(dg=(0.06, 0.06, 0.03), dr=(25, 68, -55))),                                   # flick up: dump
+    (0.14, dict(dg=(0.06, 0.06, 0.045), dr=(25, 76, -58), ease=snap)),
+    (0.19, dict(dg=(0.06, 0.06, 0.03), dr=(25, 66, -55))),
+    (0.30, dict(_HAND, lh=_UNDER, lel=(1, -0.5, -0.8))),                                     # into the left palm
+    (0.34, dict(rh='grip')),
+    (0.44, dict(rh=Vector((-0.30, -0.08, 0.45)), rel=(-1, 0.5, -0.2))),                      # right hand to the belt
+    (0.48, dict()),
+    (0.58, dict(rh=('w', 18, -12, 66), rel=(-1, -0.3, -0.6))),                               # over the cylinder
+    (0.62, dict(rh=('w', 18, -12, 52), dg=(0.15, 0.09, -0.066))),                           # thumb them in
+    (0.66, dict(rh=('w', 18, -12, 64), dg=(0.15, 0.09, -0.06))),
+    (0.72, dict(rh='grip', rel=(-1, 0.3, -0.7))),                                            # regrip
+    (0.80, dict(dg=(0.08, 0.04, -0.02), dr=(30, 4, 15), lh='rest', lel=(0.4, 1, -0.1), ease=snap)),  # flick shut
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
@@ -514,7 +515,7 @@ def check(rig, act, step=1):
         skip = [(mw @ rig.arm.pose.bones[b].tail, 0.034 * k) for b in ('lowerarm_l', 'lowerarm_r')]
         c1 = _ov(wb, body, skip)
         c2 = len(wb.overlap(acc)) if (wb and acc) else 0
-        sh = [(mw @ rig.arm.pose.bones[b].head, 0.035 * k) for b in ('upperarm_l', 'upperarm_r')]
+        sh = [(mw @ rig.arm.pose.bones[b].head, 0.05 * k) for b in ('upperarm_l', 'upperarm_r')]
         c3 = _ov(wedge, arms, sh)                       # (the arm sticks root into the wedge sides at the shoulders)
         c3 += _ov(hats, arms, sh)                       # arms through hats / face accessories count too
         c4 = len(legs_l.overlap(legs_r)) if (legs_l and legs_r) else 0
