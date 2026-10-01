@@ -894,11 +894,12 @@ def mechanic(P, T):
     obs += cap
     # black grease smudges (finger swipes) on the wedge
     gm = grease_mat()
-    for k, (cx, cz, L, W, ang) in enumerate(((-0.046, 0.624, 0.090, 0.034, math.radians(14)),
-                                            (-0.166, 0.885, 0.060, 0.028, math.radians(-62)),
-                                            (0.150, 0.648, 0.040, 0.022, math.radians(-35)))):
+    front = A.frame_matrix(Vector((0, A.FRONT_Y, 0)), Vector((1, 0, 0)), Vector((0, 0, 1)), Vector((0, -1, 0)))
+    for k, (cx, cz, L, W, ang) in enumerate(((-0.046, 0.622, 0.112, 0.046, math.radians(14)),
+                                            (-0.162, 0.880, 0.082, 0.040, math.radians(-62)),
+                                            (0.152, 0.650, 0.056, 0.032, math.radians(-35)))):
         ol = smudge_outline(cx, cz, L, W, ang, seed=k * 7 + 3)
-        obs.append(A.puff('Mech_Grease%d' % k, P, ol, 0.0008, gm, edge=0.003, power=1.0, bury=0.0012, res=0.0022, hole_clamp=False))
+        obs.append(A.decal('Mech_Grease%d' % k, P, ol, front, (0, 1, 0), gm, off=0.0009, res=0.003))
     # red shop rag stuffed into the big jaw hole, a tail hanging out
     rag = A.mat_plain('M_ShopRag', '#b3231d', rough=0.9, col2='#8c1813', nscale=70, bump=0.35, bscale=1400)
     hc = Vector((-0.140, A.FRONT_Y, 0.646))
@@ -923,15 +924,16 @@ def mechanic(P, T):
         t = j / nv
         for i in range(nu + 1):
             u = i / nu * 2 - 1
-            w = 0.060 * (1 - t) ** 0.85 + 0.004               # narrows to the hanging corner of the rag
+            w = 0.058 * (1 - 0.15 * t)
             x = hc.x + 0.006 + u * w / 2 + 0.010 * math.sin(t * 2.2)
             z = hc.z - 0.012 - 0.090 * t
             fold = 0.0045 * math.sin(u * 3.1 + t * 6.0) + 0.003 * math.sin(u * 7.0 - t * 3.0)
             loc, nor = P.hit((x, -1.0, z), (0, 1, 0))
             yb = min(loc.y, A.FRONT_Y) if (loc is not None and z > 0.586) else A.FRONT_Y + 0.004 + 0.01 * max(0.0, (0.586 - z) / 0.02)
             y = yb - 0.006 - 0.012 * (1 - t) ** 2 - abs(fold)
+            z -= 0.032 * t * (u + 1) / 2                               # diagonal hem: a corner of the rag hangs lowest
             if j == nv:
-                z -= 0.006 * (0.5 + 0.5 * math.sin(i * 2.7))          # frayed hem
+                z -= 0.005 * (0.5 + 0.5 * math.sin(i * 2.7))          # frayed hem
             verts.append(Vector((x, y, z)))
     for j in range(nv):
         for i in range(nu):
