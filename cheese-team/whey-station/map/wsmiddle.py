@@ -81,10 +81,8 @@ def half(K, T):
     P.stairs(-3.75, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')            # clear of the pit wall
     P.rail(-5.05, -8, -5.05, 8, 0.0, mat='TF_Steel')
     P.rail(-3.0, 8.05, 5.0, 8.05, 0.0, mat='TF_Steel')
-    # cover: vats, a shipping container and stacked crates/barrels (library props)
+    # cover: vats and stacked crates/barrels (library props)
     vat(K, -18, 10.5, T=T); vat(K, -18, -10.5, T=T); vat(K, -10, -13.5, 2.4, T=T)
-    K.prop('container', -13.0, 0, 0.0, 0.0, col=(-3.0, 0, -1.2, 3.0, 2.9, 1.2))
-    K.prop('container', -24.0, 0, -3.0, PI / 2, col=(-3.0, 0, -1.2, 3.0, 2.9, 1.2))
     K.prop('crate', -9.0, 0, 1.6, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.prop('crate', -9.0, 1.2, 1.6, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     for (x, z) in ((-16.8, -1.8), (-16.2, -2.4)):
