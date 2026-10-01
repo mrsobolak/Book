@@ -135,10 +135,7 @@ def base(K, T):
     K.box('Glass', 17.5, 10.15, -19.0, 23.5, 10.2, -13.0)
     for d in (19.5, 21.5):
         P.hbeam(-18.8, -13.2, d, 9.7, d=0.4, w=0.18, mat='TF_Steel', axis='z')
-    # floor: painted team ring round the dais
     fx, fy, fz = 20.5, 0.0, -16.0
-    K.cyl(TP, fx, 0.0, fz, 4.6, 0.012, seg=64)
-    K.cyl('TF_FloorWarm', fx, 0.0, fz, 4.3, 0.016, seg=64)
     # the dais: three round steps, steel lips, team glow inlay, flat flag pad on top
     for (r, y0, h, mat) in ((3.2, 0.0, 0.2, 'TF_Conc'), (2.6, 0.2, 0.2, 'TF_Conc'), (2.0, 0.4, 0.2, 'TF_Tile')):
         K.cyl(mat, fx, y0, fz, r, h, seg=64, col=True)
