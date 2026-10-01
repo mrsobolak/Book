@@ -169,8 +169,8 @@ GAIT = {
     'Idle':    dict(dir=Vector((0, 0, 0)), stride=0.0, frames=60),
     'WalkF':   dict(dir=Vector((0, -1, 0)), stride=0.10, frames=24),
     'WalkB':   dict(dir=Vector((0, 1, 0)), stride=0.08, frames=26),
-    'StrafeL': dict(dir=Vector((1, 0, 0)), stride=0.065, frames=24),
-    'StrafeR': dict(dir=Vector((-1, 0, 0)), stride=0.065, frames=24),
+    'StrafeL': dict(dir=Vector((1, 0, 0)), stride=0.05, frames=22),
+    'StrafeR': dict(dir=Vector((-1, 0, 0)), stride=0.05, frames=22),
 }
 HIP_DROP = 0.035
 LIFT = 0.045
@@ -216,7 +216,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     for side_n, sx, ph0 in (('l', 1, 0.0), ('r', -1, 0.5)):
         ph = (t + ph0) % 1.0
         off, lift = foot_offset(ph, g['stride'], LIFT) if moving else (0.0, 0.0)
-        base = Vector((sx * 0.075, 0, 0.045))
+        base = Vector((sx * (0.075 + 0.02 * abs(g['dir'].x)), 0, 0.045))   # strafes step a touch wider: feet never cross
         ank = base + g['dir'] * off + Vector((0, 0, lift))
         knee_pole = Vector((0, -1, 0)) if g['dir'].y <= 0 else Vector((0, -1, 0))
         toe_pitch = 0.0
@@ -236,25 +236,77 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
         grip.z += 0.003 * math.sin(2 * PI * t)
     grip.z += bob + HIP_DROP                                     # the whole upper body rides the pelvis
     lhand = H['lhand'].copy(); lhand.z += bob + HIP_DROP
-    lelbow = H['lelbow']
+    lelbow = H['lelbow']; relbow = H['relbow']
+    lspec = rspec = None
     if extra:
         e = extra(rig, t)
         grip += e.get('dgrip', Vector())
         for k, v in e.get('drot', {}).items():
             rot[k] += v
-        if 'lhand' in e:
-            lhand = e['lhand']
-        if 'lelbow' in e:
-            lelbow = e['lelbow']
+        lspec = e.get('lhand'); rspec = e.get('rhand')
+        lelbow = e.get('lelbow', lelbow); relbow = e.get('relbow', relbow)
     Rm = R(**rot)
+    # the hands and gun ride the spine lean (pivot at the spine head)
+    piv = rig.C(hd); L3 = lean.to_3x3()
+    grip = piv + L3 @ (grip - piv); Rm = L3 @ Rm
+    lrest = piv + L3 @ (lhand - piv)
     rig.place_weapon('weapon', grip, Rm)
     # ---- arms
-    rig.two_bone('upperarm_r', 'lowerarm_r', rig.A(grip), H['relbow'], b3='hand_r')
-    if H['support'] is not None:
-        sup = grip + Rm @ rig.wlocal('weapon', *H['support'])
-        lhand = sup if not (extra and 'lhand' in extra(rig, t)) else lhand
-    rig.two_bone('upperarm_l', 'lowerarm_l', rig.A(lhand), lelbow, b3='hand_l')
+    if H['support'] is not None and lspec is None:
+        lspec = ('w',) + tuple(H['support'])
+    rh = hand_pos(rig, rspec, grip, Rm, grip)
+    lh = hand_pos(rig, lspec, grip, Rm, lrest)
+    rig.two_bone('upperarm_r', 'lowerarm_r', rig.A(rh), relbow, b3='hand_r')
+    rig.two_bone('upperarm_l', 'lowerarm_l', rig.A(lh), lelbow, b3='hand_l')
     return grip, Rm
+
+
+def hand_pos(rig, spec, grip, Rm, rest):
+    """hand target from a spec: None -> rest, 'grip', 'rest', ('w', u, v, x) weapon point (design mm, hand-ball centre),
+    a char-space Vector, or ('mix', a, b, k)"""
+    if spec is None or spec == 'rest':
+        return rest
+    if spec == 'grip':
+        return grip
+    if isinstance(spec, Vector):
+        return spec
+    if spec[0] == 'w':
+        return grip + Rm @ rig.wlocal('weapon', *spec[1:])
+    if spec[0] == 'mix':
+        return hand_pos(rig, spec[1], grip, Rm, rest).lerp(hand_pos(rig, spec[2], grip, Rm, rest), spec[3])
+    raise ValueError(spec)
+
+
+def keyed(keys):
+    """key-pose timeline -> extra(rig, t). keys: [(t, dict(dg=(x,y,z), dr=(yaw,pitch,roll), lh=spec, rh=spec,
+    lel=pole, rel=pole, ease=fn))]; missing fields carry over from the previous key. Hand specs blend in place on the gun."""
+    full = []; cur = dict(dg=(0, 0, 0), dr=(0, 0, 0), lh='rest', rh='grip', lel=None, rel=None)
+    for t, k in keys:
+        cur = dict(cur, **{a: b for a, b in k.items() if a != 'ease'}); cur['ease'] = k.get('ease', ease)
+        full.append((t, cur))
+
+    def ex(rig, t):
+        i = 0
+        while i < len(full) - 2 and t > full[i + 1][0]:
+            i += 1
+        (t0, a), (t1, b) = full[i], full[i + 1]
+        k = b['ease']((t - t0) / max(1e-6, t1 - t0))
+        out = {'dgrip': Vector(a['dg']).lerp(Vector(b['dg']), k),
+               'drot': {n: lerp(a['dr'][j], b['dr'][j], k) for j, n in enumerate(('yaw', 'pitch', 'roll'))},
+               'lhand': ('mix', a['lh'], b['lh'], k), 'rhand': ('mix', a['rh'], b['rh'], k)}
+        for n in ('lel', 'rel'):
+            pa, pb = a[n], b[n]
+            if pa is not None or pb is not None:
+                pa = Vector(pa if pa is not None else pb); pb = Vector(pb if pb is not None else pa)
+                out['lelbow' if n == 'lel' else 'relbow'] = pa.normalized().lerp(pb.normalized(), k)
+        return out
+    return ex
+
+
+def snap(t):
+    """fast-out ease for flicks"""
+    t = max(0.0, min(1.0, t))
+    return 1 - (1 - t) ** 3
 
 
 # ------------------------------------------------------------------ fire / reload modifiers
@@ -265,26 +317,29 @@ def fire_revolver(rig, t):
     return {'dgrip': Vector((0, 0.022 * k, 0.018 * k)), 'drot': {'pitch': 16 * k, 'yaw': -2 * k}}
 
 
-def reload_revolver(rig, t):
-    # raise + tilt the gun toward the middle, left hand comes over, thumbs six rounds in, swing back
-    up = ease(t / 0.18) * (1 - ease((t - 0.82) / 0.18))
-    dg = Vector((0.07, 0.02, 0.06)) * up
-    dr = {'pitch': 38 * up, 'roll': -55 * up, 'yaw': 18 * up}
-    H = HOLDS['pistol']
-    rest = H['lhand'].copy()
-    g = H['grip'] + dg
-    Rm = R(**{k: H['rot'][k] + dr.get(k, 0) for k in ('yaw', 'pitch', 'roll')})
-    cyl = g + Rm @ rig.wlocal('weapon', 20.0, -14.0, 24.0)
-    push = 0.0
-    if 0.25 < t < 0.75:
-        push = 0.5 - 0.5 * math.cos(2 * PI * ((t - 0.25) / 0.5) * 3)
-    hand_on = ease((t - 0.15) / 0.12) * (1 - ease((t - 0.78) / 0.12))
-    lh = rest.lerp(cyl + Vector((0.035, 0.004, 0.0)) + Vector((-0.012, 0, 0)) * push, hand_on)
-    return {'dgrip': dg, 'drot': dr, 'lhand': lh, 'lelbow': Vector((1, -0.4, -0.6))}
+# grip near front-centre for loading: the stick arms can't meet closer than ~0.15 m in front of the wedge, so the
+# left hand takes the gun under the barrel while the right hand fetches rounds from the hip and thumbs them in.
+_LOAD = dict(dg=(0.19, 0.03, 0.045), dr=(82, -22, -90))
+reload_revolver = keyed([
+    (0.00, {}),
+    (0.10, dict(dg=(0.09, 0.05, 0.085), dr=(30, 62, -70), lh='rest')),                      # flick open, muzzle up: dump
+    (0.15, dict(dg=(0.09, 0.05, 0.10), dr=(30, 74, -74), ease=snap)),                        # shake
+    (0.20, dict(dg=(0.09, 0.05, 0.088), dr=(30, 64, -70))),
+    (0.32, dict(_LOAD, lh=('w', 200, -10, -58), lel=(1, -0.3, -0.6))),                      # left hand takes the barrel
+    (0.36, dict(rh='grip', rel=(-1, 0.1, -0.4))),
+    (0.48, dict(rh=Vector((-0.255, -0.05, 0.52)), rel=(-1, 0.4, -0.1))),                     # right hand to hip pouch
+    (0.53, dict()),
+    (0.63, dict(rh=('w', 12, -12, 64), rel=(-1, -0.3, -0.5))),                              # rounds over the cylinder
+    (0.67, dict(dg=(0.19, 0.03, 0.039), rh=('w', 12, -12, 54))),                             # press in
+    (0.71, dict(dg=(0.19, 0.03, 0.045), rh=('w', 12, -12, 62))),
+    (0.78, dict(rh='grip', rel=(-1, 0.1, -0.4))),                                            # regrip
+    (0.84, dict(dg=(0.12, 0.02, 0.03), dr=(40, -5, 10), lh='rest', lel=(1, 0.2, -0.2), ease=snap)),  # flick shut
+    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+])
 
 
 ACTIONS = {
-    'pistol': {'Fire': (18, fire_revolver), 'Reload': (66, reload_revolver)},
+    'pistol': {'Fire': (18, fire_revolver), 'Reload': (78, reload_revolver)},
 }
 
 
