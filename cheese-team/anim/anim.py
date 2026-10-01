@@ -152,6 +152,7 @@ class Rig:
 # the wedge (rest char space, metres): main block + the googly-eye bulge on the front face
 WEDGE_BOXES = [(Vector((-0.215, -0.115, 0.575)), Vector((0.203, 0.155, 1.0))),
                (Vector((-0.18, -0.156, 0.675)), Vector((0.17, -0.10, 0.885)))]
+IK_MISSES = []
 ARM_R = 0.012                                     # stick radius + a hair of air
 
 
@@ -186,21 +187,23 @@ def arm_ik(rig, side, target, pole, b3):
     a = (L1 * L1 - L2 * L2 + d * d) / (2 * d); h = math.sqrt(max(0.0, L1 * L1 - a * a))
     p0 = to_rest.to_3x3() @ Vector(pole)
     p0 = (p0 - u * p0.dot(u)); p0 = p0.normalized() if p0.length > 1e-6 else u.orthogonal().normalized()
-    best = None
+    best = None; least = (9, p0)
     for k in range(0, 25):
         ang = math.radians(((k + 1) // 2) * 7.5 * (1 if k % 2 else -1))
         pv = Matrix.Rotation(ang, 3, u) @ p0
         E = S + u * a + pv * h; W = S + u * d
         Sa = S + (E - S).normalized() * 0.05             # the stick roots into the wedge side at the shoulder
-        hit = any(_seg_hits_box(q0, q1, lo_ - Vector((ARM_R,) * 3), hi_ + Vector((ARM_R,) * 3))
-                  for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
-        if not hit:
+        nh = sum(_seg_hits_box(q0, q1, lo_ - Vector((ARM_R,) * 3), hi_ + Vector((ARM_R,) * 3))
+                 for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
+        if nh == 0:
             best = pv; break
+        if nh < least[0]:
+            least = (nh, pv)
     if best is None:
-        best = p0
+        best = least[1]
+        IK_MISSES.append((side, tuple(round(c, 3) for c in target)))
     pole_posed = to_rest.inverted().to_3x3() @ best
     rig.two_bone(up, lo, rig.A(target), pole_posed, b3=b3)
-    return best is not p0 or k == 0
 
 
 # ------------------------------------------------------------------ hold definitions
@@ -379,8 +382,8 @@ def fire_revolver(rig, t):
 # the side-mounted shoulders keep the hands >= ~0.14 m apart in front of the wedge, so the gun bridges the gap: flick it
 # muzzle-up to dump the shells, the left hand takes it under the barrel while the right hand fetches rounds from the
 # belt and thumbs them into the open cylinder (gun lying on its right side, cylinder up), then a flick shut.
-_HAND = dict(dg=(0.15, 0.09, -0.06), dr=(85, -12, -90))           # grip (-0.05, -0.27, 0.64), muzzle to the left
-_UNDER = ('w', 200, -10, -50)                                      # left palm under the barrel
+_HAND = dict(dg=(0.11, 0.09, -0.06), dr=(88, -10, -90))           # grip (-0.09, -0.27, 0.64), muzzle to the left
+_UNDER = ('w', 232, -10, -50)                                      # left palm under the barrel
 reload_revolver = keyed([
     (0.00, {}),
     (0.10, dict(dg=(0.06, 0.06, 0.03), dr=(25, 68, -55))),                                   # flick up: dump
@@ -390,9 +393,9 @@ reload_revolver = keyed([
     (0.34, dict(rh='grip')),
     (0.44, dict(rh=Vector((-0.30, -0.08, 0.45)), rel=(-1, 0.5, -0.2))),                      # right hand to the belt
     (0.48, dict()),
-    (0.58, dict(rh=('w', 18, -12, 66), rel=(-1, -0.3, -0.6))),                               # over the cylinder
-    (0.62, dict(rh=('w', 18, -12, 52), dg=(0.15, 0.09, -0.066))),                           # thumb them in
-    (0.66, dict(rh=('w', 18, -12, 64), dg=(0.15, 0.09, -0.06))),
+    (0.58, dict(rh=('w', 18, -12, 72), rel=(-0.6, -0.2, 0.8))),                               # over the cylinder
+    (0.62, dict(rh=('w', 18, -12, 54), dg=(0.11, 0.09, -0.066))),                           # thumb them in
+    (0.66, dict(rh=('w', 18, -12, 70), dg=(0.11, 0.09, -0.06))),
     (0.72, dict(rh='grip', rel=(-1, 0.3, -0.7))),                                            # regrip
     (0.80, dict(dg=(0.08, 0.04, -0.02), dr=(30, 4, 15), lh='rest', lel=(0.4, 1, -0.1), ease=snap)),  # flick shut
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
