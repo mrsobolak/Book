@@ -349,7 +349,7 @@ def mat_lens(name, col):
     sc2 = A._noise(nt, mp.outputs['Vector'], 6, 12, 0.85)
     mx = nt.nodes.new('ShaderNodeMath'); mx.operation = 'MAXIMUM'
     nt.links.new(sc1.outputs['Fac'], mx.inputs[0]); nt.links.new(sc2.outputs['Fac'], mx.inputs[1])
-    rr = A._ramp(nt, mx.outputs[0], (0.04, 0.04, 0.04), (0.6, 0.6, 0.6), 0.62, 0.70)
+    rr = A._ramp(nt, mx.outputs[0], (0.03, 0.03, 0.03), (0.5, 0.5, 0.5), 0.68, 0.72)
     sepc = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(rr.outputs['Color'], sepc.inputs[0])
     nt.links.new(sepc.outputs[0], bs.inputs['Roughness'])
     try:
@@ -357,7 +357,7 @@ def mat_lens(name, col):
         bs.inputs['Coat Roughness'].default_value = 0.03
     except KeyError:
         pass
-    A._bump(nt, bs, mx.outputs[0], 0.06, 0.0003)
+    A._bump(nt, bs, mx.outputs[0], 0.015, 0.0002)
     return m
 
 
@@ -400,11 +400,11 @@ def rocketguy(P, T):
     lining = A.mat_plain('M_HelmetLining', '#24201d', rough=0.85, col2='#151311', nscale=200, bump=0.15, bscale=600)
     rubber = A.mat_plain('M_HelmetTrim', '#161515', rough=0.55, bump=0.03)
     chrome = A.mat_metal('M_Chrome', '#e8e8ea', rough=0.12, scratches=0.4)
-    a, b = 0.238, 0.174
+    a, b = 0.252, 0.188
     H = hat_frame(T, fwd=math.radians(-2), side=math.radians(-11), lift=0.0, shift=(0.004, 0.004))
-    prof = [(1.0, -0.150), (1.0, -0.100), (1.0, -0.050), (0.997, 0.0), (0.975, 0.048), (0.925, 0.092), (0.845, 0.130),
-            (0.725, 0.160), (0.565, 0.181), (0.38, 0.193), (0.19, 0.199), (0.0, 0.201)]
-    shell = A.lathe(prof, a, b, e=3.6, n=128, cap_bottom=False)
+    prof = [(1.0, -0.150), (1.0, -0.100), (1.0, -0.050), (0.997, 0.0), (0.975, 0.040), (0.925, 0.076), (0.845, 0.107),
+            (0.725, 0.132), (0.565, 0.149), (0.38, 0.159), (0.19, 0.164), (0.0, 0.166)]
+    shell = A.lathe(prof, a, b, e=4.0, n=128, cap_bottom=False)
     def cut_z(fx, fy):                       # opening: brow edge high at the front, cheek guards, low at the back
         th = math.degrees(abs(math.atan2(fx / a, -fy / b)))      # 0 = straight ahead, 180 = back
         if th < 50:
@@ -434,7 +434,7 @@ def rocketguy(P, T):
         bm = A.tube(pts, 0.0062, n=10, cap=False, flat=1.3, up=Vector((0, 0, 1)))
         helm.append(A.make_obj('Rocket_HelmetTrim%d' % i, A.transform(bm, H), rubber, 'spine_01'))
     # three chrome visor snaps across the brow
-    sbvh = A.bvh_of(A.lathe(prof, a * 1.0, b * 1.0, e=3.6, n=128, cap_bottom=False))
+    sbvh = A.bvh_of(A.lathe(prof, a * 1.0, b * 1.0, e=4.0, n=128, cap_bottom=False))
     for k, sx in enumerate((-0.085, 0.0, 0.085)):
         loc, nor, idx, d = sbvh.ray_cast(Vector((sx, -1.0, -0.028)), Vector((0, 1, 0)))
         if loc is None:
@@ -446,9 +446,9 @@ def rocketguy(P, T):
         helm.append(A.make_obj('Rocket_Snap%d' % k, A.transform(bm, H), chrome, 'spine_01'))
     # goggles resting on the front of the dome
     rubber_g = A.mat_plain('M_GoggleRubber', '#2a2522', rough=0.6, bump=0.06, bscale=500)
-    lens = mat_lens('M_GoggleLens', '#6b3e12')
+    lens = mat_lens('M_GoggleLens', '#3d2309')
     strap = A.mat_plain('M_GoggleStrap', '#3c3a37', rough=0.75, col2='#2a2826', nscale=300, bump=0.12, bscale=900)
-    gz = 0.092
+    gz = 0.078
     gr = 1.42                                 # goggle size factor
     centers = []
     for sx in (-0.074, 0.074):
@@ -472,15 +472,16 @@ def rocketguy(P, T):
     bm = A.tube([p0, (p0 + mid) / 2 + Vector((0, -0.002, 0)), mid, (p1 + mid) / 2 + Vector((0, -0.002, 0)), p1], 0.0042, n=10, flat=0.7)
     helm.append(A.make_obj('Rocket_GoggleBridge', A.transform(bm, H), rubber_g, 'spine_01'))
     # strap: around the dome from one cup to the other, round the back, hugging the paint
-    spts = []
+    spts = []; snor = []
     for i in range(41):
         f = -PI / 2 + math.radians(38) + (2 * PI - math.radians(76)) * i / 40
         dvec = Vector((math.cos(f), math.sin(f), 0.0))
         zz = gz - 0.012 + 0.010 * math.sin(f + PI / 2) ** 2
         loc, nor, idx, d = sbvh.ray_cast(Vector((0, 0, zz)) + dvec * 1.0, -dvec)
         if loc is not None:
-            spts.append(loc + nor.normalized() * 0.0045 * (1 if nor.dot(dvec) > 0 else -1))
-    bm = A.ribbon(spts, lambda t: 0.026, lambda t, tan: (spts[min(len(spts) - 1, int(t * (len(spts) - 1)))] - Vector((0, 0, gz))).normalized(), thick=0.0)
+            nn = nor.normalized() * (1 if nor.dot(dvec) > 0 else -1)
+            spts.append(loc + nn * 0.0048); snor.append(nn)
+    bm = A.ribbon(spts, lambda t: 0.026, lambda t, tan: snor[min(len(snor) - 1, int(round(t * (len(snor) - 1))))], thick=0.0)
     helm.append(A.make_obj('Rocket_GoggleStrap', A.transform(bm, H), strap, 'spine_01', solid=0.0022))
     print('rocket helmet fit', A.fit_hat(P, helm, helm[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=6.0))
     obs += helm
