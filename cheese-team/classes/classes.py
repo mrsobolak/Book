@@ -1096,7 +1096,7 @@ def heavy(P, T):
     H = hat_frame(T, fwd=math.radians(-4), side=math.radians(-9), lift=-0.004, shift=(0.010, 0.004))
     hat = []
     # crown: tall cattleman crown, slightly tapered, rounded top edge
-    crown = [(1.0, -0.012), (1.0, 0.0), (0.985, 0.04), (0.965, 0.08), (0.94, 0.12), (0.915, 0.155), (0.895, 0.178), (0.87, 0.192),
+    crown = [(1.0, -0.150), (1.0, -0.06), (1.0, 0.0), (0.985, 0.04), (0.965, 0.08), (0.94, 0.12), (0.915, 0.155), (0.895, 0.178), (0.87, 0.192),
              (0.82, 0.200), (0.6, 0.204), (0.0, 0.206)]
     bm = A.revolve(crown, a, b, n=96, closed=False)
     def shape_crown(v):
@@ -1191,7 +1191,7 @@ def heavy(P, T):
     star = []
     for i in range(12):
         ang = PI / 2 + rot + 2 * PI * i / 12
-        r = R if i % 2 == 0 else R * 0.56
+        r = R if i % 2 == 0 else R * 0.60
         star.append((r * math.cos(ang), r * math.sin(ang)))
     front = A.frame_matrix(Vector((cxs, cy_, cz_)) + Zs * 0.0028, fw, up, Zs)
     st = A.extrude_outline([star], 0.0040, front)
@@ -1200,8 +1200,8 @@ def heavy(P, T):
     obs.append(so)
     for i in range(6):                                                 # ball tips
         ang = PI / 2 + rot + 2 * PI * i / 6
-        c = front @ Vector(((R + 0.003) * math.cos(ang), (R + 0.003) * math.sin(ang), 0.0))
-        obs.append(A.make_obj('Heavy_StarTip%d' % i, A.sphere(c, 0.0058, seg=16, rings_=10), gold, 'spine_01'))
+        c = front @ Vector(((R - 0.0015) * math.cos(ang), (R - 0.0015) * math.sin(ang), 0.0))
+        obs.append(A.make_obj('Heavy_StarTip%d' % i, A.sphere(c, 0.0062, seg=16, rings_=10), gold, 'spine_01'))
     # raised centre disc with an engraved ring and a small embossed star
     disc = A.lathe([(1.0, 0.0), (1.0, 0.0012), (0.92, 0.0022), (0.0, 0.0024)], 0.0175, 0.0175, n=48)
     A.transform(disc, front @ Matrix.Translation((0, 0, 0.0020)))
