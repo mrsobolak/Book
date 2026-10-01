@@ -800,9 +800,9 @@ def mechanic(P, T):
             v = j / nv
             bx = u * a * 0.70
             by0 = -b * math.sqrt(max(0.0, 1 - abs(bx / a) ** E)) ** (2.0 / E) * 0.985
-            ln = 0.056 * (1 - 0.55 * u * u)                       # short brim flipped right up
-            by = by0 - v * ln * math.cos(math.radians(62))
-            bz = 0.004 + v * ln * math.sin(math.radians(62)) - 0.004 * u * u
+            ln = 0.070 * (1 - 0.45 * u * u)                       # short brim, flipped up
+            by = by0 - v * ln * math.cos(math.radians(38))
+            bz = 0.004 + v * ln * math.sin(math.radians(38)) - 0.004 * u * u
             verts.append(Vector((bx, by, bz)))
     for i in range(nu):
         for j in range(nv):
@@ -878,12 +878,13 @@ def mechanic(P, T):
     ang = math.radians(48)
     # the side face is yawed (the wedge narrows to the back): fit its plane, skipping the arm stick
     pts = []
-    for yy in (-0.10, -0.07, -0.04, 0.04, 0.07, 0.10, 0.12):
-        for zz in (0.60, 0.63, 0.66):
+    for yy in (-0.10, -0.07, -0.04, -0.01, 0.02, 0.05, 0.08, 0.11):
+        for zz in (0.62, 0.66, 0.70, 0.74, 0.78):
+            if abs(yy) < 0.03 and zz > 0.72:
+                continue                                          # the shoulder / arm stick
             loc, nor = P.hit((1.0, yy, zz), (-1, 0, 0))
-            if loc is not None and loc.x < 0.22:
+            if loc is not None and loc.x < 0.22 and nor.x > 0.8:
                 pts.append(loc)
-    cen = sum(pts, Vector()) / len(pts)
     # least squares x = a*y + b*z + c
     import numpy as np
     M_ = np.array([[p.y, p.z, 1.0] for p in pts]); rhs = np.array([p.x for p in pts])
@@ -924,6 +925,21 @@ def mechanic(P, T):
         slot = A.box((0, 0, 0), (0.0060, 0.0011, 0.0012))
         A.transform(slot, A.frame_matrix((base + Z * (0.0002 + st + 0.0021)) + Y * off, X, Y, Z) @ Matrix.Rotation(0.6 * k + 0.3, 4, 'Z'))
         obs.append(A.make_obj('Mech_ScrewSlot%d' % k, slot, A.mat_plain('M_SlotDark', '#1a1a1a', rough=0.6, bump=0.0), 'spine_01'))
+    # the side face bulges a little: push the whole wrench assembly out until no wrench vertex is inside the cheese
+    kit = [w, strap] + [o for o in obs if o.name.startswith('Mech_Screw')]
+    deep = 0.0
+    for v in w.data.vertices:
+        p = w.matrix_world @ v.co
+        loc, nor, idx, d = P.bvh.find_nearest(p)
+        if loc is not None and d < 0.05:
+            depth = (loc - p).dot(nor)
+            deep = max(deep, depth)
+    if deep > 0:
+        for o in kit:
+            for v in o.data.vertices:
+                v.co += Z * (deep + 0.0006)
+            o.data.update()
+    print('mech wrench push', round(deep, 4))
     return obs
 
 
