@@ -636,9 +636,14 @@ def puff(name, P, outline_xz, thick, mat, bone='spine_01', edge=0.022, res=0.003
             else:
                 h = -bury * min(1.0, d / 0.004)
             loc, nor = P.hit((x, -1.0, z), (0, 1, 0))
-            y = loc.y if loc is not None else FRONT_Y + 0.02
+            if loc is None:
+                verts.append(Vector((x, FRONT_Y + 0.05, z))); keep.append(False)
+                continue
+            y = loc.y
             if hole_clamp and y > FRONT_Y + 0.003 and abs(x) < 0.186:
                 y = FRONT_Y
+            if y > FRONT_Y + 0.012 and h < 0:          # rounded corner / side: keep buried bits buried
+                h = -bury
             verts.append(Vector((x, y - h, z)))
             keep.append(d < 0.006 or inside(p))
     faces = []
