@@ -38,15 +38,16 @@ def half(K, T):
     P = wsparts.Parts(K, T)
     # ---------------- Vat Hall (west half; the rotated pass builds the east half) ----------------
     K.slab('Epoxy', -24, -20, 0, 20, -0.3, 0.0, holes=[(-5, -8, 0, 8)])          # hall floor with the pit hole
-    K.slab('Steel', -24, -20, 0, 20, 14.0, 14.4, holes=[(-19, -6, -13, 6)], col=False)   # roof with skylight
+    K.slab('CorrWorn', -24, -20, 0, 20, 14.0, 14.4, holes=[(-19, -6, -13, 6)], col=False)   # roof with skylight
     for x in (-19, -13):
         K.box('Glass', x, 14.05, -6, x + 6, 14.1, 6)
         P.hbeam(x, x + 6, 0, 14.0, d=0.25, w=0.12)
     for x in (-21, -15, -9, -3):
         P.hbeam(-20, 20, x, 13.9, d=0.6, w=0.3, axis='z')
     # long wall (north; rotated -> south)
-    K.wall('Brick', 'x', -23.8, 0, 20, WT, 0, 14, holes=[(-21, -17, 10.4, 12.6), (-13, -9, 10.4, 12.6), (-5, -1, 10.4, 12.6)])
-    for x0 in (-21, -13, -5):
+    WIN = (-21, -13, -5, 3, 11, 19)
+    K.wall('Brick', 'x', -23.8, 23.8, 20, WT, 0, 14, holes=[(x0, x0 + 4, 10.4, 12.6) for x0 in WIN])
+    for x0 in WIN:
         P.window('x', x0, x0 + 4, 20, WT, 10.4, 12.6, pane=1.0)
     # end wall (west; rotated -> east)
     K.wall('Brick', 'z', -20, 20, -24, WT, 0, 14,
@@ -56,8 +57,8 @@ def half(K, T):
     P.opening('z', 15.2, 19.8, -24, WT, 6, 9, mat='Steel')
     P.opening('z', -19.8, -15.2, -24, WT, 6, 9, mat='Steel')
     # pilasters on the long wall
-    for x in (-21.5, -14.5, -7.5, -0.5):
-        K.box('Brick', x - 0.35, 0, 19.4, x + 0.35, 14, 19.8)
+    for x in (-22.5, -14.5, -7.5, 0.5, 8.5, 16.5):
+        K.box('Brick', x - 0.35, 6.0, 19.4, x + 0.35, 14, 19.8)
     # north catwalk (y 6), full length -- this is the Cheddar high route through the hall
     K.box('Plate', -24, 5.8, 15, 24, 6.0, 19.8, col=True, bevel=False)
     K.box('Steel', -24, 5.55, 14.95, 24, 5.8, 15.1)                                 # edge channel
@@ -79,13 +80,13 @@ def half(K, T):
     # brine pit: channel x -5..5, z -16..16 at y -4 (open to the hall for |z|<8)
     K.slab('FloorDmg', -5, -16, 0, 16, -4.3, -4.0)
     K.wall('Precast', 'z', -16, 16, -5, WT, -4.0, 0.0, holes=[(-16, -12, -4.0, -1.0)])
-    K.wall('Precast', 'x', -5, 5, 16, WT, -4.0, -0.3) if False else None
-    K.wall('Precast', 'x', -5, 0, 16, WT, -4.0, -0.3)
+    K.wall('Precast', 'x', -5, 5, 16, WT, -4.0, -0.3)
     K.box('Grate', -4.6, -4.02, -15.6, -0.2, -3.98, 15.6)                             # drain gratings in the bed
     P.stairs(-4, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')                    # pit stair -> hall floor (top at z=8)
     P.rail(-5.05, -8, -5.05, 8, 0.0)
-    P.rail(-3.0, 8.05, 0, 8.05, 0.0)
+    P.rail(-3.0, 8.05, 5.0, 8.05, 0.0)
     K.box('SafetyY', -5.2, 0.0, -8.2, -4.9, 0.08, 8.2)
+    K.box('SafetyY', -5.0, 0.0, 7.9, 5.0, 0.08, 8.2)
     # cover: vats and a pump skid
     vat(K, -14, 8.5); vat(K, -14, -8.5)
     pump_skid(K, -11, 0)
