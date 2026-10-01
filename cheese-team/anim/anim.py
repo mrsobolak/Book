@@ -808,6 +808,7 @@ reload_launcher = keyed([                                            # RPG-style
     (0.46, dict(lh=('w', 1060, -60, 0), lel=(1, 0.0, -0.8))),                                  # rocket at the muzzle
     (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.139, 0.097, 0.0), ease=snap)),                   # shove it home
     (0.62, dict(lh=('w', 1060, -60, 0), dg=_BACK)),
+    (0.68, dict(lh=('w', 1060, -130, 0))),                                                    # drop under the muzzle
     (0.82, dict(lh=None, dg=(0, 0, 0))),
     (1.00, {}),
 ])
