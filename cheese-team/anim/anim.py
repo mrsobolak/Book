@@ -632,16 +632,17 @@ reload_dual = keyed([
 ])
 
 # ---- machine pistol: 3-round burst; long mag swapped with the gun on its side (mag points left)
-reload_mpistol = keyed([
+reload_mpistol = keyed([                                             # long mag seated off the hip pouch, rack up front
     (0.00, {}),
-    (0.12, dict(dg=(0.15, 0.12, -0.10), dr=(0, 0, -75), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),
-    (0.16, dict(dg=(0.15, 0.12, -0.088), ease=snap)),
-    (0.30, dict(dg=(0.15, 0.12, -0.10))),
-    (0.48, dict(lh=('w', 40, -330, 0), lel=LEL)),                                              # new mag under the long well
-    (0.56, dict(lh=('w', 40, -306, 0), dg=(0.14, 0.12, -0.10), ease=snap)),
-    (0.64, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.72, dict(dr=(0, 30, 0), rel=(-1, 0.3, -0.7), ease=snap)),                               # flick up: bolt home
-    (0.86, dict(dg=(0.02, 0.0, 0.0), dr=(0, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
+    (0.08, dict(dg=(0.0, 0.02, 0.02), dr=(0, 20, -30), ease=snap)),                           # release: mag drops
+    (0.26, dict(dg=(-0.05, 0.27, 0.015), dr=(0, 90, 0), rel=(-1, 0.4, 0.2))),                 # muzzle up over the pouch
+    (0.34, dict(dg=(-0.05, 0.27, -0.015), ease=snap)),                                        # seat the long mag
+    (0.40, dict(dg=(-0.05, 0.27, 0.015))),
+    (0.48, dict(dg=(0.06, 0.06, -0.02), dr=(45, 40, 0))),
+    (0.58, dict(dg=_LOW, dr=(90, 0, 0), lh=('w', 214, 30, -50), lel=LEL, rel=(-1, 0.3, -0.7))),  # across the belly
+    (0.64, dict(lh=('w', 184, 30, -50))),                                                     # rack
+    (0.67, dict(lh=('w', 214, 30, -64), ease=snap)),
+    (0.84, dict(dg=(0.03, 0.02, 0.0), dr=(4, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
@@ -665,9 +666,9 @@ reload_bolt = keyed([(0.0, {})] + _bolt(0.04, 0.30)[:3] + [
     (0.86, dict(rh=('w', -64, 44, -96))), (0.90, dict(rh=BOLT)), (0.97, dict(rh='grip', rel=REL_T)), (1.0, {})])
 
 # ---- lever rifle: boom, lever down-up; reload thumbs rounds into the right-side gate
-LEVER_DN = ('w', 6, -100, 0)
+LEVER_DN = ('w', 6, -100, -30)
 fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8),
-                   keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.2, 0.6))), (0.62, dict(rh='grip', dr=(0, 0, 0))),
+                   keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.3, 0.0))), (0.62, dict(rh='grip', dr=(0, 0, 0))),
                            (0.80, dict(rel=REL_T)), (1.0, {})]))
 GATE = ('w', 14, -16, -62)
 reload_lever = keyed([
@@ -675,31 +676,32 @@ reload_lever = keyed([
     (0.10, dict(dr=(0, 0, 40))),                                                              # roll the gate up
     (0.22, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
     (0.26, dict()),
-    (0.38, dict(rh=GATE, rel=(-1, 0.2, 0.6))),
+    (0.38, dict(rh=GATE, rel=(-1, 0.3, 0.0))),
     (0.43, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.48, dict(rh=GATE, dg=(0, 0, 0))),
     (0.53, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.58, dict(rh=GATE, dg=(0, 0, 0))),
     (0.63, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.68, dict(rh=GATE, dg=(0, 0, 0))),
     (0.76, dict(rh='grip', dr=(0, 0, 0), rel=REL_T)),
-    (0.84, dict(rh=LEVER_DN, rel=(-1, 0.2, 0.6))), (0.92, dict(rh='grip')), (0.97, dict(rel=REL_T)), (1.00, {}),
+    (0.84, dict(rh=LEVER_DN, rel=(-1, 0.3, 0.0))), (0.92, dict(rh='grip')), (0.97, dict(rel=REL_T)), (1.00, {}),
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
 SMAG = ('w', 120, 0, 250)                                            # (gun rolled: the side mag stands up on top)
 reload_smg = keyed([                                                 # left hand keeps the fore-end, right hand swaps the mag
     (0.00, {}),
-    (0.12, dict(dr=(0, 4, -90), rh=('w', 120, 0, 250), rel=(-1, 0.2, 0.6))),
-    (0.20, dict(rh=('w', 120, 0, 310), ease=snap)),                                           # yank it up
+    (0.06, dict(dg=(0.03, -0.07, 0.02))),                                                    # push it out first
+    (0.14, dict(dr=(0, 4, -90), rh=('w', 120, 0, 270), rel=(-1, 0.2, 0.6))),
+    (0.22, dict(rh=('w', 120, 0, 330), ease=snap)),                                           # yank it up
     (0.36, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
     (0.40, dict()),
-    (0.54, dict(rh=('w', 120, 0, 310), rel=(-1, 0.2, 0.6))),
-    (0.62, dict(rh=('w', 120, 0, 250), dg=(0, 0, -0.004), ease=snap)),                       # seat
-    (0.70, dict(dg=(0, 0, 0))),
-    (0.84, dict(rh='grip', dr=(0, 0, 0), rel=REL_T)),
+    (0.54, dict(rh=('w', 120, 0, 330), rel=(-1, 0.2, 0.6))),
+    (0.62, dict(rh=('w', 120, 0, 268), dg=(0.03, -0.07, 0.016), ease=snap)),                  # seat
+    (0.70, dict(dg=(0.03, -0.07, 0.02))),
+    (0.84, dict(rh='grip', dr=(0, 0, 0), dg=(0, 0, 0), rel=REL_T)),
     (1.00, {}),
 ])
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
-_VERT = dict(dg=(0.09, -0.107, -0.08), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
+_VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
 reload_launcher = keyed([                                            # left hand steadies it, right drops a rocket in the top
     (0.00, {}),
     (0.12, dict(dg=(0.05, -0.15, -0.03), dr=(-30, 35, 0), tw=30, rh=Vector((-0.22, -0.22, 0.55)), rel=(-1, 0.3, -0.6))),
@@ -707,20 +709,20 @@ reload_launcher = keyed([                                            # left hand
     (0.36, dict(rh=BELT_R, rel=(-1, 0.5, -0.2))),
     (0.42, dict()),
     (0.56, dict(rh=('w', 1064, 0, -86), rel=(-1, 0.2, -0.4))),                                # rocket over the muzzle
-    (0.64, dict(rh=('w', 1004, 0, -86), dg=(0.09, -0.107, -0.09), ease=snap)),               # drop it in
-    (0.70, dict(rh=('w', 1064, 0, -86), dg=(0.09, -0.107, -0.08))),
+    (0.64, dict(rh=('w', 1004, 0, -86), dg=(0.15, -0.107, -0.12), ease=snap)),               # drop it in
+    (0.70, dict(rh=('w', 1064, 0, -86), dg=(0.15, -0.107, -0.11))),
     (0.86, dict(dg=(0.05, -0.15, -0.03), dr=(-30, 35, 0), tw=30, lh=None, rh=Vector((-0.22, -0.22, 0.55)))),
     (0.94, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, rh='grip', rel=REL_T)),
     (1.00, {}),
 ])
 
 # ---- blueprint: present it (fire), flip the page (reload)
-fire_board = keyed([(0.0, {}), (0.30, dict(dg=(0.03, -0.10, -0.04), dr=(0, -30, 0), ease=snap)),
+fire_board = keyed([(0.0, {}), (0.30, dict(dg=(0.0, -0.07, 0.02), dr=(0, -20, 0), ease=snap)),
                     (0.45, dict()), (1.0, dict(dg=(0, 0, 0), dr=(0, 0, 0)))])
 reload_board = keyed([
     (0.00, {}),
     (0.16, dict(lh=('w', 24, 150, -150), lel=(1, -0.3, -0.6))),                               # top-left corner
-    (0.40, dict(lh=('w', 70, 175, -40), dr=(0, 6, 0))),                                       # curl the page up and over
+    (0.40, dict(lh=('w', 70, 175, -80), dr=(0, 6, 0))),                                       # curl the page up and over
     (0.60, dict(lh=('w', 24, 120, -150), dr=(0, 0, 0))),                                      # smooth it down
     (0.80, dict(lh=None)),
     (1.00, {}),
@@ -741,7 +743,7 @@ WDEF = {
                        fire=(32, fire_lever, False), reload=(84, reload_lever)),
     'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(240, -57, 0)),
                       fire=(12, shake(12, 0.004, 1.5, 4), True), reload=(64, reload_smg)),
-    'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.09, -0.27, 0.58)), support=(700, -87, 0)),
+    'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.15, -0.27, 0.61)), support=(700, -87, 0)),
                            fire=(30, kick(30, 0.05, 0.02, 8, 0.0, decay=5.0), False), reload=(76, reload_launcher)),
     'Minigun':   dict(hold='heavy', over=dict(support=(228, -166, 0)), fire=(12, shake(12, 0.006, 1.2, 6), True), reload=None),
     'Blueprint': dict(hold='board', over=dict(hold_pt=(10, 0, 128)), fire=(24, fire_board, False), reload=(44, reload_board)),
@@ -931,3 +933,55 @@ def probe(rig, act, frames):
         P = lambda b: tuple(round(c, 3) for c in rig.C(rig.arm.pose.bones[b].tail))
         out.append((f, row, 'hL', P('lowerarm_l'), 'hR', P('lowerarm_r')))
     return out
+
+
+# ------------------------------------------------------------------ final bake + export per class
+CLASS_WEAPONS = {'Outlaw': ('Revolver', 'Derringer'), 'MrShotgun': ('SawedOff', 'MachinePistol'),
+                 'RocketGuy': ('RocketLauncher', 'SemiAuto'), 'Sniper': ('BoltRifle', 'LeverRifle'),
+                 'Mechanic': ('SMG', 'Blueprint'), 'Greg': ('Minigun', 'SnubNose')}
+OUT = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseAnim\export"
+
+
+def _drop_weapons(rig):
+    for w in rig.weapons.values():
+        for o in [w['hold']] + list(w['hold'].children_recursive):
+            bpy.data.objects.remove(o, do_unlink=True)
+    rig.weapons.clear()
+
+
+def export_class(cls, step=2, logp=None):
+    """bake both weapons' third-person sets on one rig, verify, save <cls>_TP.blend + .fbx (armature, body, accessories,
+    all TP_<Weapon>_<Action> actions). returns {action: clip-frames}"""
+    os.makedirs(OUT, exist_ok=True)
+    rig = Rig(cls)
+    report = {}
+    for wname in CLASS_WEAPONS[cls]:
+        d = WDEF[wname]
+        rig.attach(wname, 'weapon')
+        if d.get('dual'):
+            rig.attach(wname, 'wp_01')
+        H = hold_of(wname); prefix = 'TP_%s' % wname
+        acts = [bake(rig, prefix, H, g, GAIT[g]['frames']) for g in GAIT]
+        n, fn, lp = d['fire']; acts.append(bake(rig, prefix, H, 'Fire', n, extra=fn, loop=lp))
+        if d.get('reload'):
+            n, fn = d['reload']; acts.append(bake(rig, prefix, H, 'Reload', n, extra=fn))
+        for a in acts:
+            report[a.name] = len(check(rig, a, step=step))
+            if logp:
+                open(logp, 'a').write('%s %s clip-frames=%d\n' % (cls, a.name, report[a.name]))
+        _drop_weapons(rig)
+    rig.arm.animation_data.action = bpy.data.actions.get('TP_%s_Idle' % CLASS_WEAPONS[cls][0])
+    bpy.context.scene.frame_set(1)
+    bpy.ops.wm.save_as_mainfile(filepath=os.path.join(OUT, '%s_TP.blend' % cls))
+    win = bpy.context.window_manager.windows[0]
+    keep = [rig.arm, rig.body] + list(rig.acc)
+    for o in bpy.context.view_layer.objects:
+        o.select_set(o in keep)
+    with bpy.context.temp_override(window=win, active_object=rig.arm, selected_objects=keep):
+        bpy.ops.export_scene.fbx(filepath=os.path.join(OUT, '%s_TP.fbx' % cls), use_selection=True,
+                                 object_types={'ARMATURE', 'MESH'}, add_leaf_bones=False, bake_anim=True,
+                                 bake_anim_use_all_actions=True, bake_anim_use_nla_strips=False,
+                                 path_mode='COPY', embed_textures=True, apply_unit_scale=True)
+    if logp:
+        open(logp, 'a').write('%s exported\n' % cls)
+    return report
