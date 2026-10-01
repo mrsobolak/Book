@@ -248,9 +248,7 @@ def decal(name, P, outline_uv, frame, direction, mat, bone='spine_01', off=0.001
 
 # ------------------------------------------------------------------ materials (procedural, baked later)
 def _mat(name):
-    m = bpy.data.materials.get(name)
-    if m:
-        bpy.data.materials.remove(m)
+    # never delete an existing material of the same name: objects built earlier in this file still use it
     m = bpy.data.materials.new(name); m.use_nodes = True
     nt = m.node_tree; nt.nodes.clear()
     out = nt.nodes.new('ShaderNodeOutputMaterial'); bs = nt.nodes.new('ShaderNodeBsdfPrincipled')

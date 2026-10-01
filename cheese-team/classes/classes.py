@@ -540,68 +540,72 @@ BUILDERS['RocketGuy'] = rocketguy
 
 
 # ================================================================== 4. SNIPER
-def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.086, D=0.125, yc=-0.074, min_z=0.700):
-    """quilted ear flap hanging from the cap band down the side face (sgn=+1: character's left, +x)"""
-    import bmesh
-    # where the cap band sits on this side: lowest cap point per y slice
-    rim = {}
+def ear_flap(P, cap_obs, sgn, name, mat, fleece, W=0.118, D=0.096, yc=-0.058, flare=34.0):
+    """hunting-cap ear flap: hinged under the cap band on the side, hanging down and flaring OUT so it reads from the
+    front. Blaze outside, fleece lining inside, fleece-trimmed edge, a dangling tie. sgn=+1: character's left (+x)."""
+    rim = {}; bx = {}
     for ob in cap_obs:
         mw = ob.matrix_world
         for v in ob.data.vertices:
             w = mw @ v.co
-            if sgn * w.x > 0.16:
+            if sgn * w.x > 0.15:
                 k = int(round(w.y / 0.01))
-                rim[k] = min(rim.get(k, 9.0), w.z)
-    ks = [k for k in rim if abs(k * 0.01 - yc) < W / 2 + 0.01]
-    n_ = len(ks); my = sum(k * 0.01 for k in ks) / n_; mz = sum(rim[k] for k in ks) / n_
+                if w.z < rim.get(k, 9.0):
+                    rim[k] = w.z; bx[k] = abs(w.x)
+    ks = [k for k in rim if abs(k * 0.01 - yc) < W / 2 + 0.015]
+    n_ = len(ks); my = sum(k * 0.01 for k in ks) / n_
+    mz = sum(rim[k] for k in ks) / n_; mx = sum(bx[k] for k in ks) / n_
     sl = sum((k * 0.01 - my) * (rim[k] - mz) for k in ks) / max(1e-9, sum((k * 0.01 - my) ** 2 for k in ks))
-    def rim_z(y):                                  # straight least-squares line along the band: no wrinkles
-        return mz + sl * (y - my)
-    def side_x(y, z):                             # side face (never inside it: above the face the ray hits the top slope)
-        loc, nor = P.hit((sgn * 1.0, y, z), (-sgn, 0, 0))
-        return max(abs(loc.x), 0.203) if loc is not None else 0.205
-    band_x = max([abs((ob.matrix_world @ v.co).x) for ob in cap_obs for v in ob.data.vertices
-                  if sgn * (ob.matrix_world @ v.co).x > 0.16 and abs((ob.matrix_world @ v.co).y - yc) < W / 2 + 0.01] or [0.214])
-    D = min(D, min(rim_z(yc - W / 2), rim_z(yc + W / 2)) + 0.014 - min_z)
-    # (the flap sits on the front half of the side face, ahead of the shoulder: the arm stick never reaches it)
-    nu, nv = 22, 18
-    verts = []; faces = []; uvs = []
+    rim_z = lambda y: mz + sl * (y - my)
+    fl = math.radians(flare)
+    nu, nv = 22, 16
+    outer = []; inner = []
     for j in range(nv + 1):
         v = j / nv * D
-        q = max(0.0, (v - 0.55 * D) / (0.45 * D))
-        hw = W / 2 * math.sqrt(max(0.0, 1 - q ** 2.6)) if q < 1 else 0.0
-        hw = max(hw, 0.004)
+        q = max(0.0, (v - 0.50 * D) / (0.50 * D))
+        hw = max(W / 2 * math.sqrt(max(0.0, 1 - q ** 2.4)), 0.004)
         for i in range(nu + 1):
-            u = (i / nu * 2 - 1)
+            u = i / nu * 2 - 1
             y = yc + u * hw
-            z = rim_z(y) + 0.014 - v
-            x = side_x(y, z) + 0.0075 + 0.0045 * (v / D) + 0.0025 * (1 - u * u)
-            if v < 0.030:                             # tucked under the cap band: stay just outside it
-                x = max(x, band_x + 0.0045 - 0.004 * v / 0.030)
-            verts.append(Vector((sgn * x, y, z))); uvs.append((u, v))
+            puff = 0.0035 * (1 - u * u) * math.sin(PI * min(1.0, v / D + 0.1))
+            hinge = 0.016                                      # top of the flap starts tucked up inside the band
+            z = rim_z(y) + hinge - (v + 0.0) * math.cos(fl) * (1 if v > hinge else 1)
+            x = mx - 0.004 + max(0.0, v - hinge) * math.sin(fl) * 1.0 + puff
+            outer.append(Vector((sgn * (x + 0.0035), y, z)))
+            inner.append(Vector((sgn * (x - 0.0005), y, z)))
+    faces = []
     for j in range(nv):
         for i in range(nu):
             q = j * (nu + 1) + i
             faces.append((q, q + 1, q + nu + 2, q + nu + 1))
-    bm = A.bm_from(verts, faces)
-    obs = [A.make_obj(name, bm, mat, 'spine_01', solid=0.0055)]
-    # fleece trim around the sides + bottom
-    j0 = 3                                        # trim starts below the cap band (no hooks poking out above it)
-    border = [verts[j * (nu + 1)] for j in range(j0, nv + 1)] + [verts[nv * (nu + 1) + i] for i in range(1, nu + 1)] + \
-             [verts[j * (nu + 1) + nu] for j in range(nv - 1, j0 - 1, -1)]
-    border = [p + Vector((sgn * 0.0005, 0, 0)) for p in border]
-    bm = A.tube(border, 0.0052, n=10, flat=1.0)
-    A.displace(bm, lambda p: p + Vector((sgn, 0, 0)) * 0.0012 * noise.noise(p * 600.0))
-    obs.append(A.make_obj(name + 'Trim', bm, trim, 'spine_01'))
-    # tie string from the bottom of the flap
-    b0 = verts[nv * (nu + 1) + nu // 2] + Vector((sgn * 0.002, 0, 0.004))
-    pts = [b0 + Vector((sgn * 0.004 * t, 0.006 * math.sin(t * 2.5), -0.05 * t)) for t in [i / 8 for i in range(9)]]
-    bm = A.tube(pts, lambda t: 0.0022 - 0.0006 * t, n=8)
-    obs.append(A.make_obj(name + 'Tie', bm, trim, 'spine_01'))
+    obs = [A.make_obj(name, A.bm_from(outer, faces), mat, 'spine_01', solid=0.0018),
+           A.make_obj(name + 'Lining', A.bm_from(inner, faces), fleece, 'spine_01', solid=0.0015)]
+    # quilting on the outside: two diagonal stitch lines each way
+    stitch = A.mat_plain('M_FlapStitch', '#b8420a', rough=0.8, bump=0.0)
+    for dgn in (-1, 1):
+        for k in (-1, 0, 1):
+            pts = []
+            for j in range(2, nv - 1):
+                i = int(round((0.5 + 0.5 * dgn * (((j / nv) - 0.5) * 1.3 + k * 0.42)) * nu))
+                if 1 <= i <= nu - 1:
+                    pts.append(outer[j * (nu + 1) + i] + Vector((sgn * 0.0011, 0, 0)))
+            if len(pts) > 3:
+                obs.append(A.make_obj('%sQuilt%d%d' % (name, dgn + 1, k + 1), A.tube(pts, 0.0006, n=5), stitch, 'spine_01'))
+    # fleece trim round the sides + bottom
+    j0 = 2
+    border = [outer[j * (nu + 1)] for j in range(j0, nv + 1)] + [outer[nv * (nu + 1) + i] for i in range(1, nu + 1)] + \
+             [outer[j * (nu + 1) + nu] for j in range(nv - 1, j0 - 1, -1)]
+    border = [p - Vector((sgn * 0.0018, 0, 0)) for p in border]
+    bm = A.tube(border, 0.0046, n=10)
+    A.displace(bm, lambda p: p + Vector((sgn, 0, 0)) * 0.0010 * noise.noise(p * 600.0))
+    obs.append(A.make_obj(name + 'Trim', bm, fleece, 'spine_01'))
+    b0 = outer[nv * (nu + 1) + nu // 2] + Vector((0, 0, -0.003))
+    pts = [b0 + Vector((sgn * 0.010 * t, -0.004 * math.sin(t * 2.5), -0.045 * t)) for t in [i / 8 for i in range(9)]]
+    obs.append(A.make_obj(name + 'Tie', A.tube(pts, lambda t: 0.0021 - 0.0006 * t, n=8), fleece, 'spine_01'))
     return obs
 
 
-def camo_stripe(P, name, z_mid, height, mat, x0=-0.186, x1=0.186, seed=1, wobble=0.004):
+def camo_stripe(P, name, z_mid, height, mat, x0=-0.186, x1=0.186, seed=1, wobble=0.004, slope=0.0):
     """brushy face-paint band across the front face (follows the surface and dips into holes like real paint)"""
     rng = random.Random(seed)
     top = []; bot = []
@@ -611,12 +615,12 @@ def camo_stripe(P, name, z_mid, height, mat, x0=-0.186, x1=0.186, seed=1, wobble
         x = x0 + (x1 - x0) * i / n
         e = 1.0
         h = height * e
-        zz = z_mid + 0.004 * math.sin(x * 22 + ph1)
+        zz = z_mid + slope * x + 0.004 * math.sin(x * 22 + ph1)
         top.append((x, zz + h / 2 + wobble * math.sin(x * 61 + ph2) * rng.uniform(0.4, 1.0)))
         bot.append((x, zz - h / 2 - wobble * math.sin(x * 47 + ph1) * rng.uniform(0.4, 1.0)))
     # ragged brush-stroke ends
-    lend = [(x0 - 0.004 * rng.uniform(0.3, 1.0) * (k % 2), z_mid + height * (0.5 - k / 4)) for k in range(1, 4)]
-    rend = [(x1 + 0.004 * rng.uniform(0.3, 1.0) * (k % 2), z_mid + height * (-0.5 + k / 4)) for k in range(1, 4)]
+    lend = [(x0 - 0.004 * rng.uniform(0.3, 1.0) * (k % 2), z_mid + slope * x0 + height * (0.5 - k / 4)) for k in range(1, 4)]
+    rend = [(x1 + 0.004 * rng.uniform(0.3, 1.0) * (k % 2), z_mid + slope * x1 + height * (-0.5 + k / 4)) for k in range(1, 4)]
     outline = bot + rend + top[::-1] + lend
     return A.puff(name, P, outline, 0.0009, mat, edge=0.004, power=1.0, bury=0.0012, res=0.0025, hole_clamp=False)
 
@@ -627,41 +631,35 @@ def sniper(P, T):
     blaze = A.mat_felt('M_BlazeOrange', '#f2520a', '#de4508', rough=0.74, fiber=0.3)
     fleece = A.mat_felt('M_Fleece', '#c9b089', '#a88f68', rough=0.95, fiber=0.9)
     under = A.mat_plain('M_CapUnderbrim', '#3f4a2c', rough=0.8, bump=0.03)
-    a, b = 0.214, 0.166
-    H = hat_frame(T, fwd=math.radians(4), side=math.radians(3), lift=-0.030, shift=(-0.004, -0.008))
-    prof = [(1.0, 0.0), (0.995, 0.030), (0.975, 0.060), (0.93, 0.090), (0.85, 0.116), (0.72, 0.137), (0.54, 0.151), (0.30, 0.159), (0.0, 0.161)]
-    def soft(k, t, x, y, z):                          # softer, slightly taller front panels
-        f = max(0.0, -y / b) ** 2.0
-        return (x, y * (1.0 + 0.03 * f), z * (1.0 + 0.06 * f))
-    E = 3.3
-    bm = A.lathe(prof, a, b, e=E, n=96, cap_bottom=False, shape=soft)
+    a, b = 0.212, 0.170
+    H = hat_frame(T, fwd=math.radians(3), side=math.radians(2), lift=-0.030, shift=(-0.004, -0.004))
+    # crown: round, soft dome (hunting cap), 4 panels
+    prof = [(1.0, 0.0), (0.997, 0.028), (0.985, 0.056), (0.955, 0.084), (0.905, 0.110), (0.83, 0.132), (0.72, 0.150),
+            (0.57, 0.163), (0.38, 0.171), (0.19, 0.175), (0.0, 0.176)]
+    E = 3.0
+    bm = A.lathe(prof, a, b, e=E, n=96, cap_bottom=False)
     lin = bm.copy(); A.transform(lin, Matrix.Diagonal((0.975, 0.975, 0.975, 1.0)))
     cap = [A.make_obj('Sniper_Crown', A.transform(bm, H), blaze, 'spine_01', solid=0.004),
            A.make_obj('Sniper_CapLining', A.transform(lin, H), A.mat_plain('M_SniperLining', '#2b2a24', rough=0.85, bump=0.02), 'spine_01', solid=0.002)]
     seam = A.mat_plain('M_SniperSeam', '#c2410a', rough=0.8, bump=0.0)
-    for k in range(6):
-        ang = k / 6 * 2 * PI + PI / 6
-        pts = []
-        for (s, z) in prof[1:-1]:
-            cx = math.copysign(abs(math.cos(ang)) ** (2.0 / E), math.cos(ang)); cy = math.copysign(abs(math.sin(ang)) ** (2.0 / E), math.sin(ang))
-            fz = max(0.0, -cy) ** 2.0
-            pts.append(Vector((a * s * cx * 1.004, b * s * cy * (1 + 0.03 * fz) * 1.004, z * (1 + 0.06 * fz) + 0.003)))
-        bm = A.tube(pts, 0.0015, n=6)
-        cap.append(A.make_obj('Sniper_Seam%d' % k, A.transform(bm, H), seam, 'spine_01'))
-    bm = A.lathe([(1.0, 0.0), (1.0, 0.004), (0.7, 0.0075), (0.0, 0.0085)], 0.011, 0.011, n=24)
-    A.transform(bm, Matrix.Translation((0, 0, 0.161)))
+    for k in range(4):
+        ang = k / 4 * 2 * PI + PI / 4
+        cx = math.copysign(abs(math.cos(ang)) ** (2.0 / E), math.cos(ang)); cy = math.copysign(abs(math.sin(ang)) ** (2.0 / E), math.sin(ang))
+        pts = [Vector((a * s * cx * 1.004, b * s * cy * 1.004, z + 0.0028)) for (s, z) in prof[1:-1]]
+        cap.append(A.make_obj('Sniper_Seam%d' % k, A.transform(A.tube(pts, 0.0015, n=6), H), seam, 'spine_01'))
+    bm = A.lathe([(1.0, 0.0), (1.0, 0.004), (0.7, 0.0075), (0.0, 0.0085)], 0.012, 0.012, n=24)
+    A.transform(bm, Matrix.Translation((0, 0, 0.175)))
     cap.append(A.make_obj('Sniper_Button', A.transform(bm, H), blaze, 'spine_01'))
-    # brim to the front, gently curved, dark olive underside (top + bottom as two shells)
+    # short visor, turned down, olive underside
     verts = []; faces = []
-    nu, nv = 18, 9
+    nu, nv = 18, 7
+    vis = lambda u, v: (u * (a * 0.70) * (1 - 0.18 * v ** 2),
+                        -(b * 0.985) * math.sqrt(max(0.0, 1 - (u * 0.70) ** 2)) - v * 0.072 * (1 - 0.55 * u * u),
+                        0.006 - 0.016 * u * u - 0.034 * v - 0.010 * v * v)
     for i in range(nu + 1):
         u = i / nu * 2 - 1
         for j in range(nv + 1):
-            v = j / nv
-            bx = u * (a * 0.84) * (1 - 0.15 * v ** 2)
-            by = -(b * 0.97) * math.sqrt(max(0.0, 1 - (bx / a) ** 2)) - v * 0.105 * (1 - 0.5 * u * u)
-            bz = 0.010 - 0.020 * u * u - 0.040 * v - 0.006 * v * v
-            verts.append(Vector((bx, by, bz)))
+            verts.append(Vector(vis(u, j / nv)))
     for i in range(nu):
         for j in range(nv):
             q = i * (nv + 1) + j
@@ -670,39 +668,30 @@ def sniper(P, T):
     bot = bm.copy(); A.transform(bot, Matrix.Translation((0, 0, -0.0042)))
     cap.append(A.make_obj('Sniper_Brim', A.transform(bm, H), blaze, 'spine_01', solid=0.004))
     cap.append(A.make_obj('Sniper_BrimUnder', A.transform(bot, H), under, 'spine_01', solid=0.0012))
-    # brim stitching rows
-    for r in (0.25, 0.5, 0.75):
-        pts = []
-        for i in range(nu + 1):
-            u = i / nu * 2 - 1
-            v = 0.15 + r * 0.8
-            bx = u * (a * 0.84) * (1 - 0.15 * v ** 2) * 0.96
-            by = -(b * 0.97) * math.sqrt(max(0.0, 1 - (bx / a) ** 2)) - v * 0.105 * (1 - 0.5 * u * u)
-            bz = 0.010 - 0.020 * u * u - 0.040 * v - 0.006 * v * v + 0.0024
-            pts.append(Vector((bx, by, bz)))
-        bm = A.tube(pts, 0.0008, n=5)
-        cap.append(A.make_obj('Sniper_BrimStitch%d' % int(r * 4), A.transform(bm, H), seam, 'spine_01'))
+    for r in (0.35, 0.7):
+        pts = [Vector(vis(i / nu * 2 - 1, r)) * 1.0 + Vector((0, 0, 0.0024)) for i in range(nu + 1)]
+        cap.append(A.make_obj('Sniper_BrimStitch%d' % int(r * 10), A.transform(A.tube(pts, 0.0008, n=5), H), seam, 'spine_01'))
     chk = [cap[0], cap[1], [o for o in cap if o.name == 'Sniper_Brim'][0]]
     print('sniper cap fit', A.fit_hat(P, cap, chk[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=4.0))
     print('sniper cap drape', A.drape(P, cap, chk, H.col[2][:3]))
     obs += cap
-    # ear flaps down
+    # ear flaps down, flaring out
     for sgn in (-1, 1):
         obs += ear_flap(P, cap[:1], sgn, 'Sniper_Flap%s' % ('L' if sgn > 0 else 'R'), blaze, fleece)
     # two stripes of camo face paint across the wedge, under the eyes
     olive = A.mat_plain('M_CamoOlive', '#4b5a2a', rough=0.88, col2='#3a4720', nscale=120, bump=0.05, bscale=500)
-    brown = A.mat_plain('M_CamoBrown', '#3b2a1a', rough=0.9, col2='#2a1d12', nscale=120, bump=0.05, bscale=500)
-    obs.append(camo_stripe(P, 'Sniper_CamoTop', 0.676, 0.030, olive, seed=3))
-    obs.append(camo_stripe(P, 'Sniper_CamoLow', 0.628, 0.030, brown, seed=8))
+    black = A.mat_plain('M_CamoBlack', '#1f2414', rough=0.9, col2='#14180d', nscale=120, bump=0.05, bscale=500)
+    obs.append(camo_stripe(P, 'Sniper_CamoTop', 0.688, 0.024, olive, seed=3, slope=-0.06))
+    obs.append(camo_stripe(P, 'Sniper_CamoLow', 0.651, 0.022, black, seed=8, slope=-0.06))
     # a long piece of dry grass where a mouth would be
     straw = A.mat_plain('M_DryGrass', '#cdb06a', rough=0.7, col2='#a88848', nscale=200, bump=0.08, bscale=900)
-    root = Vector((MOUTH.x - 0.004, A.FRONT_Y + 0.006, 0.652))
-    d = Vector((0.82, -0.50, 0.10)).normalized()
+    root = Vector((MOUTH.x + 0.010, A.FRONT_Y + 0.006, 0.668))
+    d = Vector((0.76, -0.50, 0.40)).normalized()
     pts = []
     for i in range(25):
         t = i / 24
-        pts.append(root + d * 0.205 * t + Vector((0, 0, -0.045 * t * t)) + Vector((0.004 * math.sin(t * 5), 0, 0)))
-    bm = A.tube(pts, lambda t: 0.0038 * (1 - 0.35 * t), n=8, flat=0.85)
+        pts.append(root + d * 0.25 * t + Vector((0, 0, -0.060 * t * t)) + Vector((0.004 * math.sin(t * 5), 0, 0)))
+    bm = A.tube(pts, lambda t: 0.0044 * (1 - 0.35 * t), n=8, flat=0.85)
     obs.append(A.make_obj('Sniper_GrassStem', bm, straw, 'spine_01'))
     # seed head: alternating spikelets along the last stretch + a couple of nodes on the stem
     head = A.mat_plain('M_GrassHead', '#b8954f', rough=0.75, col2='#8f6f35', nscale=300, bump=0.1, bscale=1200)
@@ -715,9 +704,9 @@ def sniper(P, T):
         side = tan.cross(Vector((0, 0, 1))).normalized()
         dirn = (tan * 0.8 + side * (0.55 if k % 2 else -0.55) + Vector((0, 0, 0.3))).normalized()
         s = 1.0 - 0.45 * k / 13
-        sp = A.sphere((0, 0, 0), 1.0, seg=10, rings_=6, scale=(0.0032 * s, 0.0032 * s, 0.0085 * s))
+        sp = A.sphere((0, 0, 0), 1.0, seg=10, rings_=6, scale=(0.0042 * s, 0.0042 * s, 0.0115 * s))
         zax = dirn; xax = zax.orthogonal().normalized(); yax = zax.cross(xax)
-        A.transform(sp, A.frame_matrix(p + dirn * 0.006 * s, xax, yax, zax))
+        A.transform(sp, A.frame_matrix(p + dirn * 0.008 * s, xax, yax, zax))
         tmp = bpy.data.meshes.new('tmp'); sp.to_mesh(tmp); sp.free(); hb.from_mesh(tmp); bpy.data.meshes.remove(tmp)
     for t in (0.3, 0.55):
         i = int(t * 24)
