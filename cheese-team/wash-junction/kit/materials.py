@@ -906,6 +906,28 @@ def r_flat(g, p):
     return dict(color=g.const_c(p.get("color", "#808080")), rough=p.get("rough", 0.8), metal=p.get("metal", 0.0), height=0.0)
 
 
+def r_card(g, p):
+    """Alpha-tested card (razor wire, fringes, mesh). p: img (Non-Color image, R = coverage), size=(Lx, Ly) of the
+    card in its local x/y, centre=(cx, cy), base recipe colours 'galv' | 'steel' | 'cloth' via look."""
+    x, y, z = g.sep(g.P)
+    Lx, Ly = p.get("size", (1.0, 1.0))
+    cx, cy = p.get("centre", (0.0, 0.0))
+    u = g.add(g.div(g.sub(x, cx), Lx), 0.5)
+    v = g.add(g.div(g.sub(y, cy), Ly), 0.5)
+    tex = g.image(p["img"], g.comb(u, v, 0.0), extension=p.get("extension", "REPEAT"))
+    cov = g.sep(tex)[0]
+    look = p.get("look", "galv")
+    if look == "galv":
+        out = r_galv(g, dict(p, oxide=0.4, rust=p.get("rust", 0.35), dust=0.2, splash=0.0))
+    elif look == "steel":
+        out = r_steel(g, dict(p, splash=0.0))
+    else:
+        out = r_cloth(g, p)
+    out["alpha"] = g.smooth(cov, 0.35, 0.6)
+    out["height"] = g.add(out["height"], g.mul(cov, 1.0))
+    return out
+
+
 def r_debug_mask(g, p):
     e, c, a = g.masks()
     cc = g.node("ShaderNodeCombineColor")
@@ -913,7 +935,7 @@ def r_debug_mask(g, p):
     return dict(color=cc.outputs[0], rough=0.9, metal=0.0, height=0.0)
 
 
-RECIPES = {"debug_mask": r_debug_mask, 
+RECIPES = {"debug_mask": r_debug_mask, "card": r_card, 
     "paint": r_paint, "team": r_team, "rust": r_rust, "galv": r_galv, "steel": r_steel,
     "diamond": r_diamond, "wood": r_wood, "concrete": r_concrete, "burlap": r_burlap,
     "wax": r_wax, "cheddar": r_cheddar, "bleu_paste": r_bleu_paste, "bleu_rind": r_bleu_rind,

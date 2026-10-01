@@ -429,6 +429,22 @@ def _blur(a, it=1):
     return a
 
 
+def image_from_array(name, arr, color=False):
+    """numpy float array (H, W) or (H, W, 3|4), row 0 = TOP, values 0..1 -> packed Blender image for recipes
+    (e.g. K.mat("card", img=...)).  Create it AFTER K.Asset(...) (the Asset constructor resets the scene)."""
+    a = np.asarray(arr, np.float32)
+    if a.ndim == 2:
+        a = np.dstack([a, a, a])
+    if a.shape[2] == 3:
+        a = np.dstack([a, np.ones(a.shape[:2], np.float32)])
+    h, w = a.shape[:2]
+    img = bpy.data.images.new(name, w, h, alpha=True, float_buffer=True)
+    img.colorspace_settings.name = "Linear Rec.709" if color else "Non-Color"
+    img.pixels.foreach_set(a[::-1].ravel())
+    img.pack()
+    return img
+
+
 def stencil_image(name, kind="wedge", res=512):
     """Procedural stencil masks (white = paint), returned as a non-colour Blender image."""
     yy, xx = np.mgrid[0:res, 0:res].astype(np.float32) / res

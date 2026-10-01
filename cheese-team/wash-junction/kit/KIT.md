@@ -97,6 +97,9 @@ Shortcuts:
 - Stencils (create AFTER `K.Asset(...)`, which resets the scene): `img = K.stencil_image("wedge_stencil", "wedge")` gives a cheese-wedge stencil mask.
   Pass `decal=dict(img=img, axes="yz", center=(y, z), size=(sy, sz), facing=(1, 0, 0), color="#hex")` to `paint` or `wood`.
   See the materials.py decal helper.
+- Alpha cards (razor wire etc.): `A = K.Asset(..., alpha=True)`. Draw the pattern with numpy and wrap it with
+  `img = K.image_from_array("wire", arr)` (after `K.Asset(...)`). Then `K.mat("card", img=img, size=(Lx, Ly), centre=(cx, cy), look="galv")`
+  maps the image over the card's local x/y (its two longest axes). BaseColor becomes RGBA and the GLB material is alpha-clipped.
 - Colours are sRGB hex. Keep albedo realistic: no pure black or white, paint about 0.15–0.75 value, rust dark.
 - Desert setting: sun-faded, dusty and dry. Never clean.
 

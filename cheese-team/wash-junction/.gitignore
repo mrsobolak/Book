@@ -4,3 +4,5 @@ export/**/*_Normal.gl.png
 *.blend
 *.blend1
 __pycache__/
+export/**/_inspect*
+export/**/_v_*
