@@ -656,3 +656,38 @@ def puff(name, P, outline_xz, thick, mat, bone='spine_01', edge=0.022, res=0.003
     bm = bm_from(verts, faces)
     bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
     return make_obj(name, bm, mat, bone, smooth=True)
+
+
+def boundary_loops(bm):
+    """ordered loops of boundary-edge vertex coordinates"""
+    edges = [e for e in bm.edges if e.is_boundary]
+    adj = {}
+    for e in edges:
+        a, b = e.verts
+        adj.setdefault(a, []).append(b); adj.setdefault(b, []).append(a)
+    seen = set(); loops = []
+    for start in list(adj):
+        if start in seen:
+            continue
+        loop = [start]; seen.add(start); prev = None; cur = start
+        while True:
+            nxt = [v for v in adj[cur] if v is not prev and v not in seen]
+            if not nxt:
+                break
+            prev, cur = cur, nxt[0]; loop.append(cur); seen.add(cur)
+        loops.append([v.co.copy() for v in loop])
+    return loops
+
+
+def local_uv(bm, name='Local', fn=None):
+    """store each vertex's (local) coordinates in a UV layer, so shaders can draw stripes etc. in the object's own space"""
+    uvl = bm.loops.layers.uv.new(name)
+    for f in bm.faces:
+        for lp in f.loops:
+            c = lp.vert.co
+            lp[uvl].uv = fn(c) if fn else (c.x, c.y)
+    return bm
+
+
+def bvh_of(bm):
+    return BVHTree.FromBMesh(bm)

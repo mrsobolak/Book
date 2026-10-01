@@ -295,3 +295,230 @@ def mrshotgun(P, T):
 
 
 BUILDERS['MrShotgun'] = mrshotgun
+
+
+# ================================================================== 3. ROCKET GUY
+def mat_helmet(name, col, stripe, uvname='Local', s0=0.040, s1=0.016):
+    """glossy clear-coated paint, two racing stripes (from the shell's own x stored in a UV layer), scuffs"""
+    m, nt, bs = A._mat(name)
+    uv = nt.nodes.new('ShaderNodeUVMap'); uv.uv_map = uvname
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(uv.outputs[0], sep.inputs[0])
+    def math_node(op, a, b=None):
+        n = nt.nodes.new('ShaderNodeMath'); n.operation = op
+        if isinstance(a, float): n.inputs[0].default_value = a
+        else: nt.links.new(a, n.inputs[0])
+        if b is not None:
+            if isinstance(b, float): n.inputs[1].default_value = b
+            else: nt.links.new(b, n.inputs[1])
+        return n.outputs[0]
+    d = math_node('ABSOLUTE', math_node('SUBTRACT', math_node('ABSOLUTE', sep.outputs[0]), s0))
+    mask = math_node('LESS_THAN', d, s1)
+    vec = A._tc(nt)
+    wear = A._noise(nt, vec, 35, 6, 0.65)
+    base = A._ramp(nt, wear.outputs['Fac'], A.srgb(col), A.srgb(col), 0.4, 0.8)
+    base.color_ramp.elements[0].color = (*[c * 0.86 for c in A.srgb(col)], 1)
+    mix = nt.nodes.new('ShaderNodeMix'); mix.data_type = 'RGBA'
+    nt.links.new(mask, mix.inputs['Factor']); nt.links.new(base.outputs['Color'], mix.inputs['A'])
+    mix.inputs['B'].default_value = (*A.srgb(stripe), 1)
+    nt.links.new(mix.outputs['Result'], bs.inputs['Base Color'])
+    mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (1.0, 1.0, 40.0)
+    nt.links.new(vec, mp.inputs['Vector'])
+    scr = A._noise(nt, mp.outputs['Vector'], 40, 10, 0.75)
+    rr = A._ramp(nt, scr.outputs['Fac'], (0.22, 0.22, 0.22), (0.55, 0.55, 0.55), 0.55, 0.72)
+    sepc = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(rr.outputs['Color'], sepc.inputs[0])
+    nt.links.new(sepc.outputs[0], bs.inputs['Roughness'])
+    try:
+        bs.inputs['Coat Weight'].default_value = 0.8
+        nt.links.new(sepc.outputs[0], bs.inputs['Coat Roughness'])
+    except KeyError:
+        pass
+    A._bump(nt, bs, scr.outputs['Fac'], 0.04, 0.0004)
+    return m
+
+
+def mat_lens(name, col):
+    """tinted goggle lens: glossy, with scratches in the roughness and a faint bump"""
+    m, nt, bs = A._mat(name)
+    bs.inputs['Base Color'].default_value = (*A.srgb(col), 1)
+    bs.inputs['Metallic'].default_value = 0.35
+    vec = A._tc(nt)
+    sc1 = A._noise(nt, vec, 260, 12, 0.8)
+    mp = nt.nodes.new('ShaderNodeMapping'); mp.inputs['Scale'].default_value = (90.0, 1.0, 4.0)
+    mp.inputs['Rotation'].default_value = (0.0, 0.7, 0.4)
+    nt.links.new(vec, mp.inputs['Vector'])
+    sc2 = A._noise(nt, mp.outputs['Vector'], 6, 12, 0.85)
+    mx = nt.nodes.new('ShaderNodeMath'); mx.operation = 'MAXIMUM'
+    nt.links.new(sc1.outputs['Fac'], mx.inputs[0]); nt.links.new(sc2.outputs['Fac'], mx.inputs[1])
+    rr = A._ramp(nt, mx.outputs[0], (0.04, 0.04, 0.04), (0.6, 0.6, 0.6), 0.62, 0.70)
+    sepc = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(rr.outputs['Color'], sepc.inputs[0])
+    nt.links.new(sepc.outputs[0], bs.inputs['Roughness'])
+    try:
+        bs.inputs['Coat Weight'].default_value = 1.0
+        bs.inputs['Coat Roughness'].default_value = 0.03
+    except KeyError:
+        pass
+    A._bump(nt, bs, mx.outputs[0], 0.06, 0.0003)
+    return m
+
+
+def wristband(P, bone, leather, chrome, t=0.55, side=''):
+    """thick leather cuff around the stick forearm with two rows of chrome pyramid-ish spikes and stitched edges"""
+    M, head, tail = A.bone_frame(bone)
+    ax = (tail - head).normalized()
+    c = head + (tail - head) * t
+    x = ax.orthogonal().normalized(); y = ax.cross(x)
+    F = A.frame_matrix(c, x, y, ax)
+    obs = []
+    h, ri, ro = 0.021, 0.0105, 0.0195
+    sec = [(ri, -h), (ro - 0.003, -h), (ro - 0.0005, -h + 0.0012), (ro, -h + 0.004), (ro + 0.0006, 0.0), (ro, h - 0.004),
+           (ro - 0.0005, h - 0.0012), (ro - 0.003, h), (ri, h)]
+    bm = A.revolve(sec, 1.0, 1.0, n=40)
+    obs.append(A.make_obj('Rocket_Cuff%s' % side, A.transform(bm, F), leather, bone))
+    stitch = A.mat_plain('M_CuffStitch', '#cfc3a6', rough=0.7, bump=0.0)
+    for zz in (-h + 0.0045, h - 0.0045):
+        for k in range(20):                                   # dashed stitch line
+            f0 = 2 * PI * k / 20; f1 = f0 + 2 * PI / 20 * 0.55
+            pts = [Vector(((ro + 0.0004) * math.cos(f0 + (f1 - f0) * i / 3), (ro + 0.0004) * math.sin(f0 + (f1 - f0) * i / 3), zz)) for i in range(4)]
+            bm = A.tube(pts, 0.00065, n=5)
+            obs.append(A.make_obj('Rocket_CuffStitch%s_%d_%d' % (side, int(zz > 0), k), A.transform(bm, F), stitch, bone))
+    for row, zz in enumerate((-0.0085, 0.0085)):
+        for k in range(7):
+            f = 2 * PI * (k + 0.5 * row) / 7
+            r_dir = Vector((math.cos(f), math.sin(f), 0))
+            t_dir = Vector((-math.sin(f), math.cos(f), 0))
+            S = A.frame_matrix(Vector((0, 0, zz)) + r_dir * (ro - 0.0005), t_dir, Vector((0, 0, 1)), r_dir)
+            sp = A.lathe([(1.0, 0.0), (1.0, 0.0012), (0.92, 0.0018), (0.55, 0.0068), (0.14, 0.0118), (0.0, 0.0124)],
+                         0.0056, 0.0056, e=2.0, n=16)            # rivet base + cone with a blunted tip
+            A.transform(sp, S)
+            obs.append(A.make_obj('Rocket_Spike%s_%d_%d' % (side, row, k), A.transform(sp, F), chrome, bone))
+    return obs
+
+
+def rocketguy(P, T):
+    obs = []
+    paint = mat_helmet('M_HelmetPaint', '#efe6d2', '#1b1a1a')
+    lining = A.mat_plain('M_HelmetLining', '#24201d', rough=0.85, col2='#151311', nscale=200, bump=0.15, bscale=600)
+    rubber = A.mat_plain('M_HelmetTrim', '#161515', rough=0.55, bump=0.03)
+    chrome = A.mat_metal('M_Chrome', '#e8e8ea', rough=0.12, scratches=0.4)
+    a, b = 0.236, 0.168
+    H = hat_frame(T, fwd=math.radians(-2), side=math.radians(-11), lift=0.0, shift=(0.004, 0.004))
+    prof = [(1.0, -0.150), (1.0, -0.100), (1.0, -0.050), (0.997, 0.0), (0.975, 0.048), (0.925, 0.092), (0.845, 0.130),
+            (0.725, 0.160), (0.565, 0.181), (0.38, 0.193), (0.19, 0.199), (0.0, 0.201)]
+    shell = A.lathe(prof, a, b, e=2.4, n=112, cap_bottom=False)
+    def cut_z(fx, fy):                       # opening: brow edge high at the front, cheek guards, low at the back
+        th = math.degrees(abs(math.atan2(fx / a, -fy / b)))      # 0 = straight ahead, 180 = back
+        if th < 50:
+            return -0.058 + 0.010 * (th / 50) ** 2
+        if th < 78:
+            u = (th - 50) / 28
+            return -0.048 - 0.095 * (3 * u * u - 2 * u ** 3)
+        return -0.150 + 0.006 * min(1.0, (th - 78) / 40)
+    dele = []
+    for f in shell.faces:
+        c = f.calc_center_median()
+        if c.z < cut_z(c.x, c.y):
+            dele.append(f)
+    bmesh.ops.delete(shell, geom=dele, context='FACES')
+    bmesh.ops.delete(shell, geom=[v for v in shell.verts if not v.link_faces], context='VERTS')
+    loops = A.boundary_loops(shell)
+    lin = shell.copy()
+    A.transform(lin, Matrix.Diagonal((0.955, 0.94, 0.96, 1.0)) @ Matrix.Translation((0, 0, -0.004)))
+    A.local_uv(shell)
+    helm = [A.make_obj('Rocket_HelmetShell', A.transform(shell, H), paint, 'spine_01', solid=0.007)]
+    helm.append(A.make_obj('Rocket_HelmetLining', A.transform(lin, H), lining, 'spine_01', solid=0.006))
+    # rubber edge trim along the opening
+    for i, lp in enumerate(loops):
+        if len(lp) < 8:
+            continue
+        pts = lp + [lp[0]]
+        bm = A.tube(pts, 0.0062, n=10, cap=False, flat=1.3, up=Vector((0, 0, 1)))
+        helm.append(A.make_obj('Rocket_HelmetTrim%d' % i, A.transform(bm, H), rubber, 'spine_01'))
+    # three chrome visor snaps across the brow
+    sbvh = A.bvh_of(A.lathe(prof, a * 1.0, b * 1.0, e=2.4, n=112, cap_bottom=False))
+    for k, sx in enumerate((-0.085, 0.0, 0.085)):
+        loc, nor, idx, d = sbvh.ray_cast(Vector((sx, -1.0, -0.028)), Vector((0, 1, 0)))
+        if loc is None:
+            continue
+        nor = nor if nor.y < 0 else -nor
+        xx = Vector((0, 0, 1)).cross(nor).normalized(); yy = nor.cross(xx)
+        bm = A.lathe([(1.0, 0.0), (1.0, 0.0012), (0.75, 0.0032), (0.0, 0.0038)], 0.0068, 0.0068, n=20)
+        A.transform(bm, A.frame_matrix(loc + nor * 0.0035, xx, yy, nor))
+        helm.append(A.make_obj('Rocket_Snap%d' % k, A.transform(bm, H), chrome, 'spine_01'))
+    # goggles resting on the front of the dome
+    rubber_g = A.mat_plain('M_GoggleRubber', '#2a2522', rough=0.6, bump=0.06, bscale=500)
+    lens = mat_lens('M_GoggleLens', '#6b3e12')
+    strap = A.mat_plain('M_GoggleStrap', '#3c3a37', rough=0.75, col2='#2a2826', nscale=300, bump=0.12, bscale=900)
+    gz = 0.085
+    centers = []
+    for sx in (-0.062, 0.062):
+        loc, nor, idx, d = sbvh.ray_cast(Vector((sx, -1.0, gz)), Vector((0, 1, 0)))
+        nor = nor if nor.y < 0 else -nor
+        nor = (nor + Vector((0, -0.25, 0.0))).normalized()
+        centers.append((loc, nor))
+        xx = Vector((0, 0, 1)).cross(nor).normalized(); yy = nor.cross(xx)
+        G = A.frame_matrix(loc + nor * 0.004, xx, yy, nor)
+        cup = A.lathe([(0.86, -0.004), (1.0, 0.0), (1.06, 0.006), (1.05, 0.014), (0.98, 0.019), (0.9, 0.020)], 0.033, 0.030, n=40,
+                      cap_bottom=True, cap_top=False)
+        helm.append(A.make_obj('Rocket_GoggleCup%d' % len(centers), A.transform(A.transform(cup, G), H), rubber_g, 'spine_01'))
+        ring = A.revolve([(0.86, 0.017), (0.98, 0.017), (1.0, 0.0205), (0.97, 0.0235), (0.86, 0.0225)], 0.033, 0.030, n=48)
+        helm.append(A.make_obj('Rocket_GoggleRim%d' % len(centers), A.transform(A.transform(ring, G), H), chrome, 'spine_01'))
+        ln = A.lathe([(1.0, 0.0), (0.96, 0.0035), (0.75, 0.0058), (0.0, 0.0066)], 0.0285, 0.0258, n=48)
+        A.transform(ln, Matrix.Translation((0, 0, 0.0168)))
+        helm.append(A.make_obj('Rocket_GoggleLens%d' % len(centers), A.transform(A.transform(ln, G), H), lens, 'spine_01'))
+    (l0, n0), (l1, n1) = centers
+    p0 = l0 + n0 * 0.014 + Vector((0.030, 0, 0)); p1 = l1 + n1 * 0.014 - Vector((0.030, 0, 0))
+    mid = (p0 + p1) / 2 + (n0 + n1).normalized() * 0.006
+    bm = A.tube([p0, (p0 + mid) / 2 + Vector((0, -0.002, 0)), mid, (p1 + mid) / 2 + Vector((0, -0.002, 0)), p1], 0.0042, n=10, flat=0.7)
+    helm.append(A.make_obj('Rocket_GoggleBridge', A.transform(bm, H), rubber_g, 'spine_01'))
+    # strap: around the dome from one cup to the other, round the back, hugging the paint
+    spts = []
+    for i in range(41):
+        f = -PI / 2 + math.radians(32) + (2 * PI - math.radians(64)) * i / 40
+        dvec = Vector((math.cos(f), math.sin(f), 0.0))
+        zz = gz - 0.012 + 0.010 * math.sin(f + PI / 2) ** 2
+        loc, nor, idx, d = sbvh.ray_cast(Vector((0, 0, zz)) + dvec * 1.0, -dvec)
+        if loc is not None:
+            spts.append(loc + nor.normalized() * 0.0045 * (1 if nor.dot(dvec) > 0 else -1))
+    bm = A.ribbon(spts, lambda t: 0.021, lambda t, tan: (spts[min(len(spts) - 1, int(t * (len(spts) - 1)))] - Vector((0, 0, gz))).normalized(), thick=0.0)
+    helm.append(A.make_obj('Rocket_GoggleStrap', A.transform(bm, H), strap, 'spine_01', solid=0.0022))
+    print('rocket helmet fit', A.fit_hat(P, helm, helm[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=6.0))
+    obs += helm
+    # big band-aid over the centre hole, like it's covering a wound; one corner peeling up
+    tan = A.mat_image('M_Bandaid', 'bandaid.png', rough=0.6, bump=0.05)
+    L, W = 0.150, 0.050
+    ang = math.radians(24)
+    cx, cz = 0.052, 0.648
+    ud = Vector((math.cos(ang), 0, math.sin(ang))); vd = Vector((-math.sin(ang), 0, math.cos(ang)))
+    verts = []; uvs = []; faces = []
+    nu, nv = 48, 12
+    r = W * 0.42
+    for i in range(nu + 1):
+        for j in range(nv + 1):
+            v = (j / nv - 0.5) * W
+            ext = L / 2 - r + math.sqrt(max(0.0, r * r - max(0.0, abs(v) - (W / 2 - r)) ** 2))
+            u = (i / nu * 2 - 1) * ext
+            p = Vector((cx, 0, cz)) + ud * u + vd * v
+            loc, nor = P.hit((p.x, -1.0, p.z), (0, 1, 0))
+            y = min(loc.y if loc is not None else A.FRONT_Y, A.FRONT_Y) - 0.0011
+            peel = max(0.0, (u / (L / 2) - 0.80) / 0.20) * max(0.0, (v / (W / 2) + 0.2) / 1.2)
+            y -= 0.012 * peel ** 2
+            verts.append(Vector((p.x, y, p.z))); uvs.append(((u + L / 2) / L, (v + W / 2) / W))
+    for i in range(nu):
+        for j in range(nv):
+            q = i * (nv + 1) + j
+            faces.append((q, q + nv + 1, q + nv + 2, q + 1))
+    bm = A.bm_from(verts, faces)
+    uvl = bm.loops.layers.uv.new('UVMap')
+    bm.verts.index_update()
+    for f in bm.faces:
+        for lp in f.loops:
+            lp[uvl].uv = uvs[lp.vert.index]
+    obs.append(A.make_obj('Rocket_Bandaid', bm, tan, 'spine_01', solid=0.0007))
+    # spiked leather wristbands on both stick forearms
+    leather = A.mat_plain('M_CuffLeather', '#2e1d14', rough=0.5, col2='#1c120c', nscale=90, bump=0.12, bscale=700)
+    obs += wristband(P, 'lowerarm_l', leather, chrome, side='L')
+    obs += wristband(P, 'lowerarm_r', leather, chrome, side='R')
+    return obs
+
+
+BUILDERS['RocketGuy'] = rocketguy
