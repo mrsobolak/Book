@@ -21,6 +21,7 @@ MATS.update({
     'RR_Cheese': ('yellow_plaster', 1.5, '#ffd95a', 0.55, 0), 'RR_Rind': ('yellow_plaster', 1.5, '#e8a63a', 0.65, 0),
     'RR_Wax': ('yellow_plaster', 1.5, '#c4232a', 0.4, 0),
     'Grid': ('rusty_metal_grid', 1.8, '#8b9294', 0.5, 0.6),
+    'RR_Far': ('cliff_rock', 30.0, '#b06a48', 0.95, 0),
 })
 
 
@@ -68,6 +69,7 @@ def step(name, texdir):
     K, S = STATE['K'], STATE['S']
     if name == 'T':
         K.group = 'Terrain'; X, Z, H, D, I = rrterrain.build(K, S); STATE['H'] = (X, Z, H)
+        K.group = 'Backdrop'; rrterrain.backdrop(K)
     elif name == 'K':
         K.group = 'Track'; rrstruct.track(K, S, STATE['H'])
     elif name == 'S':

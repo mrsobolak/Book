@@ -5,7 +5,7 @@ import math
 import numpy as np
 import rrlayout as L
 
-X0, X1, Z0, Z1, CELL = -232.0, 168.0, -192.0, 152.0, 2.0
+X0, X1, Z0, Z1, CELL = -232.0, 168.0, -192.0, 152.0, 1.6
 BENCH, BLEND = 5.0, 9.0
 
 
@@ -28,9 +28,11 @@ def natural(x, z):
     r = r0 + warp * _smooth(L.PLATEAU_R - 8, L.PLATEAU_R + 25, r0)
     h = L.PLATEAU_Y * _smooth(L.FOOT_R, L.PLATEAU_R, r) ** 1.5
     # broken strata: terraces with drifting phase, only partly blended -> ledges and red rock bands
-    ph = 2.0 * _noise(x * 0.6 + 40, z * 0.6 - 20)
-    t = (h + ph) / 7.0; terr = (np.floor(t) + _smooth(0.5, 0.95, t - np.floor(t))) * 7.0 - ph
-    h = h + 0.55 * (terr - h) * _smooth(L.PLATEAU_R - 2, L.PLATEAU_R + 10, r)
+    ph = 3.0 * _noise(x * 0.5 + 40, z * 0.5 - 20) + 2.0 * np.sin(2 * ang)
+    step = 8.0 + 2.5 * np.sin(ang * 2 + 1.0)
+    t = (h + ph) / step; terr = (np.floor(t) + _smooth(0.45, 0.95, t - np.floor(t))) * step - ph
+    patch = _smooth(-0.3, 0.6, _noise(x * 0.35 - 11, z * 0.35 + 7))          # strata only in patches -> broken cliffs
+    h = h + 0.7 * patch * (terr - h) * _smooth(L.PLATEAU_R - 2, L.PLATEAU_R + 10, r)
     h += 1.6 * _noise(x, z) * _smooth(L.PLATEAU_R + 4, L.PLATEAU_R + 20, r)
     # the summit spire (Bleu's bunker is cut into its south face)
     sx, sz, sr, sh = L.SPIRE
@@ -104,20 +106,57 @@ def build(K, S, mats=('RR_Sand', 'RR_Rock', 'RR_Road', 'RR_Dirt')):
         if v is None:
             v = bms[m].verts.new(T2B((float(X[i, j]), float(H[i, j]), float(Z[i, j])))); c[k] = v
         return v
+    gz_, gx_ = np.gradient(H, CELL)
+    slope = np.hypot(gx_, gz_)
+    k = np.ones(3) / 3                                       # light blur so material borders follow contours
+    sl = np.apply_along_axis(lambda m: np.convolve(m, k, mode='same'), 0, slope)
+    sl = np.apply_along_axis(lambda m: np.convolve(m, k, mode='same'), 1, sl)
+    nse = _noise(X * 1.7, Z * 1.9) * 0.12
     for i in range(nz - 1):
         for j in range(nx - 1):
-            h = (H[i, j], H[i, j + 1], H[i + 1, j + 1], H[i + 1, j])
-            sx = ((h[1] - h[0]) + (h[2] - h[3])) / (2 * CELL); sz = ((h[3] - h[0]) + (h[2] - h[1])) / (2 * CELL)
-            slope = math.hypot(sx, sz)
-            d = D[i:i + 2, j:j + 2].min()
-            if slope > 0.9:
-                m = rock
-            elif d < BENCH + 0.5:
-                m = road
-            elif slope > 0.45:
-                m = dirt
-            else:
-                m = sand
-            q = [V(m, i, j), V(m, i, j + 1), V(m, i + 1, j + 1), V(m, i + 1, j)]
-            bms[m].faces.new(q[::-1])      # (x, -z) flips handedness
+            for tri in (((i, j), (i, j + 1), (i + 1, j + 1)), ((i, j), (i + 1, j + 1), (i + 1, j))):
+                sv = sum(sl[a, b] for a, b in tri) / 3 + sum(nse[a, b] for a, b in tri) / 3
+                d = min(D[a, b] for a, b in tri)
+                if sv > 0.85:
+                    m = rock
+                elif d < BENCH + 0.3:
+                    m = road
+                elif sv > 0.42:
+                    m = dirt
+                else:
+                    m = sand
+                q = [V(m, a, b) for a, b in tri]
+                bms[m].faces.new(q[::-1])      # (x, -z) flips handedness
     return X, Z, H, D, I
+
+
+def backdrop(K):
+    """scenery ring outside the playable rectangle: the canyon floor below the N/E drops, mesas and buttes beyond"""
+    from wskit import T2B
+    BX0, BX1, BZ0, BZ1, C = -900.0, 840.0, -860.0, 820.0, 10.0
+    xs = np.arange(BX0, BX1 + 1e-6, C); zs = np.arange(BZ0, BZ1 + 1e-6, C)
+    Xb, Zb = np.meshgrid(xs, zs)
+    inside = (Xb > X0 + 4) & (Xb < X1 - 4) & (Zb > Z0 + 4) & (Zb < Z1 - 4)
+    edge = np.minimum.reduce([Xb - X0, X1 - Xb, Zb - Z0, Z1 - Zb])          # >0 inside, <0 outside
+    out = np.maximum(-edge, 0.0)
+    nat = natural(np.clip(Xb, X0, X1), np.clip(Zb, Z0, Z1))                 # continue the map's own edge height
+    far = -55.0 + 40.0 * _smooth(60, 400, out)                              # canyon floor, rising far away
+    mes = np.zeros_like(Xb)
+    rng = np.random.RandomState(4)
+    for _ in range(46):
+        a = rng.uniform(0, 2 * np.pi); dist = rng.uniform(330, 760)
+        bx, bz = 0 + dist * np.cos(a), 0 + dist * np.sin(a); br = rng.uniform(30, 90); bh = rng.uniform(40, 140)
+        mes = np.maximum(mes, bh * _smooth(br, br * 0.8, np.hypot(Xb - bx, Zb - bz)))
+    hb = np.where(nat > 20, nat - 4.0 * _smooth(0, 200, out) + 0.0, nat * (1 - _smooth(0, 40, out)) + far * _smooth(0, 40, out))
+    hb = np.maximum(hb, far + mes)
+    b = K.bm('RR_Far~flat'); vc = {}
+    def V(i, j):
+        v = vc.get((i, j))
+        if v is None:
+            v = b.verts.new(T2B((float(Xb[i, j]), float(hb[i, j]), float(Zb[i, j])))); vc[(i, j)] = v
+        return v
+    for i in range(len(zs) - 1):
+        for j in range(len(xs) - 1):
+            if inside[i, j] and inside[i + 1, j + 1] and inside[i, j + 1] and inside[i + 1, j]:
+                continue
+            b.faces.new([V(i, j), V(i, j + 1), V(i + 1, j + 1), V(i + 1, j)][::-1])
