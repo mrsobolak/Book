@@ -695,3 +695,28 @@ def bvh_of(bm):
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     bm.normal_update()                       # FromBMesh hit normals are zero without this
     return BVHTree.FromBMesh(bm)
+
+
+def extrude_outline(loops, thick, F=None):
+    """solid from 2D loops (first = outline, rest = holes), thickness along local z centred on 0"""
+    from mathutils.geometry import tessellate_polygon
+    flat = [p for lp in loops for p in lp]
+    tris = tessellate_polygon([[Vector((p[0], p[1], 0.0)) for p in lp] for lp in loops])
+    n = len(flat)
+    verts = [Vector((p[0], p[1], -thick / 2)) for p in flat] + [Vector((p[0], p[1], thick / 2)) for p in flat]
+    faces = []
+    for (a, b, c) in tris:
+        faces.append((a, c, b)); faces.append((a + n, b + n, c + n))
+    base = 0
+    for lp in loops:
+        m = len(lp)
+        for i in range(m):
+            a = base + i; b = base + (i + 1) % m
+            faces.append((a, b, b + n, a + n))
+        base += m
+    bm = bm_from(verts, faces)
+    bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-7)
+    bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
+    if F is not None:
+        transform(bm, F)
+    return bm
