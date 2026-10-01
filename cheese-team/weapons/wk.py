@@ -104,8 +104,12 @@ def profile(outline, x0, x1, holes=(), taper=None):
         return (x1 + t) if side > 0 else (x0 - t)
     verts = [W(p[0], p[1], xa(p, -1)) for p in flat] + [W(p[0], p[1], xa(p, 1)) for p in flat]
     faces = []
-    for (a, b, c) in tris:
-        faces.append((a, b, c)); faces.append((a + n, c + n, b + n))
+    if len(loops) == 1:                      # single n-gon caps: no long thin triangles (clean bevels and shading)
+        m = len(loops[0])
+        faces.append(tuple(range(m))); faces.append(tuple(range(n, n + m))[::-1])
+    else:
+        for (a, b, c) in tris:
+            faces.append((a, b, c)); faces.append((a + n, c + n, b + n))
     base = 0
     for lp in loops:
         m = len(lp)
@@ -115,6 +119,8 @@ def profile(outline, x0, x1, holes=(), taper=None):
         base += m
     bm = bm_from(verts, faces)
     bmesh.ops.remove_doubles(bm, verts=bm.verts[:], dist=1e-7)
+    if len(loops) > 1:                       # merge the cap triangles back into n-gons where coplanar
+        bmesh.ops.dissolve_limit(bm, angle_limit=math.radians(0.5), verts=bm.verts[:], edges=bm.edges[:])
     bmesh.ops.recalc_face_normals(bm, faces=bm.faces[:])
     return bm
 
