@@ -271,22 +271,15 @@ def mrshotgun(P, T):
             specs.append((root, d, L, r, Vector((0, 0, -0.10)), 0.55))
         obs.append(clumps(P, 'Shotgun_Brow%s' % ('L' if sgn > 0 else 'R'), hair, specs, follow_face=0.005))
     # big bushy mutton chops: one soft domed mass per side (narrow at the temple, wide over the jaw corner, tufted
-    # lower edge), plus a few loose 3D tufts on the tips so the silhouette is hairy, not a flat sticker
-    chop_ol = [(0.196, 0.868), (0.199, 0.800), (0.199, 0.720), (0.198, 0.650), (0.191, 0.598), (0.174, 0.627), (0.157, 0.590),
+    # lower edge, combed strand grooves)
+    chop_ol = [(0.194, 0.868), (0.196, 0.800), (0.196, 0.720), (0.195, 0.650), (0.189, 0.598), (0.174, 0.627), (0.157, 0.590),
                (0.139, 0.623), (0.119, 0.597), (0.105, 0.630), (0.083, 0.626), (0.098, 0.655), (0.126, 0.676), (0.150, 0.700),
                (0.171, 0.734), (0.177, 0.780), (0.176, 0.825), (0.181, 0.868)]
-    tips = [(0.191, 0.598), (0.157, 0.590), (0.119, 0.597), (0.083, 0.626)]
     for sgn in (-1, 1):
         ol = [(sgn * x, z) for (x, z) in chop_ol]
         if sgn < 0:
             ol.reverse()
-        obs.append(A.puff('Shotgun_Chop%s' % ('L' if sgn > 0 else 'R'), P, ol, 0.024, hair, edge=0.026))
-        specs = []
-        for (x, z) in tips:
-            root, _ = face_point(P, sgn * (x + 0.012 * (1 if x > 0.12 else -0.5)), z + 0.030, 0.004)
-            d = Vector((sgn * (x - 0.15) * 4.0, -0.25, -1.0)).normalized()
-            specs.append((root, d, 0.040, 0.0105, Vector((-sgn * 0.3, -0.1, 0.1)), 0.6))
-        obs.append(clumps(P, 'Shotgun_ChopTufts%s' % ('L' if sgn > 0 else 'R'), hair, specs, follow_face=0.003))
+        obs.append(A.puff('Shotgun_Chop%s' % ('L' if sgn > 0 else 'R'), P, ol, 0.026, hair, edge=0.028, groove=0.0035, groove_slant=-0.35 * sgn))
     # shotgun shells pushed into the cheese holes, like a bandolier
     hull = A.mat_plain('M_ShellHull', '#b4231f', rough=0.38, col2='#8f1915', nscale=60, bump=0.05)
     brass = A.mat_metal('M_ShellBrass', '#d9a441', rough=0.28)

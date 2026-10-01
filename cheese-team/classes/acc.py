@@ -600,32 +600,54 @@ def drape(P, objs, check, n, band=0.065, maxd=0.04, clear=0.0025, bins=72, step=
     return sum(field) / bins, min(field), max(field)
 
 
-def puff(name, P, outline_xz, thick, mat, bone='spine_01', edge=0.022, res=0.0035, sink_edge=0.002, power=0.55, hole_clamp=True):
-    """a soft, domed cartoon shape (sideburns, patches) on the FRONT face: outline in (x, z), triangulated + refined,
-    each vertex lifted toward the viewer by thick * (dist_to_outline / edge) ** power; the rim is buried by sink_edge
-    so it grows out of the cheese with no visible seam. Holes under it are bridged (hole_clamp)."""
-    bm = bmesh.new()
-    V = [bm.verts.new((x, 0.0, z)) for (x, z) in outline_xz]
-    f = bm.faces.new(V)
-    bmesh.ops.triangulate(bm, faces=[f])
-    for _ in range(8):
-        long = [e for e in bm.edges if e.calc_length() > res]
-        if not long:
-            break
-        bmesh.ops.subdivide_edges(bm, edges=long, cuts=1, use_grid_fill=True)
-        bmesh.ops.triangulate(bm, faces=bm.faces[:])
-    bmesh.ops.beautify_fill(bm, faces=bm.faces[:], edges=bm.edges[:])
-    segs = [(Vector(outline_xz[i]), Vector(outline_xz[(i + 1) % len(outline_xz)])) for i in range(len(outline_xz))]
+def puff(name, P, outline_xz, thick, mat, bone='spine_01', edge=0.022, res=0.003, power=0.55, bury=0.004,
+         groove=0.0, groove_period=0.013, groove_slant=0.0, xlim=0.197, hole_clamp=True):
+    """a soft, domed cartoon mass (sideburns, beards, patches) on the FRONT face. A regular (x, z) grid over the
+    outline's bounds is lifted toward the viewer by thick * (signed_dist / edge) ** power inside the outline and
+    sunk `bury` into the cheese outside it, so the silhouette is the smooth line where it meets the face.
+    groove: depth of combed strand grooves running along z (slanted by groove_slant)."""
+    ol = [Vector(p) for p in outline_xz]
+    segs = [(ol[i], ol[(i + 1) % len(ol)]) for i in range(len(ol))]
     def dseg(p, a, b):
         ab = b - a; t = max(0.0, min(1.0, (p - a).dot(ab) / max(ab.length_squared, 1e-12)))
         return (p - (a + ab * t)).length
-    for v in bm.verts:
-        p2 = Vector((v.co.x, v.co.z))
-        d = min(dseg(p2, a, b) for a, b in segs)
-        h = thick * min(1.0, d / edge) ** power - sink_edge * max(0.0, 1.0 - d / (edge * 0.35))
-        loc, nor = P.hit((v.co.x, -1.0, v.co.z), (0, 1, 0))
-        y = loc.y if loc is not None else FRONT_Y
-        if hole_clamp and y > FRONT_Y + 0.003 and abs(v.co.x) < 0.186:
-            y = FRONT_Y
-        v.co = Vector((v.co.x, y - h, v.co.z))
+    def inside(p):
+        c = False
+        for a, b in segs:
+            if (a.y > p.y) != (b.y > p.y):
+                x = a.x + (p.y - a.y) * (b.x - a.x) / (b.y - a.y)
+                if p.x < x:
+                    c = not c
+        return c
+    x0 = min(p.x for p in ol) - 0.006; x1 = max(p.x for p in ol) + 0.006
+    z0 = min(p.y for p in ol) - 0.006; z1 = max(p.y for p in ol) + 0.006
+    x0 = max(x0, -xlim); x1 = min(x1, xlim)
+    nx = max(2, int((x1 - x0) / res) + 1); nz = max(2, int((z1 - z0) / res) + 1)
+    verts = []; keep = []
+    for i in range(nx + 1):
+        for j in range(nz + 1):
+            x = x0 + (x1 - x0) * i / nx; z = z0 + (z1 - z0) * j / nz
+            p = Vector((x, z)); d = min(dseg(p, a, b) for a, b in segs)
+            if inside(p):
+                h = thick * min(1.0, d / edge) ** power
+                if groove:
+                    g = 0.5 + 0.5 * math.sin(2 * PI * (x + groove_slant * (z1 - z)) / groove_period)
+                    h -= groove * g * min(1.0, d / edge)
+            else:
+                h = -bury * min(1.0, d / 0.004)
+            loc, nor = P.hit((x, -1.0, z), (0, 1, 0))
+            y = loc.y if loc is not None else FRONT_Y + 0.02
+            if hole_clamp and y > FRONT_Y + 0.003 and abs(x) < 0.186:
+                y = FRONT_Y
+            verts.append(Vector((x, y - h, z)))
+            keep.append(d < 0.006 or inside(p))
+    faces = []
+    for i in range(nx):
+        for j in range(nz):
+            q = i * (nz + 1) + j
+            idx = (q, q + nz + 1, q + nz + 2, q + 1)
+            if any(keep[k] for k in idx):
+                faces.append(idx)
+    bm = bm_from(verts, faces)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
     return make_obj(name, bm, mat, bone, smooth=True)
