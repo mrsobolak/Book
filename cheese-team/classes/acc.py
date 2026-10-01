@@ -369,15 +369,38 @@ def mat_hair(name, col, col2):
     return m
 
 
-def uv_cylinder(ob, axis_len=None):
-    """quick UVs for image materials: smart project"""
-    bpy.context.view_layer.objects.active = ob
-    for o in bpy.context.selected_objects:
-        o.select_set(False)
-    ob.select_set(True)
-    bpy.ops.object.mode_set(mode='EDIT'); bpy.ops.mesh.select_all(action='SELECT')
-    bpy.ops.uv.smart_project(angle_limit=1.15, island_margin=0.01)
-    bpy.ops.object.mode_set(mode='OBJECT')
+def uv_box(ob, scale=12.0):
+    """box-projected UVs straight from the mesh (no operators): u, v = metres * scale on the dominant axis plane"""
+    me = ob.data
+    uv = me.uv_layers.new(name='UVMap') if not me.uv_layers else me.uv_layers[0]
+    for p in me.polygons:
+        n = p.normal; ax = max(range(3), key=lambda i: abs(n[i]))
+        for li in p.loop_indices:
+            co = me.vertices[me.loops[li].vertex_index].co
+            if ax == 0:
+                uv.data[li].uv = (co.y * scale, co.z * scale)
+            elif ax == 1:
+                uv.data[li].uv = (co.x * scale, co.z * scale)
+            else:
+                uv.data[li].uv = (co.x * scale, co.y * scale)
+
+
+uv_cylinder = uv_box
+
+
+def ctx():
+    """an override with a real window/area, for operators run from scripts or the MCP socket"""
+    wm = bpy.context.window_manager
+    win = wm.windows[0] if wm.windows else None
+    d = {}
+    if win:
+        d['window'] = win; d['screen'] = win.screen
+        for a in win.screen.areas:
+            if a.type == 'VIEW_3D':
+                d['area'] = a
+                d['region'] = next((r for r in a.regions if r.type == 'WINDOW'), None)
+                break
+    return d
 
 
 def revolve(section, a, b, n=64, closed=True, zfn=None, sfn=None):
