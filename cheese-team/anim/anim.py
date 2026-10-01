@@ -413,7 +413,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     if moving:
         sw_k = H.get('sway', 1.0)
         bobv = Vector((0.004 * math.sin(2 * PI * t), 0, 0.006 * math.sin(4 * PI * t + 0.6))) * sw_k
-        grip += bobv; rot['yaw'] += 1.5 * math.sin(2 * PI * t)
+        grip += bobv; rot['yaw'] += 1.5 * sw_k * math.sin(2 * PI * t)
         if two:
             grip2 += Vector((-bobv.x, 0, 0.006 * math.sin(4 * PI * t + 2.2))); rot2['yaw'] -= 1.5 * math.sin(2 * PI * t)
     else:
