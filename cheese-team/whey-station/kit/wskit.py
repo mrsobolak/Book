@@ -268,9 +268,10 @@ class Kit:
             self.light(x, yl - 0.3, z, color, intensity, dist)
 
     def lamp_prop(self, x, y, z, color='#ffe7c2', intensity=1.6, dist=18):
-        """library lamp model hanging at height y (light just below it)"""
+        """library ceiling light (Poly Haven 'Mounted Fluorescent Lights', two strips) -- origin at its TOP,
+        so y is the ceiling height; the point light sits just below it"""
         self.prop('lamp', x, y, z)
-        self.light(x, y - 0.4, z, color, intensity, dist)
+        self.light(x, y - 0.35, z, color, intensity, dist)
 
     # ---------- helpers ----------
     @staticmethod

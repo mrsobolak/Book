@@ -139,7 +139,7 @@ def half(K, T):
     K.box('TF_Grate', -39.6, -4.02, -14.5, -5.4, -3.98, -13.5)                            # drain channel
     K.box('TF_Hazard', -40, -4.0, -15.8, -27.3, -3.99, -15.6); K.box('TF_Hazard', -16.7, -4.0, -15.8, -5.2, -3.99, -15.6)
     for (x, z) in ((-36, -14), (-30, -14), (-22, -19), (-12, -14)):
-        K.lamp_prop(x, -1.1, z, color='#cfe6ff', intensity=1.1, dist=11)
+        K.lamp_prop(x, -0.33, z, color='#e8f2ff', intensity=1.1, dist=11)
     K.light(-22, -2.0, -19.5, '#fff0d0', 0.9, 8)
     # chamber cover (library props)
     K.prop('crate', -25.8, -4.0, -20.8, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
@@ -152,7 +152,7 @@ def half(K, T):
     # brine pit dressing
     K.box('TF_Ceiling', -5, -0.33, -16, 0, -0.3, -8); K.box('TF_Ceiling', -5, -0.33, 8, 0, -0.3, 16)
     for z in (-12, 12):
-        K.lamp_prop(-2.5, -1.1, z, color='#cfe6ff', intensity=1.0, dist=10)
+        K.lamp_prop(-2.5, -0.33, z, color='#e8f2ff', intensity=1.0, dist=10)
 
 
 def middle(K):
