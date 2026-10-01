@@ -499,3 +499,56 @@ def sink(P, objs, normal, check, clear=0.0015, step=0.002, limit=0.08):
             break
         drop += step
     return drop
+
+
+def fit_hat(P, objs, check, pivot, u, v, n, rng_deg=8.0, step_deg=2.0, clear=0.002, span=0.08):
+    """seat a hat as low as it can go without clipping: tries tilts about the hat's own u/v axes (through pivot) and,
+    for each, binary-searches the offset along n where no `check` vertex enters the body. Applies the best one.
+    Returns (tilt_u_deg, tilt_v_deg, offset)."""
+    pivot = Vector(pivot); u = Vector(u).normalized(); v = Vector(v).normalized(); n = Vector(n).normalized()
+    pts = []
+    for ob in check:
+        mw = ob.matrix_world
+        for vv in ob.data.vertices:
+            w = mw @ vv.co
+            loc, nor, i, d = P.bvh.find_nearest(w)
+            if loc is not None and d < 0.06:          # only the part of the hat that can ever touch the head
+                pts.append(w)
+
+    def clips(R, s):
+        for w in pts:
+            p = pivot + R @ (w - pivot) + n * s
+            loc, nor, i, d = P.bvh.find_nearest(p)
+            if loc is not None and (p - loc).dot(nor) < clear:
+                return True
+        return False
+
+    best = None
+    k = int(round(rng_deg / step_deg))
+    for i in range(-k, k + 1):
+        for j in range(-k, k + 1):
+            R = (Matrix.Rotation(math.radians(i * step_deg), 3, u) @ Matrix.Rotation(math.radians(j * step_deg), 3, v))
+            lo, hi = -span, span
+            if clips(R, hi):
+                continue
+            for _ in range(13):
+                mid = 0.5 * (lo + hi)
+                if clips(R, mid):
+                    lo = mid
+                else:
+                    hi = mid
+            score = hi + 0.0004 * (abs(i) + abs(j))      # prefer small tilts when it barely matters
+            if best is None or score < best[0]:
+                best = (score, i * step_deg, j * step_deg, hi, R)
+    if best is None:
+        return None
+    _, a, b, s, R = best
+    M = Matrix.Translation(pivot + n * s) @ R.to_4x4() @ Matrix.Translation(-pivot)
+    for ob in objs:
+        mw = ob.matrix_world; inv = mw.inverted()
+        L = inv @ M @ mw
+        me = ob.data
+        for vv in me.vertices:
+            vv.co = L @ vv.co
+        me.update()
+    return a, b, s

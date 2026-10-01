@@ -255,8 +255,7 @@ def mrshotgun(P, T):
         xx = Vector((0, 0, 1)).cross(nrm).normalized(); yy = nrm.cross(xx)
         A.transform(st, A.frame_matrix(p, xx, yy, nrm))
         cap.append(A.make_obj('Shotgun_Stud%d' % k, A.transform(st, H), stud, 'spine_01'))
-    print('shotgun cap settle', A.settle(P, cap, Vector(H.col[2][:3]), clear=0.002, check=cap[:2] + [cap[2]]))
-    print('shotgun cap sink', A.sink(P, cap, Vector(H.col[2][:3]), check=cap[:3] + [o for o in cap if o.name.startswith('Shotgun_Bill')]))
+    print('shotgun cap fit', A.fit_hat(P, cap, cap[:3] + [o for o in cap if o.name == 'Shotgun_Bill'], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3]))
     obs += cap
     # hair: smooth, chunky cartoon clumps (matches the toon body; no stringy strands)
     hair = A.mat_plain('M_ShotgunHair', '#5e3b21', rough=0.55, col2='#432914', nscale=55, bump=0.04, bscale=180)
@@ -297,10 +296,11 @@ def mrshotgun(P, T):
     hull = A.mat_plain('M_ShellHull', '#b4231f', rough=0.38, col2='#8f1915', nscale=60, bump=0.05)
     brass = A.mat_metal('M_ShellBrass', '#d9a441', rough=0.28)
     prim = A.mat_metal('M_ShellPrimer', '#c9c2b6', rough=0.3)
-    for k, ((hx, hz), ax) in enumerate((((-0.140, 0.646), Vector((0.10, -1, 0.25))), ((0.039, 0.649), Vector((-0.05, -1, 0.30))),
-                                         ((0.123, 0.602), Vector((-0.15, -1, 0.35))))):
-        obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, Vector((hx, A.FRONT_Y, hz)), ax.normalized(), hull, brass, prim, depth=0.10)
-    for k, (y, z, ax) in enumerate(((-0.098, 0.643, Vector((-1, -0.25, 0.25))), (0.066, 0.795, Vector((-1, 0.1, 0.35))))):
+    # front: the centre hole and the low +x hole (the -x jaw hole is under the mutton chop), tipped so the red hulls show
+    for k, ((hx, hz), ax) in enumerate((((0.039, 0.649), Vector((-0.40, -0.80, 0.45))), ((0.123, 0.602), Vector((0.30, -0.85, -0.20))))):
+        obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, Vector((hx, A.FRONT_Y, hz)), ax.normalized(), hull, brass, prim, depth=0.18)
+    # -x side face: a row of three, like a bandolier
+    for k, (y, z, ax) in enumerate(((-0.098, 0.643, Vector((-1, -0.25, 0.25))), (-0.072, 0.776, Vector((-1, -0.15, 0.40))), (0.066, 0.795, Vector((-1, 0.1, 0.35))))):
         loc, nor = P.hit((-1.0, y, z), (1, 0, 0))
         obs += shotgun_shell(P, 'Shotgun_ShellS%d' % k, Vector((loc.x if loc is not None else -0.19, y, z)), ax.normalized(), hull, brass, prim, depth=0.2)
     return obs
