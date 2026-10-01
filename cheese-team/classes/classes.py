@@ -124,197 +124,6 @@ BUILDERS = {'Outlaw': outlaw}
 
 
 # ================================================================== helpers shared by several classes
-def face_point(P, x, z, off=0.0015):
-    """point on the front of the body at (x, z) (follows eyes, dents) pushed `off` toward the viewer"""
-    loc, nor = P.hit((x, -1.0, z), (0, 1, 0))
-    if loc is None:
-        return Vector((x, A.FRONT_Y - off, z)), Vector((0, -1, 0))
-    return loc + Vector((0, -off, 0)), nor
-
-
-def hair_tufts(P, name, mat, seeds, rng, bone='spine_01'):
-    """many tapered, curving tufts; seeds = [(root, direction, length, radius)]"""
-    bms = []
-    import bmesh
-    acc_bm = bmesh.new()
-    for (root, dirn, L, r) in seeds:
-        side = dirn.cross(Vector((0, -1, 0)))
-        if side.length < 1e-4:
-            side = Vector((1, 0, 0))
-        side.normalize()
-        curl = Vector((rng.uniform(-1, 1), rng.uniform(-0.6, 0.2), rng.uniform(-1, 0.3))) * 0.25
-        pts = [root + (dirn + curl * (i / 6) ** 2) .normalized() * L * (i / 6) for i in range(7)]
-        tb = A.tube(pts, lambda t, r=r: r * (1 - t) ** 0.9 + 0.0006, n=7, flat=0.75)
-        tmp = bpy.data.meshes.new('tmp'); tb.to_mesh(tmp); tb.free(); acc_bm.from_mesh(tmp); bpy.data.meshes.remove(tmp)
-    return A.make_obj(name, acc_bm, mat, bone)
-
-
-import bpy, random
-
-
-def shotgun_shell(P, name, base_pt, axis, hull, brass, prim, depth=0.6, L=0.064, R=0.0118):
-    """12-gauge style shell: red ribbed hull with crimp, brass head with rim + primer. base_pt on the surface,
-    axis pointing OUT of the cheese; the shell is pushed in by depth*L."""
-    import bmesh
-    z = axis.normalized(); x = z.cross(Vector((0, 0, 1)))
-    if x.length < 1e-3:
-        x = z.cross(Vector((1, 0, 0)))
-    x.normalize(); y = z.cross(x)
-    M = A.frame_matrix(base_pt - z * depth * L, x, y, z)       # local z=0 = crimp end (inside), z=L = brass head
-    obs = []
-    # hull: ribbed plastic tube with a crimped, slightly rounded end
-    ribs = lambda k, t, px, py, pz: (px * (1 + 0.035 * math.cos(t * 2 * PI * 16)), py * (1 + 0.035 * math.cos(t * 2 * PI * 16)), pz)
-    prof = [(0.55, 0.0), (0.85, 0.002), (0.97, 0.006), (1.0, 0.012), (1.0, L - 0.016), (1.0, L - 0.0145)]
-    bm = A.lathe(prof, R, R, n=48, cap_top=False, shape=ribs)
-    obs.append(A.make_obj(name + '_Hull', A.transform(bm, M), hull, 'spine_01'))
-    # brass head with rim and primer
-    prof = [(0.99, L - 0.016), (1.02, L - 0.016), (1.03, L - 0.004), (1.12, L - 0.0035), (1.13, L - 0.001), (1.1, L), (0.5, L + 0.0002), (0.0, L + 0.0002)]
-    bm = A.lathe(prof, R, R, n=48, cap_bottom=True, cap_top=True)
-    obs.append(A.make_obj(name + '_Head', A.transform(bm, M), brass, 'spine_01'))
-    bm = A.lathe([(1.0, L), (1.0, L + 0.0008), (0.7, L + 0.0012), (0.0, L + 0.0013)], R * 0.3, R * 0.3, n=20)
-    obs.append(A.make_obj(name + '_Primer', A.transform(bm, M), prim, 'spine_01'))
-    return obs
-
-
-# ================================================================== 2. MR. SHOTGUN
-def mrshotgun(P, T):
-    import bmesh
-    obs = []
-    rng = random.Random(7)
-    foam = A.mat_felt('M_TruckerFront', '#b3302a', '#9a2822', rough=0.7, fiber=0.25)
-    mesh = A.mat_image('M_TruckerMesh', 'trucker_mesh.png', rough=0.8, bump=0.0, scale=(1, 1, 1), tint='#efe7d6')
-    strap = A.mat_plain('M_Snapback', '#2b2a2a', rough=0.45, bump=0.02)
-    stud = A.mat_plain('M_SnapStud', '#ece7df', rough=0.3, bump=0.0)
-    # cap frame: on the top plane, turned 180 degrees so the bill points to the back, cocked a little
-    a, b = 0.172, 0.150
-    H = hat_frame(T, fwd=math.radians(-6), side=math.radians(4), lift=-0.010, shift=(-0.010, 0.006), pivot=(0, b, 0))
-    H = H @ Matrix.Rotation(PI, 4, 'Z')                 # local +y now points to the character's back
-    prof = [(1.0, 0.0), (0.995, 0.018), (0.975, 0.042), (0.935, 0.066), (0.86, 0.088), (0.74, 0.104), (0.56, 0.115), (0.33, 0.121), (0.0, 0.123)]
-    def raise_front(k, t, x, y, z):                     # trucker: tall flat-ish front panel (local -y = cap front)
-        f = max(0.0, -y / b) ** 2.0
-        return (x, y * (1.0 + 0.04 * f), z * (1.0 + 0.10 * f))
-    bm = A.lathe(prof, a, b, e=2.6, n=72, cap_bottom=False, shape=raise_front)
-    # snapback opening at the cap's back (local +y -> character front): delete low faces in the back sector
-    dele = []
-    for f in bm.faces:
-        c = f.calc_center_median()
-        ang = math.atan2(c.y, c.x)
-        if c.z < 0.040 and abs(ang - PI / 2) < 0.42:
-            dele.append(f)
-    bmesh.ops.delete(bm, geom=dele, context='FACES')
-    # split front (foam) / back (mesh) panels by local y
-    bm2 = bm.copy()
-    bmesh.ops.delete(bm, geom=[f for f in bm.faces if f.calc_center_median().y > -0.035], context='FACES')
-    bmesh.ops.delete(bm2, geom=[f for f in bm2.faces if f.calc_center_median().y <= -0.035], context='FACES')
-    cap = [A.make_obj('Shotgun_CapFoam', A.transform(bm, H), foam, 'spine_01', solid=0.004),
-           A.make_obj('Shotgun_CapMesh', A.transform(bm2, H), mesh, 'spine_01', solid=0.004)]
-    A.uv_box(cap[1], 30.0)
-    # panel seams + top button
-    seam = A.mat_plain('M_TruckerSeam', '#d9cfbd', rough=0.6, bump=0.0)
-    for k in range(6):
-        ang = k / 6 * 2 * PI + PI / 6
-        pts = []
-        for (s, z) in prof[1:-1]:
-            fz = max(0.0, -(b * s * math.sin(ang)) / b) ** 2.0
-            pts.append(Vector((a * s * math.cos(ang) * 1.002, b * s * math.sin(ang) * (1 + 0.04 * fz) * 1.002, z * (1 + 0.10 * fz) + 0.0035)))
-        if len(pts) > 2:
-            bm = A.tube(pts, 0.0014, n=6)
-            cap.append(A.make_obj('Shotgun_Seam%d' % k, A.transform(bm, H), seam, 'spine_01'))
-    bm = A.lathe([(1.0, 0.0), (1.0, 0.004), (0.7, 0.0075), (0.0, 0.0085)], 0.011, 0.011, n=24)
-    A.transform(bm, Matrix.Translation((0, 0, 0.123 + 0.002)))
-    cap.append(A.make_obj('Shotgun_Button', A.transform(bm, H), foam, 'spine_01'))
-    # bill: curved visor out of the cap's front (local -y), which is the character's back
-    verts = []; faces = []
-    nu, nv = 16, 8
-    for i in range(nu + 1):
-        u = i / nu * 2 - 1                                     # across
-        for j in range(nv + 1):
-            v = j / nv                                         # outwards
-            bx = u * (a * 0.86) * (1 - 0.18 * v ** 2)
-            by = -(b * 0.96) * math.sqrt(max(0.0, 1 - (bx / (a * 1.0)) ** 2)) - v * 0.125 * (1 - 0.55 * u * u)
-            bz = 0.006 - 0.022 * u * u - 0.014 * v * v
-            verts.append(Vector((bx, by, bz)))
-    for i in range(nu):
-        for j in range(nv):
-            q = i * (nv + 1) + j
-            faces.append((q, q + nv + 1, q + nv + 2, q + 1))
-    bm = A.bm_from(verts, faces)
-    cap.append(A.make_obj('Shotgun_Bill', A.transform(bm, H), foam, 'spine_01', solid=0.007))
-    # snapback strap across the opening, with studs
-    sp = []
-    for i in range(17):
-        t = i / 16; ang = PI / 2 - 0.40 + 0.80 * t
-        sp.append(Vector((a * 0.985 * math.cos(ang), b * 0.985 * math.sin(ang), 0.012)))
-    bm = A.ribbon(sp, 0.016, lambda t, tan: Vector((0, 0, 0)) + (Vector((sp[int(t * 16)].x / a, sp[int(t * 16)].y / b, 0)).normalized()))
-    cap.append(A.make_obj('Shotgun_Strap', A.transform(bm, H), strap, 'spine_01', solid=0.003))
-    for k in range(5):
-        ang = PI / 2 - 0.30 + 0.15 * k
-        p = Vector((a * 1.0 * math.cos(ang), b * 1.0 * math.sin(ang), 0.012))
-        nrm = Vector((math.cos(ang) / a, math.sin(ang) / b, 0)).normalized()
-        st = A.lathe([(1.0, 0.0), (1.0, 0.0012), (0.6, 0.0022), (0.0, 0.0025)], 0.0032, 0.0032, n=14)
-        xx = Vector((0, 0, 1)).cross(nrm).normalized(); yy = nrm.cross(xx)
-        A.transform(st, A.frame_matrix(p, xx, yy, nrm))
-        cap.append(A.make_obj('Shotgun_Stud%d' % k, A.transform(st, H), stud, 'spine_01'))
-    print('shotgun cap settle', A.settle(P, cap, Vector(H.col[2][:3]), clear=0.002, check=cap[:2]))
-    obs += cap
-    # ---- angry eyebrows: thick, slanted down to the middle, resting on the top of each googly eye
-    hair = A.mat_hair('M_ShotgunHair', '#4a2f1c', '#6b4429')
-    for (eye, sgn) in ((EYE_R, -1), (EYE_L, 1)):
-        pts = []
-        for i in range(13):
-            t = i / 12
-            x = eye.x - sgn * 0.045 + sgn * 0.11 * t                     # inner -> outer
-            z = eye.z + 0.050 + 0.030 * t - 0.012 * (1 - t) ** 2
-            p, _ = face_point(P, x, z, 0.004)
-            pts.append(p)
-        bm = A.tube(pts, lambda t: 0.0115 * (1 - 0.45 * t) + 0.002 * math.sin(t * PI), n=12, flat=0.55)
-        def fuzz(v):
-            return v + Vector((0, 0, 1)) * 0.0015 * noise.noise(v * 400.0)
-        A.displace(bm, fuzz)
-        obs.append(A.make_obj('Shotgun_Brow%s' % ('L' if sgn > 0 else 'R'), bm, hair, 'spine_01'))
-    # ---- big bushy mutton chops down both sides of the face, curling in toward the mouth
-    for sgn in (-1, 1):
-        seeds = []
-        # a solid base pad so it reads as one big mass
-        base_pts = []
-        for i in range(10):
-            t = i / 9
-            x = sgn * (0.192 - 0.075 * t ** 1.6); z = 0.80 - 0.18 * t
-            p, _ = face_point(P, x, z, 0.002)
-            base_pts.append(p)
-        bm = A.tube(base_pts, lambda t: 0.022 * math.sin(PI * (0.15 + 0.85 * t)) ** 0.6 + 0.006, n=12, flat=0.55)
-        pad = A.make_obj('Shotgun_ChopPad%s' % ('L' if sgn > 0 else 'R'), bm, hair, 'spine_01')
-        obs.append(pad)
-        for i in range(60):
-            t = rng.random()
-            x = sgn * (0.192 - 0.075 * t ** 1.6) + rng.uniform(-0.016, 0.016)
-            z = 0.80 - 0.18 * t + rng.uniform(-0.014, 0.014)
-            root, nor = face_point(P, x, z, -0.004)
-            dirn = Vector((sgn * rng.uniform(0.15, 0.6) * (1 - t) - sgn * 0.5 * t, rng.uniform(-0.7, -0.3), rng.uniform(-1.0, -0.4))).normalized()
-            seeds.append((root, dirn, rng.uniform(0.025, 0.05), rng.uniform(0.006, 0.010)))
-        obs.append(hair_tufts(P, 'Shotgun_Chops%s' % ('L' if sgn > 0 else 'R'), hair, seeds, rng))
-    # ---- shotgun shells pushed into the cheese holes, like a bandolier
-    hull = A.mat_plain('M_ShellHull', '#b4231f', rough=0.38, col2='#8f1915', nscale=60, bump=0.05)
-    brass = A.mat_metal('M_ShellBrass', '#d9a441', rough=0.28)
-    prim = A.mat_metal('M_ShellPrimer', '#c9c2b6', rough=0.3)
-    holes = [((-0.140, 0.646), Vector((0.10, -1, 0.25))), ((0.039, 0.649), Vector((-0.05, -1, 0.30))),
-             ((0.123, 0.602), Vector((-0.15, -1, 0.35)))]
-    for k, ((hx, hz), ax) in enumerate(holes):
-        loc, nor = P.hit((hx, -1.0, hz), (0, 1, 0))
-        base = Vector((hx, A.FRONT_Y, hz))
-        obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, base, ax.normalized(), hull, brass, prim, depth=0.45)
-    # two more in the big holes on the right side face
-    for k, (y, z, ax) in enumerate(((-0.098, 0.643, Vector((-1, -0.25, 0.25))), (0.066, 0.795, Vector((-1, 0.1, 0.35))))):
-        loc, nor = P.hit((-1.0, y, z), (1, 0, 0))
-        base = Vector((loc.x if loc is not None else -0.19, y, z))
-        obs += shotgun_shell(P, 'Shotgun_ShellS%d' % k, base, ax.normalized(), hull, brass, prim, depth=0.4)
-    return obs
-
-
-BUILDERS['MrShotgun'] = mrshotgun
-
-
-# ================================================================== helpers shared by several classes
 import bpy, random
 
 
@@ -368,10 +177,10 @@ def mrshotgun(P, T):
     mesh = A.mat_image('M_TruckerMesh', 'trucker_mesh.png', rough=0.8, bump=0.0, tint='#efe7d6')
     strap = A.mat_plain('M_Snapback', '#2b2a2a', rough=0.45, bump=0.02)
     stud = A.mat_plain('M_SnapStud', '#ece7df', rough=0.3, bump=0.0)
-    a, b = 0.172, 0.150
-    H = hat_frame(T, fwd=math.radians(-6), side=math.radians(4), lift=-0.010, shift=(-0.010, 0.006), pivot=(0, b, 0))
+    a, b = 0.214, 0.166
+    H = hat_frame(T, fwd=math.radians(7), side=math.radians(3), lift=-0.030, shift=(-0.004, -0.004), pivot=(0, 0, 0))
     H = H @ Matrix.Rotation(PI, 4, 'Z')                 # turned round: local -y (cap front) points to the character's back
-    prof = [(1.0, 0.0), (0.995, 0.018), (0.975, 0.042), (0.935, 0.066), (0.86, 0.088), (0.74, 0.104), (0.56, 0.115), (0.33, 0.121), (0.0, 0.123)]
+    prof = [(1.0, 0.0), (0.995, 0.016), (0.975, 0.036), (0.935, 0.056), (0.86, 0.074), (0.74, 0.087), (0.56, 0.096), (0.33, 0.101), (0.0, 0.103)]
     def raise_front(k, t, x, y, z):                     # trucker: tall, flatter front panel
         f = max(0.0, -y / b) ** 2.0
         return (x, y * (1.0 + 0.04 * f), z * (1.0 + 0.10 * f))
@@ -394,7 +203,7 @@ def mrshotgun(P, T):
         bm = A.tube(pts, 0.0014, n=6)
         cap.append(A.make_obj('Shotgun_Seam%d' % k, A.transform(bm, H), seam, 'spine_01'))
     bm = A.lathe([(1.0, 0.0), (1.0, 0.004), (0.7, 0.0075), (0.0, 0.0085)], 0.011, 0.011, n=24)
-    A.transform(bm, Matrix.Translation((0, 0, 0.125)))
+    A.transform(bm, Matrix.Translation((0, 0, 0.105)))
     cap.append(A.make_obj('Shotgun_Button', A.transform(bm, H), foam, 'spine_01'))
     verts = []; faces = []
     nu, nv = 16, 8
@@ -425,7 +234,7 @@ def mrshotgun(P, T):
     print('shotgun cap settle', A.settle(P, cap, Vector(H.col[2][:3]), clear=0.002, check=cap[:2]))
     obs += cap
     # angry eyebrows: thick, slanted down to the middle, resting on top of each googly eye
-    hair = A.mat_hair('M_ShotgunHair', '#4a2f1c', '#6b4429')
+    hair = A.mat_hair('M_ShotgunHair', '#5c3a20', '#8a5a33')
     for (eye, sgn) in ((EYE_R, -1), (EYE_L, 1)):
         pts = []
         for i in range(13):
@@ -434,26 +243,35 @@ def mrshotgun(P, T):
             z = eye.z + 0.050 + 0.030 * t - 0.012 * (1 - t) ** 2
             p, _ = face_point(P, x, z, 0.004)
             pts.append(p)
-        bm = A.tube(pts, lambda t: 0.0115 * (1 - 0.45 * t) + 0.002 * math.sin(t * PI), n=12, flat=0.55)
-        A.displace(bm, lambda v: v + Vector((0, 0, 1)) * 0.0015 * noise.noise(v * 400.0))
+        bm = A.tube(pts, lambda t: 0.019 * (1 - 0.35 * t) + 0.003 * math.sin(t * PI), n=14, flat=0.5)
+        A.displace(bm, lambda v: v + Vector((0, 0, 1)) * 0.002 * noise.noise(v * 300.0))
         obs.append(A.make_obj('Shotgun_Brow%s' % ('L' if sgn > 0 else 'R'), bm, hair, 'spine_01'))
+        seeds = []
+        for i in range(40):
+            t = rng.random(); p = pts[min(12, int(t * 12))]
+            root = p + Vector((rng.uniform(-0.006, 0.006), -0.004, rng.uniform(-0.008, 0.008)))
+            dirn = Vector((sgn * rng.uniform(0.6, 1.0), rng.uniform(-0.35, -0.1), rng.uniform(0.05, 0.5) * (1 if rng.random() < 0.7 else -1))).normalized()
+            seeds.append((root, dirn, rng.uniform(0.014, 0.026) * (1 - 0.3 * t), rng.uniform(0.005, 0.008)))
+        obs.append(hair_tufts(P, 'Shotgun_BrowTufts%s' % ('L' if sgn > 0 else 'R'), hair, seeds, rng))
     # big bushy mutton chops down both sides of the face, curling in toward the mouth
     for sgn in (-1, 1):
         base_pts = []
         for i in range(10):
             t = i / 9
-            p, _ = face_point(P, sgn * (0.192 - 0.075 * t ** 1.6), 0.80 - 0.18 * t, 0.002)
+            p, _ = face_point(P, sgn * (0.188 - 0.062 * t ** 2), 0.83 - 0.21 * t, 0.002)
             base_pts.append(p)
-        bm = A.tube(base_pts, lambda t: 0.022 * math.sin(PI * (0.15 + 0.85 * t)) ** 0.6 + 0.006, n=12, flat=0.55)
+        bm = A.tube(base_pts, lambda t: 0.026 * math.sin(PI * (0.12 + 0.80 * t)) ** 0.5 + 0.006, n=14, flat=0.5)
         obs.append(A.make_obj('Shotgun_ChopPad%s' % ('L' if sgn > 0 else 'R'), bm, hair, 'spine_01'))
         seeds = []
-        for i in range(60):
+        for i in range(150):
             t = rng.random()
-            x = sgn * (0.192 - 0.075 * t ** 1.6) + rng.uniform(-0.016, 0.016)
-            z = 0.80 - 0.18 * t + rng.uniform(-0.014, 0.014)
-            root, nor = face_point(P, x, z, -0.004)
-            dirn = Vector((sgn * rng.uniform(0.15, 0.6) * (1 - t) - sgn * 0.5 * t, rng.uniform(-0.7, -0.3), rng.uniform(-1.0, -0.4))).normalized()
-            seeds.append((root, dirn, rng.uniform(0.025, 0.05), rng.uniform(0.006, 0.010)))
+            w = 0.024 * math.sin(PI * (0.12 + 0.80 * t)) ** 0.5
+            x = sgn * (0.188 - 0.062 * t ** 2) + rng.uniform(-w, w)
+            x = sgn * min(abs(x), 0.192)
+            z = 0.83 - 0.21 * t + rng.uniform(-0.012, 0.012)
+            root, nor = face_point(P, x, z, -0.003)
+            dirn = Vector((sgn * rng.uniform(0.1, 0.45) - sgn * 0.55 * t, rng.uniform(-0.55, -0.25), rng.uniform(-1.0, -0.6))).normalized()
+            seeds.append((root, dirn, rng.uniform(0.022, 0.042) * (0.8 + 0.4 * math.sin(PI * t)), rng.uniform(0.008, 0.012)))
         obs.append(hair_tufts(P, 'Shotgun_Chops%s' % ('L' if sgn > 0 else 'R'), hair, seeds, rng))
     # shotgun shells pushed into the cheese holes, like a bandolier
     hull = A.mat_plain('M_ShellHull', '#b4231f', rough=0.38, col2='#8f1915', nscale=60, bump=0.05)
@@ -461,10 +279,10 @@ def mrshotgun(P, T):
     prim = A.mat_metal('M_ShellPrimer', '#c9c2b6', rough=0.3)
     for k, ((hx, hz), ax) in enumerate((((-0.140, 0.646), Vector((0.10, -1, 0.25))), ((0.039, 0.649), Vector((-0.05, -1, 0.30))),
                                          ((0.123, 0.602), Vector((-0.15, -1, 0.35))))):
-        obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, Vector((hx, A.FRONT_Y, hz)), ax.normalized(), hull, brass, prim, depth=0.45)
+        obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, Vector((hx, A.FRONT_Y, hz)), ax.normalized(), hull, brass, prim, depth=0.22)
     for k, (y, z, ax) in enumerate(((-0.098, 0.643, Vector((-1, -0.25, 0.25))), (0.066, 0.795, Vector((-1, 0.1, 0.35))))):
         loc, nor = P.hit((-1.0, y, z), (1, 0, 0))
-        obs += shotgun_shell(P, 'Shotgun_ShellS%d' % k, Vector((loc.x if loc is not None else -0.19, y, z)), ax.normalized(), hull, brass, prim, depth=0.4)
+        obs += shotgun_shell(P, 'Shotgun_ShellS%d' % k, Vector((loc.x if loc is not None else -0.19, y, z)), ax.normalized(), hull, brass, prim, depth=0.2)
     return obs
 
 
