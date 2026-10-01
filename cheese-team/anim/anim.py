@@ -291,7 +291,7 @@ HOLDS = {
     'rifle': dict(twist=-65, grip=Vector((-0.09, -0.27, 0.635)), rot=dict(yaw=65, pitch=0, roll=0),
                   relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, -0.2, -0.6))),
     'heavy': dict(twist=-55, grip=Vector((-0.12, -0.24, 0.635)), rot=dict(yaw=55, pitch=0, roll=0),
-                  relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, -0.2, -0.6))),
+                  relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, 0.0, -0.8))),
     # clipboard: held by its right edge, face tilted up toward the eyes (and the over-the-shoulder camera)
     'board': dict(twist=0, grip=Vector((-0.12, -0.30, 0.54)), rot=dict(yaw=180, pitch=35, roll=0),
                   lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
@@ -702,17 +702,21 @@ reload_smg = keyed([                                                 # left hand
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
 _VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
+RFREE = Vector((-0.30, -0.04, 0.50))                                 # right hand parked low at the back-right
+_LEVEL = dict(dg=(0.15, -0.05, -0.05), dr=(-55, 0, 0), tw=55)       # squared up, tube level and pointing ahead
 reload_launcher = keyed([                                            # left hand steadies it, right drops a rocket in the top
     (0.00, {}),
-    (0.12, dict(dg=(0.05, -0.15, -0.03), dr=(-30, 35, 0), tw=30, rh=Vector((-0.22, -0.22, 0.55)), rel=(-1, 0.3, -0.6))),
-    (0.26, dict(_VERT, lh=('w', 500, 0, 86), lel=(1, 0.2, -0.6))),
+    (0.07, dict(rh=RFREE, rel=(-1, 0.4, -0.3))),                                              # let go first
+    (0.17, dict(_LEVEL, lh=('w', 560, 0, 86), lel=(1, 0.2, -0.6))),                          # square up, palm on the tube
+    (0.28, dict(_VERT, lh=('w', 500, 0, 86))),                                                # stand it up
     (0.36, dict(rh=BELT_R, rel=(-1, 0.5, -0.2))),
     (0.42, dict()),
     (0.56, dict(rh=('w', 1064, 0, -86), rel=(-1, 0.2, -0.4))),                                # rocket over the muzzle
     (0.64, dict(rh=('w', 1004, 0, -86), dg=(0.15, -0.107, -0.12), ease=snap)),               # drop it in
     (0.70, dict(rh=('w', 1064, 0, -86), dg=(0.15, -0.107, -0.11))),
-    (0.86, dict(dg=(0.05, -0.15, -0.03), dr=(-30, 35, 0), tw=30, lh=None, rh=Vector((-0.22, -0.22, 0.55)))),
-    (0.94, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, rh='grip', rel=REL_T)),
+    (0.76, dict(rh=RFREE, rel=(-1, 0.4, -0.3))),
+    (0.84, dict(_LEVEL, lh=('w', 560, 0, 86))),
+    (0.94, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, lh=None, rh='grip', rel=REL_T, lel=(1, -0.2, -0.6))),
     (1.00, {}),
 ])
 
