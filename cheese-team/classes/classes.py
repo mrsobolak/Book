@@ -775,10 +775,10 @@ def mechanic(P, T):
     obs = []
     rng = random.Random(11)
     weld = A.mat_image('M_WelderCap', 'welder_pattern.png', rough=0.82, bump=0.12)
-    a, b = 0.212, 0.164
-    E = 3.3
-    H = hat_frame(T, fwd=math.radians(5), side=math.radians(2), lift=-0.030, shift=(-0.004, -0.006))
-    prof = [(1.0, 0.0), (0.995, 0.024), (0.97, 0.048), (0.92, 0.070), (0.84, 0.088), (0.72, 0.101), (0.55, 0.109), (0.31, 0.113), (0.0, 0.114)]
+    a, b = 0.172, 0.150                                          # small, snug welder's cap
+    E = 2.6
+    H = hat_frame(T, fwd=math.radians(-6), side=math.radians(4), lift=-0.020, shift=(-0.022, -0.026))
+    prof = [(1.0, 0.0), (0.995, 0.020), (0.975, 0.040), (0.935, 0.058), (0.87, 0.074), (0.77, 0.087), (0.62, 0.096), (0.40, 0.101), (0.0, 0.103)]
     bm = A.lathe(prof, a, b, e=E, n=96, cap_bottom=False)
     lin = bm.copy(); A.transform(lin, Matrix.Diagonal((0.975, 0.975, 0.975, 1.0)))
     lathe_uv(bm, rep_u=3.0, v_scale=4.2)
@@ -798,10 +798,11 @@ def mechanic(P, T):
         u = i / nu * 2 - 1
         for j in range(nv + 1):
             v = j / nv
-            bx = u * a * 0.62
+            bx = u * a * 0.70
             by0 = -b * math.sqrt(max(0.0, 1 - abs(bx / a) ** E)) ** (2.0 / E) * 0.985
-            by = by0 - v * 0.040 * (1 - 0.6 * u * u) * math.cos(math.radians(38))
-            bz = 0.004 + v * 0.040 * (1 - 0.6 * u * u) * math.sin(math.radians(38)) - 0.006 * u * u
+            ln = 0.056 * (1 - 0.55 * u * u)                       # short brim flipped right up
+            by = by0 - v * ln * math.cos(math.radians(62))
+            bz = 0.004 + v * ln * math.sin(math.radians(62)) - 0.004 * u * u
             verts.append(Vector((bx, by, bz)))
     for i in range(nu):
         for j in range(nv):
@@ -811,8 +812,8 @@ def mechanic(P, T):
     uvl = bm.loops.layers.uv.new('UVMap')
     for f in bm.faces:
         for lp in f.loops:
-            lp[uvl].uv = (lp.vert.co.x * 14.0, lp.vert.co.y * 14.0)
-    cap.append(A.make_obj('Mech_Brim', A.transform(bm, H), A.mat_felt('M_MechBrim', '#1d7179', '#185f66', rough=0.8, fiber=0.3), 'spine_01', solid=0.004))
+            lp[uvl].uv = (lp.vert.co.x * 3.2 + 0.5, lp.vert.co.z * 3.2 + 0.1)
+    cap.append(A.make_obj('Mech_Brim', A.transform(bm, H), weld, 'spine_01', solid=0.004))
     pts = [Vector((verts[i * (nv + 1) + nv].x, verts[i * (nv + 1) + nv].y, verts[i * (nv + 1) + nv].z)) for i in range(nu + 1)]
     bm = A.tube(pts, 0.0024, n=8)                                  # bound brim edge
     cap.append(A.make_obj('Mech_BrimEdge', A.transform(bm, H), seam, 'spine_01'))
@@ -833,17 +834,18 @@ def mechanic(P, T):
     bun = A.sphere((0, 0, 0), 1.0, seg=40, rings_=22)
     def crumple(p):
         q = Vector(p)
-        ridge = 1.0 - abs(noise.noise(q * 2.6 + Vector((3, 1, 7))))          # sharp fold creases
-        f = 0.86 + 0.30 * ridge ** 3 + 0.06 * noise.noise(q * 6.0)
-        return Vector((q.x * 0.044 * f, q.y * 0.032 * f, q.z * 0.040 * f))
+        f = 1.0 + 0.16 * noise.noise(q * 1.7 + Vector((3, 1, 7))) + 0.05 * noise.noise(q * 4.0)   # soft folds
+        return Vector((q.x * 0.040 * f, q.y * 0.026 * f, q.z * 0.038 * f))
     A.displace(bun, crumple)
     A.transform(bun, Matrix.Translation(hc + Vector((0.002, 0.004, 0.004))))
-    obs.append(A.make_obj('Mech_RagBunch', bun, rag, 'spine_01', subsurf=1))
+    obs.append(A.make_obj('Mech_RagBunch', bun, ragt, 'spine_01', subsurf=2))
+    A.uv_box(obs[-1], 8.0)
     for k, (dx, dz, tw) in enumerate(((-0.030, 0.034, 0.7), (0.020, 0.040, -0.5))):    # two cloth corners poking out
         pts = [hc + Vector((dx * t, -0.022 - 0.010 * t, 0.010 + dz * t)) for t in [i / 6 for i in range(7)]]
         bm = A.ribbon(pts, lambda t: 0.030 * (1 - t) ** 0.9 + 0.002, lambda t, tan: Vector((0, -1, 0.3 * tw)).normalized())
         A.displace(bm, lambda p: p + Vector((0, -1, 0)) * 0.003 * noise.noise(p * 90.0))
-        obs.append(A.make_obj('Mech_RagCorner%d' % k, bm, rag, 'spine_01', solid=0.0022, subsurf=1))
+        obs.append(A.make_obj('Mech_RagCorner%d' % k, bm, ragt, 'spine_01', solid=0.0022, subsurf=2))
+        A.uv_box(obs[-1], 8.0)
     # tail: a cloth strip from the bunch draping down the face, folds across it, frayed end
     nu, nv = 12, 18
     verts = []; faces = []; ruv = []
@@ -872,8 +874,8 @@ def mechanic(P, T):
     obs.append(A.make_obj('Mech_RagTail', bm, ragt, 'spine_01', solid=0.0025, subsurf=1))
     # big combination wrench clipped flat to the +x side face, under the shoulder
     steel = A.mat_metal('M_WrenchSteel', '#c9ccd2', rough=0.22, scratches=0.8)
-    cz, cy = 0.630, 0.018
-    ang = math.radians(8)
+    cz, cy = 0.740, 0.030
+    ang = math.radians(48)
     # the side face is yawed (the wedge narrows to the back): fit its plane, skipping the arm stick
     pts = []
     for yy in (-0.10, -0.07, -0.04, 0.04, 0.07, 0.10, 0.12):
@@ -894,7 +896,7 @@ def mechanic(P, T):
     sx = ka * cy + kb * cz + kc
     base = Vector((sx, cy, cz))
     wt = 0.0092
-    wk = 1.16                                                     # big wrench (fills the side face)
+    wk = 1.50                                                     # BIG wrench: box end pokes above the wedge outline
     F = A.frame_matrix((base + Z * (wt / 2 + 0.0004)), X, Y, Z)
     wb = wrench_mesh(F, thick=wt, k=wk)
     w = A.make_obj('Mech_Wrench', wb, steel, 'spine_01')
