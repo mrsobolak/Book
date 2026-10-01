@@ -920,6 +920,76 @@ def boltrifle():
 BUILDERS['BoltRifle'] = boltrifle
 
 
+# ================================================================== 8. VARMINT RIFLE (Mr. Faraway, secondary)
+def leverrifle():
+    blued = wk.steel('M_LvBlued', base='#17191d', bare='#a9acb1', rough=0.3, wear=1.2, scratch=0.9, edge_gain=10.0)
+    blued_dk = wk.steel('M_LvBluedDk', base='#101114', bare='#999ca1', rough=0.34, wear=0.8, scratch=0.5, edge_gain=10.0)
+    blond = wk.wood('M_LvBlond', light='#d9b27a', dark='#a87a44', rough=0.42, ring=22.0, axis='Y', grain=0.5, wear=0.6)
+    strap = webbing('M_LvStrap', '#ff4a00')
+    # ---- receiver (flat-sided, rounded top), loading gate, lever, hammer
+    rc = rounded([(-14, 16, 6), (96, 16, 4), (100, 12, 2), (100, -16, 3), (94, -22, 2), (2, -22, 2), (-14, -12, 6)], n=8)
+    recv = make('Lv_Receiver', profile(rc, -10.5, 10.5), blued, bevel=0.0018, seg=5)
+    cut(recv, box(W(60, -2, -10.5), (0.0020, 0.030, 0.010)), 'gate')
+    make('Lv_LoadingGate', profile(rounded([(48, -7, 2), (76, -7, 2), (76, 3, 2), (48, 3, 2)]), -11.2, -10.0), blued_dk, bevel=0.0004)
+    for (u, v) in ((10, -6), (84, -12)):
+        for sd in (1, -1):
+            wk.screw(W(u, v, sd * 10.5), Vector((sd, 0, 0)), r=0.0018, mat=blued_dk, name='Lv_Screw', slot_ang=u * 0.1)
+    hm = rounded([(-8, 10, 1.5), (-10, -2, 2), (-18, -6, 3), (-24, 4, 3), (-28, 16, 3), (-34, 22, 2), (-30, 26, 2), (-20, 18, 3)], n=6)
+    make('Lv_Hammer', profile(hm, -3.0, 3.0), blued_dk, bevel=0.0005)
+    # lever loop (finger loop + trigger)
+    lp = [W(90, -22, 0), W(84, -38, 0), W(60, -44, 0), W(18, -42, 0), W(-6, -40, 0), W(-26, -50, 0), W(-36, -74, 0), W(-20, -96, 0),
+          W(4, -92, 0), W(10, -70, 0), W(2, -52, 0), W(-2, -34, 0)]
+    make('Lv_Lever', tube(wk.spline(lp, 6), 0.0040, n=16, flat=0.55), blued)
+    make('Lv_Trigger', profile(rounded([(30, -22, 0), (29, -30, 2), (25, -38, 2), (22.5, -38, 1.5), (25.5, -30, 2), (26, -22, 0)]), -2.4, 2.4),
+         blued_dk, bevel=0.0004)
+    # ---- thin barrel + tube magazine underneath, barrel band, sights
+    BV = 4.0; MV = -11.0
+    bo = make('Lv_Barrel', lathe([(8.0, 98.0), (8.0, 120.0), (7.0, 160.0), (6.6, 520.0), (6.6, 522.0)], n=40, axis_v=BV), blued)
+    cut(bo, cyl(W(480, BV, 0), W(530, BV, 0), 0.0029, n=24), 'bore')
+    make('Lv_MagTube', lathe([(5.6, 100.0), (5.6, 500.0)], n=32, axis_v=MV), blued)
+    make('Lv_MagCap', lathe([(0, 500.0), (5.9, 500.0), (5.9, 512.0), (5.0, 514.0), (0, 514.5)], n=32, axis_v=MV), blued_dk, bevel=0.0003)
+    for u in (300.0, 495.0):
+        bd = rounded([(u - 5, BV + 8, 3), (u + 5, BV + 8, 3), (u + 5, MV - 7, 3), (u - 5, MV - 7, 3)])
+        band = make('Lv_Band', profile(bd, -8.0, 8.0), blued, bevel=0.0012)
+        cut(band, cyl(W(u - 10, BV, 0), W(u + 10, BV, 0), 0.0067, n=32), 'b'); cut(band, cyl(W(u - 10, MV, 0), W(u + 10, MV, 0), 0.0057, n=32), 'm')
+    fs = rounded([(500, BV + 6, 0), (512, BV + 6, 0), (510, BV + 14, 2), (504, BV + 14, 2)])
+    make('Lv_FrontSight', profile(fs, -1.2, 1.2), blued_dk, bevel=0.0003)
+    make('Lv_FrontBead', sphere(W(507, BV + 14.5, 0), 0.0012, seg=12, rings=6), wk.steel('M_LvBead', base='#d8c27a', bare='#e8d89a', rough=0.25))
+    rs = rounded([(180, BV + 5, 0), (200, BV + 5, 0), (200, BV + 13, 1.5), (180, BV + 11, 1.5)])
+    rso = make('Lv_RearSight', profile(rs, -5.5, 5.5), blued_dk, bevel=0.0004)
+    cut(rso, box(W(190, BV + 13, 0), (0.030, 0.0030, 0.0040)), 'notch')
+    # ---- blond wood forend + buttstock with straight wrist
+    fe = [(102, 3, -20, 11.0), (140, 2, -20, 11.5), (260, 0, -19, 11.0), (296, -1, -18, 10.0)]
+    stock_loft('Lv_Forend', fe, blond, e=2.6)
+    bt = [(-12, 10, -20, 11.0), (-40, 10, -30, 11.5), (-90, 10, -44, 13.0), (-160, 12, -70, 15.5), (-240, 15, -92, 17.5),
+          (-300, 17, -104, 18.5), (-312, 17, -106, 18.5)]
+    stock_loft('Lv_Butt', bt, blond, e=2.5)
+    make('Lv_ButtPlate', profile(rounded([(-318, 18, 4), (-311, 18, 2), (-311, -107, 3), (-318, -107, 6)], n=6), -18.6, 18.6), blued, bevel=0.0018)
+    # ---- blaze-orange strap on the stock (wrapped round the butt, buckle)
+    rings = []
+    for j in range(7):
+        uu = -210 + j * 5.5
+        vt = 15.0 + 2.0 * (uu + 160) / -80; vb = -70 - 22 * (uu + 160) / -80
+        hw = 15.5 + 2.0 * (uu + 160) / -80
+        vc = (vt + vb) / 2; hv = (vt - vb) / 2 + 1.4
+        ring = []
+        for i in range(48):
+            th = 2 * PI * i / 48
+            c_, s_ = math.cos(th), math.sin(th)
+            px = math.copysign(abs(c_) ** (2 / 2.5), c_); py = math.copysign(abs(s_) ** (2 / 2.5), s_)
+            ring.append(W(uu, vc + hv * py, (hw + 1.4) * px))
+        rings.append(ring)
+    make('Lv_Strap', wk.loft(rings, closed=True, uvs=[(i / 48 * 4, j / 6) for j in range(7) for i in range(48)]), strap, solid=0.0015)
+    bk = rounded([(-206, 4, 2), (-186, 4, 2), (-186, -22, 2), (-206, -22, 2)])
+    bko = make('Lv_Buckle', profile(bk, -18.9, -17.6), wk.steel('M_LvBuckle', base='#7a7d82', bare='#c0c3c7', rough=0.3), bevel=0.0005)
+    cut(bko, box(W(-196, -9, -18.2), (0.012, 0.020, 0.004)), 'win')
+    PIVOT['LeverRifle'] = (-20.0, -40.0)
+    return 'LeverRifle'
+
+
+BUILDERS['LeverRifle'] = leverrifle
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
