@@ -540,7 +540,7 @@ BUILDERS['RocketGuy'] = rocketguy
 
 
 # ================================================================== 4. SNIPER
-def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.138, D=0.084, yc=-0.004, min_z=0.808):
+def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.100, D=0.125, yc=-0.084, min_z=0.700):
     """quilted ear flap hanging from the cap band down the side face (sgn=+1: character's left, +x)"""
     import bmesh
     # where the cap band sits on this side: lowest cap point per y slice
@@ -560,7 +560,8 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.138, D=0.084, yc=-0.004, min_
     def side_x(y, z):
         loc, nor = P.hit((sgn * 1.0, y, z), (-sgn, 0, 0))
         return abs(loc.x) if loc is not None else 0.205
-    D = min(D, min(rim_z(yc - W / 2), rim_z(yc + W / 2)) + 0.014 - min_z)   # stay above the shoulder (arm sticks)
+    D = min(D, min(rim_z(yc - W / 2), rim_z(yc + W / 2)) + 0.014 - min_z)
+    # (the flap sits on the front half of the side face, ahead of the shoulder: the arm stick never reaches it)
     nu, nv = 22, 18
     verts = []; faces = []; uvs = []
     for j in range(nv + 1):
