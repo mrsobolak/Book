@@ -203,6 +203,33 @@ def _seg_hits_tree(tree, p0, p1, r):
     return bool(tree.overlap(BVHTree.FromPolygons(verts, faces)))
 
 
+def acc_tree_rest(rig):
+    """hats / face accessories (skinned to the wedge) as a BVH in REST char space, built once per rig"""
+    if getattr(rig, '_acc_rest', 'none') != 'none':
+        return rig._acc_rest
+    rig._acc_rest = None
+    if not rig.acc:
+        return None
+    rig.arm.data.pose_position = 'REST'; bpy.context.view_layer.update()
+    C = (rig.arm.matrix_world @ Matrix.Scale(100.0, 4)).inverted()
+    dg = bpy.context.evaluated_depsgraph_get()
+    verts = []; polys = []
+    for o in rig.acc:
+        gi = {g.index: g.name for g in o.vertex_groups}
+        ev = o.evaluated_get(dg); me = ev.to_mesh(); M = C @ o.matrix_world
+        keep = set()
+        for v in o.data.vertices:
+            ws = {gi.get(g.group): g.weight for g in v.groups}
+            if ws and max(ws, key=ws.get) in ('spine_01', 'aim'):
+                keep.add(v.index)
+        base = len(verts); verts += [M @ v.co for v in me.vertices]
+        polys += [tuple(base + i for i in p.vertices) for p in me.polygons if all(i in keep for i in p.vertices)]
+        ev.to_mesh_clear()
+    rig.arm.data.pose_position = 'POSE'; bpy.context.view_layer.update()
+    rig._acc_rest = BVHTree.FromPolygons(verts, polys) if polys else None
+    return rig._acc_rest
+
+
 def arm_ik(rig, side, target, pole, b3, wtree=None):
     """two-bone arm IK whose elbow swings around the shoulder->hand axis (nearest to `pole` first) until both
     sticks clear the wedge (and the held weapon, if a char-space BVH is given). target is char space."""
@@ -225,6 +252,9 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
         Sa = S + (E - S).normalized() * 0.05             # the stick roots into the wedge side at the shoulder
         nh = sum(_seg_hits_box(q0, q1, lo_ - Vector((ARM_R,) * 3), hi_ + Vector((ARM_R,) * 3))
                  for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
+        atree = acc_tree_rest(rig)
+        if nh == 0 and atree is not None:
+            nh = 5 * (_seg_hits_tree(atree, Sa, E, ARM_R) + _seg_hits_tree(atree, E, W, ARM_R))
         if nh == 0 and wtree is not None:
             Ep, Wp, Sp = (rig.C(back @ rig.A(q)) for q in (E, W, Sa))
             Wc = Wp - (Wp - Ep).normalized() * 0.026          # the stick ends inside the hand ball, which holds the gun
