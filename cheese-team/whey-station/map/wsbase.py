@@ -40,7 +40,7 @@ def base(K, T):
     K.slab('TF_Floor', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
     K.slab('Conc', 0, -24, 12, -6, -0.3, 0.0, holes=[(1.33, -10, 7.0, -8)])     # south stair hall
     K.slab('Hangar', 10, -6, 24, 20, -0.3, 0.0)                                 # loading yard
-    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.8, 30.0, -13.6)])   # flag room
+    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.8, 30.0, -12.2)])   # flag room (hatch opening = full tunnel width)
     K.slab('AntiSlip', 30, -24, 36, -6, -0.3, 0.0)                              # packing corridor
     K.slab('TF_Floor', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
     K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, col=False)                   # roof
@@ -99,7 +99,7 @@ def base(K, T):
     K.box('TF_Grate', 12.4, -4.02, -13.6, 35.8, -3.98, -12.6)
     # tunnel ceilings (under the slabs above) -- with the stair openings left open
     K.slab('TF_Ceiling', 0, -16, 12, -6, -0.33, -0.3, holes=[(1.33, -10, 7.0, -8)], col=False)
-    K.slab('TF_Ceiling', 12, -16, 36, -12, -0.33, -0.3, holes=[(24.33, -15.8, 30.0, -13.6)], col=False)
+    K.slab('TF_Ceiling', 12, -16, 36, -12, -0.33, -0.3, holes=[(24.33, -15.8, 30.0, -12.2)], col=False)
     K.box('TF_Hazard', 0.2, -4.0, -15.8, 11.8, -3.99, -15.6)                           # floor edge stripes
     K.box('TF_Hazard', 12.0, -4.0, -15.8, 35.8, -3.99, -15.6)
     for (d, z) in ((4, -11), (17, -14), (24, -14), (33, -14)):
@@ -110,7 +110,7 @@ def base(K, T):
     K.area('Brine Tunnel', 0, -16, 36, -6, -4, team=T, kind='tunnel')
     # hatch stair from the tunnel up into the flag room
     P.stairs(30.0, -14.7, PI, 2.0, -4.0, 0.0, kind='steel')                       # clear of the tunnel wall (face at -15.8)
-    P.rail(24.33, -13.5, 29.8, -13.5, 0.0); P.rail(24.33, -15.95, 29.8, -15.95, 0.0)
+    P.rail(24.33, -12.1, 29.8, -12.1, 0.0); P.rail(29.9, -15.8, 29.9, -12.2, 0.0); P.rail(24.33, -15.95, 29.8, -15.95, 0.0)
     # ---------------- Loading Yard (hub) ----------------
     K.wall2('x', 10, 30, -6, WT, 0, 10, holes=[(14, 18, 0, 3.2)])
     P.opening('x', 14, 18, -6, WT, 0, 3.2, mat=tm('SteelT'))
