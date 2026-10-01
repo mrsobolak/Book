@@ -1093,7 +1093,7 @@ def heavy(P, T):
     band = A.mat_plain('M_HeavyBand', '#3a2416', rough=0.5, col2='#26170e', nscale=160, bump=0.25, bscale=420)
     silver = A.mat_metal('M_HeavyBuckle', '#dcd8cf', rough=0.2)
     a, b = 0.128, 0.142
-    H = hat_frame(T, fwd=math.radians(-4), side=math.radians(-2), lift=-0.004, shift=(0.004, 0.004))
+    H = hat_frame(T, fwd=math.radians(-4), side=math.radians(-9), lift=-0.004, shift=(0.010, 0.004))
     hat = []
     # crown: tall cattleman crown, slightly tapered, rounded top edge
     crown = [(1.0, -0.012), (1.0, 0.0), (0.985, 0.04), (0.965, 0.08), (0.94, 0.12), (0.915, 0.155), (0.895, 0.178), (0.87, 0.192),
@@ -1147,38 +1147,53 @@ def heavy(P, T):
         z0 = MOUTH.z + 0.006
         for i in range(31):
             t = i / 30
-            x = MOUTH.x + sgn * (0.004 + 0.118 * t)
-            z = z0 + 0.003 - 0.016 * math.sin(PI * min(1.0, t / 0.8) * 0.85) + 0.040 * max(0.0, t - 0.7) ** 1.6
+            x = MOUTH.x + sgn * (0.004 + 0.128 * t)
+            z = z0 + 0.004 - 0.020 * math.sin(PI * min(1.0, t / 0.8) * 0.85) + 0.050 * max(0.0, t - 0.68) ** 1.5
             pts.append(Vector((x, 0.0, z)))
         end = pts[-1]
         for i in range(1, 13):                                          # the curl: up, then back in over itself
-            th = PI * 1.25 * i / 12
-            r = 0.013 * (1 - 0.35 * i / 12)
+            th = PI * 1.3 * i / 12
+            r = 0.018 * (1 - 0.35 * i / 12)
             pts.append(end + Vector((sgn * (r * math.sin(th)), 0.0, r * (1 - math.cos(th)))))
         out = []
         for p in pts:
             loc, nor = P.hit((p.x, -1.0, p.z), (0, 1, 0))
             y = min(loc.y if loc is not None else A.FRONT_Y, A.FRONT_Y)
-            out.append(Vector((p.x, y - 0.010, p.z)))
+            out.append(Vector((p.x, y - 0.014, p.z)))
         L = len(out)
         bmh = bmesh.new()
-        for k, (dz, dy, rs) in enumerate(((0.0, 0.0, 1.0), (0.0065, 0.002, 0.72), (-0.0065, 0.002, 0.72), (0.0, -0.005, 0.70))):
+        for k, (dz, dy, rs) in enumerate(((0.0, 0.0, 1.0), (0.0095, 0.003, 0.72), (-0.0095, 0.003, 0.72), (0.0, -0.007, 0.70))):
             path = [q + Vector((0, dy, dz * (1 - i / L))) for i, q in enumerate(out)]
-            tb = A.tube(path, lambda t, rs=rs: rs * (0.0175 * (1 - t) ** 0.85 + 0.0012) * min(1.0, 0.55 + t * 9), n=12, flat=0.72,
+            tb = A.tube(path, lambda t, rs=rs: rs * (0.0255 * (1 - t) ** 0.85 + 0.0015) * min(1.0, 0.55 + t * 9), n=12, flat=0.72,
                         up=Vector((0, -1, 0)))
             tmp = bpy.data.meshes.new('tmp'); tb.to_mesh(tmp); tb.free(); bmh.from_mesh(tmp); bpy.data.meshes.remove(tmp)
         obs.append(A.make_obj('Heavy_Moustache%s' % ('L' if sgn > 0 else 'R'), bmh, hair, 'spine_01', subsurf=1))
     # gold sheriff's star stuck on the wedge (lower +x cheek), slightly askew
     gold = A.mat_metal('M_SheriffGold', '#e2b54a', rough=0.22, scratches=0.6)
     goldd = A.mat_metal('M_SheriffGoldDark', '#b8892e', rough=0.35, scratches=0.4)
-    cx, cz, R = 0.128, 0.633, 0.040
+    R = 0.050
     rot = math.radians(12)
+    import numpy as np
+    pts = []
+    for yy in (-0.11, -0.09, -0.07, -0.05, -0.03):
+        for zz in (0.62, 0.66, 0.70):
+            loc, nor = P.hit((1.0, yy, zz), (-1, 0, 0))
+            if loc is not None and loc.x < 0.22:
+                pts.append(loc)
+    M_ = np.array([[p.y, p.z, 1.0] for p in pts]); rhs = np.array([p.x for p in pts])
+    (ka, kb, kc), *_ = np.linalg.lstsq(M_, rhs, rcond=None)
+    Zs = Vector((1.0, -ka, -kb)).normalized()
+    up = (Vector((0, 0, 1)) - Zs * Zs.z).normalized(); fw = up.cross(Zs).normalized()
+    if fw.y > 0:
+        fw = -fw                                                     # toward the front
+    cy_, cz_ = -0.066, 0.664
+    cxs = ka * cy_ + kb * cz_ + kc
     star = []
     for i in range(12):
         ang = PI / 2 + rot + 2 * PI * i / 12
         r = R if i % 2 == 0 else R * 0.56
         star.append((r * math.cos(ang), r * math.sin(ang)))
-    front = A.frame_matrix(Vector((cx, A.FRONT_Y - 0.0028, cz)), Vector((-1, 0, 0)), Vector((0, 0, 1)), Vector((0, -1, 0)))
+    front = A.frame_matrix(Vector((cxs, cy_, cz_)) + Zs * 0.0028, fw, up, Zs)
     st = A.extrude_outline([star], 0.0040, front)
     so = A.make_obj('Heavy_Star', st, gold, 'spine_01')
     bv = so.modifiers.new('bevel', 'BEVEL'); bv.width = 0.0012; bv.segments = 2; bv.limit_method = 'ANGLE'
