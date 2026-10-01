@@ -234,12 +234,14 @@ def decal(name, P, outline_uv, frame, direction, mat, bone='spine_01', off=0.001
         bmesh.ops.subdivide_edges(bm, edges=long, cuts=1, use_grid_fill=True)
         bmesh.ops.triangulate(bm, faces=bm.faces[:])
     d = Vector(direction).normalized()
-    keep = True
+    miss = []
     for v in bm.verts:
         loc, nor = P.hit(v.co - d * 0.2, d)
         if loc is None:
-            keep = False; continue
+            miss.append(v); continue
         v.co = loc - d * off + nor * off
+    if miss:                                   # never leave floating bits where the rays missed the body
+        bmesh.ops.delete(bm, geom=miss, context='VERTS')
     ob = make_obj(name, bm, mat, bone, smooth=True)
     return ob
 

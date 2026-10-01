@@ -748,12 +748,42 @@ def grease_mat(name='M_Grease'):
     m, nt, bs = A._mat(name)
     vec = A._tc(nt)
     n = A._noise(nt, vec, 90, 6, 0.6)
-    r = A._ramp(nt, n.outputs['Fac'], A.srgb('#0d0b0a'), A.srgb('#2a2118'), 0.35, 0.75)
+    r = A._ramp(nt, n.outputs['Fac'], A.srgb('#17130f'), A.srgb('#4a3d31'), 0.30, 0.80)
     nt.links.new(r.outputs['Color'], bs.inputs['Base Color'])
     rr = A._ramp(nt, n.outputs['Fac'], (0.22, 0.22, 0.22), (0.6, 0.6, 0.6), 0.4, 0.7)
     sep = nt.nodes.new('ShaderNodeSeparateColor'); nt.links.new(rr.outputs['Color'], sep.inputs[0])
     nt.links.new(sep.outputs[0], bs.inputs['Roughness'])
-    A._bump(nt, bs, n.outputs['Fac'], 0.12, 0.0006)
+    A._bump(nt, bs, n.outputs['Fac'], 0.04, 0.0004)
+    return m
+
+
+def rag_towel_mat(name='M_ShopTowel'):
+    """red shop towel: woven red with a darker double hem stripe near the edges (UV u across, v along)"""
+    m, nt, bs = A._mat(name)
+    uv = nt.nodes.new('ShaderNodeUVMap')
+    sep = nt.nodes.new('ShaderNodeSeparateXYZ'); nt.links.new(uv.outputs[0], sep.inputs[0])
+    def mn(op, a, b=None):
+        n = nt.nodes.new('ShaderNodeMath'); n.operation = op
+        if isinstance(a, float): n.inputs[0].default_value = a
+        else: nt.links.new(a, n.inputs[0])
+        if b is not None:
+            if isinstance(b, float): n.inputs[1].default_value = b
+            else: nt.links.new(b, n.inputs[1])
+        return n.outputs[0]
+    e = mn('MINIMUM', sep.outputs[0], mn('SUBTRACT', 1.0, sep.outputs[0]))          # distance to the nearer side edge
+    st = mn('MAXIMUM', mn('LESS_THAN', mn('ABSOLUTE', mn('SUBTRACT', e, 0.10)), 0.025),
+            mn('LESS_THAN', mn('ABSOLUTE', mn('SUBTRACT', e, 0.17)), 0.012))
+    vec = A._tc(nt)
+    n1 = A._noise(nt, vec, 70, 5, 0.6)
+    base = A._ramp(nt, n1.outputs['Fac'], A.srgb('#b8261f'), A.srgb('#962019'), 0.3, 0.75)
+    mix = nt.nodes.new('ShaderNodeMix'); mix.data_type = 'RGBA'
+    nt.links.new(st, mix.inputs['Factor']); nt.links.new(base.outputs['Color'], mix.inputs['A'])
+    mix.inputs['B'].default_value = (*A.srgb('#5e100c'), 1)
+    nt.links.new(mix.outputs['Result'], bs.inputs['Base Color'])
+    bs.inputs['Roughness'].default_value = 0.92
+    wv = nt.nodes.new('ShaderNodeTexWave'); wv.inputs['Scale'].default_value = 900.0
+    nt.links.new(vec, wv.inputs['Vector'])
+    A._bump(nt, bs, wv.outputs['Fac'], 0.25, 0.0004)
     return m
 
 
@@ -895,13 +925,14 @@ def mechanic(P, T):
     # black grease smudges (finger swipes) on the wedge
     gm = grease_mat()
     front = A.frame_matrix(Vector((0, A.FRONT_Y, 0)), Vector((1, 0, 0)), Vector((0, 0, 1)), Vector((0, -1, 0)))
-    for k, (cx, cz, L, W, ang) in enumerate(((-0.046, 0.622, 0.112, 0.046, math.radians(14)),
-                                            (-0.162, 0.880, 0.082, 0.040, math.radians(-62)),
-                                            (0.152, 0.650, 0.056, 0.032, math.radians(-35)))):
+    for k, (cx, cz, L, W, ang) in enumerate(((-0.040, 0.628, 0.105, 0.040, math.radians(52)),
+                                            (-0.136, 0.880, 0.064, 0.034, math.radians(-58)),
+                                            (0.150, 0.648, 0.058, 0.030, math.radians(-60)))):
         ol = smudge_outline(cx, cz, L, W, ang, seed=k * 7 + 3)
         obs.append(A.decal('Mech_Grease%d' % k, P, ol, front, (0, 1, 0), gm, off=0.0009, res=0.003))
     # red shop rag stuffed into the big jaw hole, a tail hanging out
     rag = A.mat_plain('M_ShopRag', '#b3231d', rough=0.9, col2='#8c1813', nscale=70, bump=0.35, bscale=1400)
+    ragt = rag_towel_mat()
     hc = Vector((-0.140, A.FRONT_Y, 0.646))
     bun = A.sphere((0, 0, 0), 1.0, seg=40, rings_=22)
     def crumple(p):
@@ -918,33 +949,31 @@ def mechanic(P, T):
         A.displace(bm, lambda p: p + Vector((0, -1, 0)) * 0.003 * noise.noise(p * 90.0))
         obs.append(A.make_obj('Mech_RagCorner%d' % k, bm, rag, 'spine_01', solid=0.0022, subsurf=1))
     # tail: a cloth strip from the bunch draping down the face, folds across it, frayed end
-    nu, nv = 10, 22
-    verts = []; faces = []
+    nu, nv = 12, 18
+    verts = []; faces = []; ruv = []
     for j in range(nv + 1):
         t = j / nv
         for i in range(nu + 1):
             u = i / nu * 2 - 1
-            w = 0.058 * (1 - 0.15 * t)
+            w = 0.066 * (1 - 0.10 * t)
             x = hc.x + 0.006 + u * w / 2 + 0.010 * math.sin(t * 2.2)
-            z = hc.z - 0.012 - 0.090 * t
-            fold = 0.0045 * math.sin(u * 3.1 + t * 6.0) + 0.003 * math.sin(u * 7.0 - t * 3.0)
+            z = hc.z - 0.014 - 0.070 * t
+            fold = 0.0040 * math.sin(u * 2.6 + t * 3.0) + 0.0015 * math.sin(u * 5.0 - t * 2.0)
             loc, nor = P.hit((x, -1.0, z), (0, 1, 0))
             yb = min(loc.y, A.FRONT_Y) if (loc is not None and z > 0.586) else A.FRONT_Y + 0.004 + 0.01 * max(0.0, (0.586 - z) / 0.02)
             y = yb - 0.006 - 0.012 * (1 - t) ** 2 - abs(fold)
-            z -= 0.032 * t * (u + 1) / 2                               # diagonal hem: a corner of the rag hangs lowest
-            if j == nv:
-                z -= 0.005 * (0.5 + 0.5 * math.sin(i * 2.7))          # frayed hem
-            verts.append(Vector((x, y, z)))
+            z -= 0.026 * t * (u + 1) / 2                               # diagonal hem: a corner of the rag hangs lowest
+            verts.append(Vector((x, y, z))); ruv.append(((u + 1) / 2, t))
     for j in range(nv):
         for i in range(nu):
             q = j * (nu + 1) + i
             faces.append((q, q + 1, q + nu + 2, q + nu + 1))
-    obs.append(A.make_obj('Mech_RagTail', A.bm_from(verts, faces), rag, 'spine_01', solid=0.0025))
-    # loose threads at the frayed end
-    for k in range(5):
-        p = verts[nv * (nu + 1) + 1 + 2 * k]
-        pts = [p + Vector((0.002 * math.sin(i + k), -0.001 * i, -0.004 * i)) for i in range(4)]
-        obs.append(A.make_obj('Mech_RagThread%d' % k, A.tube(pts, 0.0007, n=4), rag, 'spine_01'))
+    bm = A.bm_from(verts, faces)
+    uvl = bm.loops.layers.uv.new('UVMap'); bm.verts.index_update()
+    for f in bm.faces:
+        for lp in f.loops:
+            lp[uvl].uv = ruv[lp.vert.index]
+    obs.append(A.make_obj('Mech_RagTail', bm, ragt, 'spine_01', solid=0.0025, subsurf=1))
     # big combination wrench clipped flat to the +x side face, under the shoulder
     steel = A.mat_metal('M_WrenchSteel', '#c9ccd2', rough=0.22, scratches=0.8)
     cz, cy = 0.668, 0.012
