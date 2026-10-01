@@ -540,7 +540,7 @@ BUILDERS['RocketGuy'] = rocketguy
 
 
 # ================================================================== 4. SNIPER
-def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.128, D=0.105, yc=0.012):
+def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.150, D=0.122, yc=0.012):
     """quilted ear flap hanging from the cap band down the side face (sgn=+1: character's left, +x)"""
     import bmesh
     # where the cap band sits on this side: lowest cap point per y slice
@@ -552,12 +552,11 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.128, D=0.105, yc=0.012):
             if sgn * w.x > 0.16:
                 k = int(round(w.y / 0.01))
                 rim[k] = min(rim.get(k, 9.0), w.z)
-    def rim_z(y):
-        k = int(round(y / 0.01))
-        for dk in (0, 1, -1, 2, -2, 3, -3):
-            if k + dk in rim:
-                return rim[k + dk]
-        return 0.86
+    ks = [k for k in rim if abs(k * 0.01 - yc) < W / 2 + 0.01]
+    n_ = len(ks); my = sum(k * 0.01 for k in ks) / n_; mz = sum(rim[k] for k in ks) / n_
+    sl = sum((k * 0.01 - my) * (rim[k] - mz) for k in ks) / max(1e-9, sum((k * 0.01 - my) ** 2 for k in ks))
+    def rim_z(y):                                  # straight least-squares line along the band: no wrinkles
+        return mz + sl * (y - my)
     def side_x(y, z):
         loc, nor = P.hit((sgn * 1.0, y, z), (-sgn, 0, 0))
         return abs(loc.x) if loc is not None else 0.205
@@ -587,19 +586,6 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.128, D=0.105, yc=0.012):
     bm = A.tube(border, 0.0052, n=10, flat=1.0)
     A.displace(bm, lambda p: p + Vector((sgn, 0, 0)) * 0.0012 * noise.noise(p * 600.0))
     obs.append(A.make_obj(name + 'Trim', bm, trim, 'spine_01'))
-    # quilting: stitched diamond lines on the flap
-    stitch = A.mat_plain('M_FlapStitch', '#b8420a', rough=0.8, bump=0.0)
-    for dgn in (-1, 1):
-        for k in range(-3, 4):
-            pts = []
-            for j in range(1, nv):
-                i = int(round((0.5 + 0.5 * dgn * ((j / nv) * 1.6 - 0.8 + k * 0.32)) * nu))
-                if 1 <= i <= nu - 1:
-                    p = verts[j * (nu + 1) + i]
-                    pts.append(p + Vector((sgn * 0.0031, 0, 0)))
-            if len(pts) > 3:
-                bm = A.tube(pts, 0.0007, n=5)
-                obs.append(A.make_obj('%sQuilt%d_%d' % (name, dgn + 1, k + 3), bm, stitch, 'spine_01'))
     # tie string from the bottom of the flap
     b0 = verts[nv * (nu + 1) + nu // 2] + Vector((sgn * 0.002, 0, 0.004))
     pts = [b0 + Vector((sgn * 0.004 * t, 0.006 * math.sin(t * 2.5), -0.05 * t)) for t in [i / 8 for i in range(9)]]
@@ -608,7 +594,7 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.128, D=0.105, yc=0.012):
     return obs
 
 
-def camo_stripe(P, name, z_mid, height, mat, x0=-0.198, x1=0.198, seed=1, wobble=0.0045):
+def camo_stripe(P, name, z_mid, height, mat, x0=-0.186, x1=0.186, seed=1, wobble=0.004):
     """brushy face-paint band across the front face (follows the surface and dips into holes like real paint)"""
     rng = random.Random(seed)
     top = []; bot = []
@@ -616,12 +602,15 @@ def camo_stripe(P, name, z_mid, height, mat, x0=-0.198, x1=0.198, seed=1, wobble
     ph1, ph2 = rng.uniform(0, 6), rng.uniform(0, 6)
     for i in range(n + 1):
         x = x0 + (x1 - x0) * i / n
-        e = 0.62 + 0.38 * max(0.0, math.sin(PI * i / n)) ** 0.35
+        e = 1.0
         h = height * e
         zz = z_mid + 0.004 * math.sin(x * 22 + ph1)
         top.append((x, zz + h / 2 + wobble * math.sin(x * 61 + ph2) * rng.uniform(0.4, 1.0)))
         bot.append((x, zz - h / 2 - wobble * math.sin(x * 47 + ph1) * rng.uniform(0.4, 1.0)))
-    outline = bot + top[::-1]
+    # ragged brush-stroke ends
+    lend = [(x0 - 0.004 * rng.uniform(0.3, 1.0) * (k % 2), z_mid + height * (0.5 - k / 4)) for k in range(1, 4)]
+    rend = [(x1 + 0.004 * rng.uniform(0.3, 1.0) * (k % 2), z_mid + height * (-0.5 + k / 4)) for k in range(1, 4)]
+    outline = bot + rend + top[::-1] + lend
     return A.puff(name, P, outline, 0.0009, mat, edge=0.004, power=1.0, bury=0.0012, res=0.0025, hole_clamp=False)
 
 
@@ -662,7 +651,7 @@ def sniper(P, T):
             v = j / nv
             bx = u * (a * 0.84) * (1 - 0.15 * v ** 2)
             by = -(b * 0.97) * math.sqrt(max(0.0, 1 - (bx / a) ** 2)) - v * 0.105 * (1 - 0.5 * u * u)
-            bz = 0.008 - 0.020 * u * u - 0.018 * v * v
+            bz = 0.012 - 0.020 * u * u + 0.010 * v - 0.014 * v * v
             verts.append(Vector((bx, by, bz)))
     for i in range(nu):
         for j in range(nv):
@@ -680,12 +669,12 @@ def sniper(P, T):
             v = 0.15 + r * 0.8
             bx = u * (a * 0.84) * (1 - 0.15 * v ** 2) * 0.96
             by = -(b * 0.97) * math.sqrt(max(0.0, 1 - (bx / a) ** 2)) - v * 0.105 * (1 - 0.5 * u * u)
-            bz = 0.008 - 0.020 * u * u - 0.018 * v * v + 0.0024
+            bz = 0.012 - 0.020 * u * u + 0.010 * v - 0.014 * v * v + 0.0024
             pts.append(Vector((bx, by, bz)))
         bm = A.tube(pts, 0.0008, n=5)
         cap.append(A.make_obj('Sniper_BrimStitch%d' % int(r * 4), A.transform(bm, H), seam, 'spine_01'))
     chk = [cap[0], cap[1], [o for o in cap if o.name == 'Sniper_Brim'][0]]
-    print('sniper cap fit', A.fit_hat(P, cap, chk, H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3]))
+    print('sniper cap fit', A.fit_hat(P, cap, chk[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=4.0))
     print('sniper cap drape', A.drape(P, cap, chk, H.col[2][:3]))
     obs += cap
     # ear flaps down
@@ -694,17 +683,17 @@ def sniper(P, T):
     # two stripes of camo face paint across the wedge, under the eyes
     olive = A.mat_plain('M_CamoOlive', '#4b5a2a', rough=0.88, col2='#3a4720', nscale=120, bump=0.05, bscale=500)
     brown = A.mat_plain('M_CamoBrown', '#3b2a1a', rough=0.9, col2='#2a1d12', nscale=120, bump=0.05, bscale=500)
-    obs.append(camo_stripe(P, 'Sniper_CamoTop', 0.688, 0.020, olive, seed=3))
-    obs.append(camo_stripe(P, 'Sniper_CamoLow', 0.640, 0.022, brown, seed=8))
+    obs.append(camo_stripe(P, 'Sniper_CamoTop', 0.676, 0.030, olive, seed=3))
+    obs.append(camo_stripe(P, 'Sniper_CamoLow', 0.628, 0.030, brown, seed=8))
     # a long piece of dry grass where a mouth would be
     straw = A.mat_plain('M_DryGrass', '#cdb06a', rough=0.7, col2='#a88848', nscale=200, bump=0.08, bscale=900)
-    root = Vector((MOUTH.x - 0.004, A.FRONT_Y + 0.006, 0.664))
-    d = Vector((0.62, -0.70, -0.06)).normalized()
+    root = Vector((MOUTH.x - 0.004, A.FRONT_Y + 0.006, 0.652))
+    d = Vector((0.66, -0.66, 0.02)).normalized()
     pts = []
     for i in range(25):
         t = i / 24
-        pts.append(root + d * 0.17 * t + Vector((0, 0, -0.035 * t * t)) + Vector((0.004 * math.sin(t * 5), 0, 0)))
-    bm = A.tube(pts, lambda t: 0.0024 * (1 - 0.35 * t), n=8, flat=0.85)
+        pts.append(root + d * 0.205 * t + Vector((0, 0, -0.045 * t * t)) + Vector((0.004 * math.sin(t * 5), 0, 0)))
+    bm = A.tube(pts, lambda t: 0.0032 * (1 - 0.35 * t), n=8, flat=0.85)
     obs.append(A.make_obj('Sniper_GrassStem', bm, straw, 'spine_01'))
     # seed head: alternating spikelets along the last stretch + a couple of nodes on the stem
     head = A.mat_plain('M_GrassHead', '#b8954f', rough=0.75, col2='#8f6f35', nscale=300, bump=0.1, bscale=1200)
