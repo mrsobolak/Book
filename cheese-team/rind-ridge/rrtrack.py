@@ -18,8 +18,8 @@ def _cr(p0, p1, p2, p3, t):
 
 def samples(step=1.0):
     """list of dicts: p (x,y,z), dir (dx,dz unit), s (arc length), kind, seg (control index)"""
-    pts = [(x, y, z) for (x, z, y, k) in L.TRACK]
-    kinds = [k for (_, _, _, k) in L.TRACK]
+    pts = [(x, 0.0, z) for (x, z, k) in L.TRACK]
+    kinds = [k for (_, _, k) in L.TRACK]
     P = [pts[0]] + pts + [pts[-1]]
     dense = []
     for i in range(len(pts) - 1):
@@ -43,7 +43,27 @@ def samples(step=1.0):
 def checkpoints(S):
     res = {}
     for name, idx in L.CHECKPOINT_IDX.items():
-        x, z, y, _ = L.TRACK[idx]
+        x, z, _ = L.TRACK[idx]
         best = min(S, key=lambda s: (s['p'][0] - x) ** 2 + (s['p'][2] - z) ** 2)
         res[name] = round(best['s'], 1)
     return res
+
+
+def lift(S, natural):
+    """give the track its heights: follow the ground, never downhill, grade <= MAX_GRADE, smoothed;
+    stretches where the ground is > 3.5 m below the track become trestles"""
+    import numpy as np
+    xs = np.array([s['p'][0] for s in S]); zs = np.array([s['p'][2] for s in S])
+    g = natural(xs, zs)
+    y = np.convolve(np.pad(g, 12, mode='edge'), np.ones(25) / 25, mode='valid')
+    y[0] = max(0.0, g[0])
+    for i in range(1, len(y)):                       # monotonic, grade-limited climb
+        y[i] = min(max(y[i], y[i - 1]), y[i - 1] + L.MAX_GRADE)
+    for i in range(len(y) - 2, -1, -1):             # back pass so it can't overshoot the ground by much
+        y[i] = max(y[i], y[i + 1] - L.MAX_GRADE) if y[i + 1] - y[i] > L.MAX_GRADE else y[i]
+    for k, s in enumerate(S):
+        s['p'][1] = float(y[k])
+        if s['kind'] == 'ground' and g[k] < y[k] - 3.5:
+            s['kind'] = 'bridge'
+        s['ground'] = float(g[k])
+    return S

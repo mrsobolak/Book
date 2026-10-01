@@ -20,6 +20,7 @@ MATS.update({
     'RR_Tin': ('rusty_corrugated_iron', 2.5, '#8a7a68', 0.6, 0.4),
     'RR_Cheese': ('yellow_plaster', 1.5, '#ffd95a', 0.55, 0), 'RR_Rind': ('yellow_plaster', 1.5, '#e8a63a', 0.65, 0),
     'RR_Wax': ('yellow_plaster', 1.5, '#c4232a', 0.4, 0),
+    'Grid': ('rusty_metal_grid', 1.8, '#8b9294', 0.5, 0.6),
 })
 
 
@@ -63,7 +64,7 @@ def clear():
 def step(name, texdir):
     if name == 'start':
         clear(); _texavg(texdir); wskit.set_floors([0.0]); STATE['K'] = Kit(seed=31)
-        STATE['S'] = rrtrack.samples(); return 'cleared'
+        STATE['S'] = rrtrack.lift(rrtrack.samples(), rrterrain.natural); return 'cleared'
     K, S = STATE['K'], STATE['S']
     if name == 'T':
         K.group = 'Terrain'; X, Z, H, D, I = rrterrain.build(K, S); STATE['H'] = (X, Z, H)

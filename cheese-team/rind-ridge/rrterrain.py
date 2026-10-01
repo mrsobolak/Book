@@ -5,7 +5,7 @@ import math
 import numpy as np
 import rrlayout as L
 
-X0, X1, Z0, Z1, CELL = -230.0, 170.0, -190.0, 150.0, 2.0
+X0, X1, Z0, Z1, CELL = -232.0, 168.0, -192.0, 152.0, 2.0
 BENCH, BLEND = 5.0, 9.0
 
 
@@ -21,26 +21,30 @@ def _noise(x, z):
 
 def natural(x, z):
     mx, mz = L.MESA
+    r0 = np.hypot(x - mx, z - mz)
     ang = np.arctan2(z - mz, x - mx)
-    # warped radius: lobes, spurs and gullies so the mesa outline is irregular (not a cake)
-    warp = 14.0 * np.sin(3 * ang + 0.8) + 8.0 * np.sin(5 * ang - 1.2) + 6.0 * _noise(x * 0.8, z * 0.8)
-    r = np.hypot(x - mx, z - mz) + warp * _smooth(L.PLATEAU_R - 10, L.PLATEAU_R + 25, np.hypot(x - mx, z - mz))
-    h = L.PLATEAU_Y * _smooth(L.FOOT_R + 10, L.PLATEAU_R, r) ** 1.05
-    # strata: terraces whose height drifts round the mountain, blended in only partly -> broken ledges + rock bands
-    ph = 1.8 * _noise(x * 0.6 + 40, z * 0.6 - 20)
+    # warped radius: lobes, spurs and gullies so the mountain outline is irregular
+    warp = 12.0 * np.sin(3 * ang + 0.8) + 7.0 * np.sin(5 * ang - 1.2) + 5.0 * _noise(x * 0.8, z * 0.8)
+    r = r0 + warp * _smooth(L.PLATEAU_R - 8, L.PLATEAU_R + 25, r0)
+    h = L.PLATEAU_Y * _smooth(L.FOOT_R, L.PLATEAU_R, r) ** 1.5
+    # broken strata: terraces with drifting phase, only partly blended -> ledges and red rock bands
+    ph = 2.0 * _noise(x * 0.6 + 40, z * 0.6 - 20)
     t = (h + ph) / 7.0; terr = (np.floor(t) + _smooth(0.5, 0.95, t - np.floor(t))) * 7.0 - ph
-    h = h + 0.6 * (terr - h) * _smooth(L.PLATEAU_R - 2, L.PLATEAU_R + 10, r)
-    h += 1.6 * _noise(x, z) * _smooth(L.PLATEAU_R + 4, L.PLATEAU_R + 20, r)          # plateau stays flat
-    # foothills, buttes and spires round the base
-    for (bx, bz, br, bh) in ((-120, -40, 26, 14), (-150, 40, 30, 22), (-60, 110, 22, 16), (40, -150, 30, 12), (125, -120, 20, 18)):
-        h += bh * _smooth(br, br * 0.55, np.hypot(x - bx, z - bz))
-    h += 15.0 * np.exp(-(((x - 4) / 34.0) ** 2 + ((z + 104) / 22.0) ** 2))             # Hogback Hill
-    h -= 15.0 * np.exp(-((z + 24) / 7.5) ** 2) * _smooth(70, 92, x)                    # the gully under the trestle
-    h += 34.0 * _smooth(-150, -178, z) + 34.0 * _smooth(-195, -222, x)                 # mesa walls (S, W)
+    h = h + 0.55 * (terr - h) * _smooth(L.PLATEAU_R - 2, L.PLATEAU_R + 10, r)
+    h += 1.6 * _noise(x, z) * _smooth(L.PLATEAU_R + 4, L.PLATEAU_R + 20, r)
+    # the summit spire (Bleu's bunker is cut into its south face)
+    sx, sz, sr, sh = L.SPIRE
+    h += sh * _smooth(sr, sr * 0.45, np.hypot(x - sx, z - sz) + 2.5 * _noise(x * 3, z * 3))
+    # foothills and buttes round the base
+    for (bx, bz, br, bh) in ((-128, -40, 26, 16), (-155, 45, 30, 26), (-70, 125, 24, 20), (45, -158, 30, 14), (128, -125, 20, 22)):
+        h += bh * _smooth(br, br * 0.5, np.hypot(x - bx, z - bz))
+    h += 15.0 * np.exp(-(((x - 4) / 34.0) ** 2 + ((z + 104) / 20.0) ** 2))             # Hogback Hill
+    h -= 15.0 * np.exp(-((z + 24) / 7.5) ** 2) * _smooth(76, 96, x)                    # the gully under the trestle
+    h += 44.0 * _smooth(-150, -176, z) + 44.0 * _smooth(-196, -222, x)                 # canyon walls (S, W)
     h += 3.0 * _noise(x * 2.3, z * 2.1) * _smooth(-150, -170, z)
-    h -= 60.0 * _smooth(124, 140, z) * _smooth(-40, 0, x)                              # canyon drop (N)
-    h -= 60.0 * _smooth(138, 152, x)                                                   # canyon drop (E)
-    return np.maximum(h, -50.0)
+    h -= 70.0 * _smooth(126, 142, z) * _smooth(-40, 0, x)                              # canyon drop (N)
+    h -= 70.0 * _smooth(140, 154, x)                                                   # canyon drop (E)
+    return np.maximum(h, -60.0)
 
 
 def grid():
@@ -64,7 +68,24 @@ def carve(X, Z, H, S):
     w = 1.0 - _smooth(BENCH, BENCH + BLEND, D)
     w = np.where(bridge[I], 0.0, w)
     H2 = H * (1 - w) + T * w
+    # building pads
+    for name, (x0, z0, x1, z1, y, alcove) in L.PADS.items():
+        if y is None:                                 # forward-spawn pads sit at the level of the nearest track
+            cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
+            y = float(Y[np.argmin(np.hypot(P[:, 0] - cx, P[:, 1] - cz))])
+        PAD_Y[name] = y
+        dx = np.maximum(np.maximum(x0 - X, X - x1), 0); dz = np.maximum(np.maximum(z0 - Z, Z - z1), 0)
+        dd = np.hypot(dx, dz)
+        wp = (dd <= 0.01).astype(float) if alcove else 1.0 - _smooth(0.0, 10.0, dd)
+        H2 = H2 * (1 - wp) + y * wp
     return H2, D, I
+
+
+PAD_Y = {}
+
+
+def pad_y(name):
+    return PAD_Y[name]
 
 
 def build(K, S, mats=('RR_Sand', 'RR_Rock', 'RR_Road', 'RR_Dirt')):

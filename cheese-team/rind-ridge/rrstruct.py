@@ -97,7 +97,7 @@ def payload(K, S, k):
     p, yaw, pitch, lat = frame(S, k)
     K.at(p[0], p[1], p[2], yaw)
     K.box('TF_Steel', -1.9, 0.46, -1.35, 1.9, 0.8, 1.35)                               # bogie deck
-    K.box('TF_Paint_B', -1.95, 0.8, -1.4, 1.95, 0.95, 1.4)                             # team-painted rim
+    K.box('TF_Paint_C', -1.95, 0.8, -1.4, 1.95, 0.95, 1.4)                             # team-painted rim (Cheddar push)
     for x in (-1.3, 1.3):
         for z in (-GAUGE / 2, GAUGE / 2):
             K.cyl('TF_Steel', x, 0.55, z, 0.32, 0.14, axis='z', seg=16)                # wheels on the rails
@@ -111,5 +111,64 @@ def payload(K, S, k):
     K.pop()
 
 
+WT = 0.4
+
+
+def building(K, P, x0, z0, x1, z1, y, h, wall_mat, holes, roof='RR_Tin', lower=None, roof_t=0.3, overhang=0.6, floor='RR_Planks'):
+    """box building: holes = {'n'|'s'|'e'|'w': [(s0, s1, y0, y1), ...]} in world coords along that wall.
+    lower: team dado material (wall2 style) or None for a single material."""
+    walls = {'s': ('x', x0, x1, z0), 'n': ('x', x0, x1, z1), 'w': ('z', z0, z1, x0), 'e': ('z', z0, z1, x1)}
+    for side, (ax, a0, a1, c) in walls.items():
+        hs = [(h0, h1, y + v0, y + v1) for (h0, h1, v0, v1) in holes.get(side, [])]
+        if lower:
+            K.wall2(ax, a0, a1, c, WT, y, y + h, holes=hs, lower=lower, upper=wall_mat, band=1.2)
+        else:
+            K.wall(wall_mat, ax, a0, a1, c, WT, y, y + h, holes=hs, band=False)
+        for (h0, h1, v0, v1) in hs:
+            P.opening(ax, h0, h1, c, WT, v0, v1, mat='RR_Timber', w=0.16)
+    K.slab(floor, x0, z0, x1, z1, y - 0.3, y)
+    K.slab(roof, x0 - overhang, z0 - overhang, x1 + overhang, z1 + overhang, y + h, y + h + roof_t, col=True)
+
+
 def structures(K, S, Hg):
-    pass
+    import wsparts
+    P = wsparts.Parts(K, 'C')
+    # ---- CHEDDAR main spawn: a bunker set into the south canyon wall, three exits north onto the start yard ----
+    x0, z0, x1, z1, y, _ = L.PADS['cheddar_spawn']
+    building(K, P, x0, z0, x1, z1, y, 6.0, 'TF_Conc', {'n': [(-192, -189, 0, 3.2), (-183.5, -180.5, 0, 3.2), (-175, -172, 0, 3.2)]},
+             roof='TF_Conc', lower='TF_Paint_C', roof_t=0.8, overhang=0.0, floor='TF_FloorWarm')
+    K.box('TF_Paint_C', x0, y + 6.8, z1 - 0.2, x1, y + 7.6, z1 + 0.3)                 # orange header over the doors
+    for xx in (-190.5, -182, -173.5):
+        K.box('RR_Timber', xx - 1.8, y + 3.3, z1, xx + 1.8, y + 3.5, z1 + 1.4)        # door canopies
+    K.box('TF_Corr_C', x0 + 0.3, y, z0 + 0.3, x1 - 0.3, y + 2.4, z0 + 1.0, col=True)   # resupply lockers along the back
+    K.light((x0 + x1) / 2, y + 5.2, (z0 + z1) / 2, '#ffe2b8', 1.6, 18)
+    SPAWNS_OUT['C_main'] = [(x0 + x1) / 2, y + 0.1, (z0 + z1) / 2]
+    # ---- BLEU main spawn: bunker cut into the summit spire, exits south onto the plateau facing the Grater ----
+    x0, z0, x1, z1, y, _ = L.PADS['bleu_spawn']
+    building(K, P, x0, z0, x1, z1, y, 6.0, 'TF_Conc', {'s': [(-13, -10, 0, 3.2), (-2, 1, 0, 3.2)], 'w': [(29, 32, 0, 3.2)]},
+             roof='TF_Conc', lower='TF_Paint_B', roof_t=0.8, overhang=0.0, floor='TF_FloorWarm')
+    K.box('TF_Paint_B', x0, y + 6.8, z0 - 0.3, x1, y + 7.6, z0 + 0.2)
+    K.box('TF_Corr_B', x0 + 0.3, y, z1 - 1.0, x1 - 0.3, y + 2.4, z1 - 0.3, col=True)
+    K.light((x0 + x1) / 2, y + 5.2, (z0 + z1) / 2, '#d8e8ff', 1.6, 18)
+    SPAWNS_OUT['B_main'] = [(x0 + x1) / 2, y + 0.1, (z0 + z1) / 2]
+    # ---- forward spawns: ranch barn (Cheddar after A), mine head house (Bleu until B), sawmill (Cheddar after C) ----
+    for name, wall, roofm, holes, team in (
+            ('ranch', 'RR_SidingR', 'RR_Tin', {'n': [(-89, -85, 0, 3.6)], 'e': [(-96, -92, 0, 3.0)]}, 'C'),
+            ('mine', 'RR_SidingG', 'RR_Tin', {'n': [(74, 78, 0, 3.4)], 'w': [(-101, -98, 0, 3.0)]}, 'B'),
+            ('sawmill', 'RR_Planks', 'RR_Tin', {'s': [(64, 68, 0, 3.6)], 'w': [(30, 34, 0, 3.0)], 'e': [(36, 40, 0, 3.0)]}, 'C')):
+        x0, z0, x1, z1, _, _ = L.PADS[name]
+        y = float(T.pad_y(name))
+        building(K, P, x0 + 2, z0 + 2, x1 - 2, z1 - 2, y, 5.0, wall, holes, roof=roofm)
+        K.light((x0 + x1) / 2, y + 4.2, (z0 + z1) / 2, '#ffe2b8', 1.2, 14)
+        SPAWNS_OUT[team + '_' + name] = [(x0 + x1) / 2, y + 0.1, (z0 + z1) / 2]
+    # ---- the Grater: the cheese rolls off the end of the track into a giant steel grater over a pit ----
+    gx, gz = L.TRACK[-1][0], L.TRACK[-1][1]
+    gy = S[-1]['p'][1]
+    K.box('TF_Steel', gx + 1.5, gy, gz - 4.5, gx + 9.5, gy + 1.0, gz + 4.5, col=True)       # base
+    K.box('Grid', gx + 2.5, gy + 1.0, gz - 3.5, gx + 8.5, gy + 7.0, gz + 3.5, col=True)     # the grater drum (perforated)
+    K.box('TF_Hazard', gx + 2.4, gy + 7.0, gz - 3.6, gx + 8.6, gy + 7.4, gz + 3.6)
+    for zz in (-3.6, 3.6):
+        K.box('TF_Steel', gx + 2.0, gy, gz + zz - 0.25, gx + 2.5, gy + 9.0, gz + zz + 0.25, col=True)
+        K.box('TF_Steel', gx + 8.5, gy, gz + zz - 0.25, gx + 9.0, gy + 9.0, gz + zz + 0.25, col=True)
+    K.box('TF_Steel', gx + 2.0, gy + 9.0, gz - 3.85, gx + 9.0, gy + 9.5, gz + 3.85)
+    K.label('THE GRATER', gx + 5.5, gy + 10.5, gz, kind='final')
