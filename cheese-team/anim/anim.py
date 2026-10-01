@@ -157,8 +157,8 @@ def R(yaw=0.0, pitch=0.0, roll=0.0):
 
 HOLDS = {
     # one-handed pistol: right hand out front-right, left hand relaxed at the side
-    'pistol': dict(grip=Vector((-0.12, -0.285, 0.625)), rot=dict(yaw=5, pitch=0, roll=0), support=None,
-                   lhand=Vector((0.305, -0.03, 0.50)), relbow=Vector((-1, 0.15, -0.5)), lelbow=Vector((1, 0.2, -0.2))),
+    'pistol': dict(grip=Vector((-0.262, -0.25, 0.655)), rot=dict(yaw=3, pitch=0, roll=0), support=None,
+                   lhand=Vector((0.305, -0.03, 0.50)), relbow=Vector((-1, 0.1, -0.4)), lelbow=Vector((1, 0.2, -0.2))),
 }
 
 WEAPON_HOLD = {'Revolver': 'pistol', 'Derringer': 'pistol', 'SemiAuto': 'pistol', 'SnubNose': 'pistol'}
@@ -346,7 +346,31 @@ def _bvh(objs, exclude_groups=(), only_groups=None):
             if keep is None or all(i in keep for i in p.vertices):
                 polys.append(tuple(base + i for i in p.vertices))
         ev.to_mesh_clear()
-    return BVHTree.FromPolygons(verts, polys) if polys else None
+    if not polys:
+        return None
+    t = BVHTree.FromPolygons(verts, polys)
+    t.cents = [sum((verts[i] for i in p), Vector()) / len(p) for p in polys]
+    return t
+
+
+class _T:
+    pass
+
+
+def _ov(a, b, skip=None):
+    """overlap pairs between two trees, ignoring pairs whose body-side triangle is inside a hand ball (a held grip)"""
+    if a is None or b is None:
+        return 0
+    pairs = a.overlap(b)
+    if not skip:
+        return len(pairs)
+    n = 0
+    for (i, j) in pairs:
+        cb = b.cents[j]
+        if any((cb - c).length < r for (c, r) in skip):
+            continue
+        n += 1
+    return n
 
 
 def check(rig, act, step=1):
