@@ -15,7 +15,20 @@ const CLASS_NAME = { Outlaw:'Outlaw', MrShotgun:'Mr. Shotgun', RocketGuy:'Boom B
 
 // ---------------- scene
 const view = document.getElementById('view');
-const renderer = new THREE.WebGLRenderer({ antialias:true });
+function webglOK() {
+  try { const c = document.createElement('canvas'); return !!(c.getContext('webgl2') || c.getContext('webgl')); } catch (e) { return false; }
+}
+if (!webglOK()) {
+  window.__fatal && window.__fatal('This browser has 3D (WebGL) turned off. Fix: open this file in Chrome or Edge, ' +
+    'or in Firefox go to Settings > Performance and tick "Use hardware acceleration", then restart Firefox.');
+  throw new Error('no WebGL');
+}
+let renderer;
+try { renderer = new THREE.WebGLRenderer({ antialias:true }); }
+catch (e) {
+  try { renderer = new THREE.WebGLRenderer({ antialias:false, powerPreference:'low-power' }); }
+  catch (e2) { window.__fatal && window.__fatal('3D failed to start: ' + (e2.message || e2) + '. Try Chrome or Edge.'); throw e2; }
+}
 renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
 renderer.outputColorSpace = THREE.SRGBColorSpace;
 renderer.toneMapping = THREE.ACESFilmicToneMapping;
