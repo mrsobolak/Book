@@ -541,20 +541,20 @@ reload_revolver = keyed([
 
 # small guns can't bridge the hand gap in front of the wedge, but just under it (in front of the hips) the hands get
 # within ~8 cm: the derringer / snub-nose / semi-auto reloads happen down there.
-_LOW = (0.21, 0.14, -0.14)                                           # grip ~(-0.04, -0.22, 0.48), gun across the belly
-_LOWd = (0.21, 0.14, -0.146)
+_LOW = (0.20, 0.20, -0.135)                                          # grip ~(-0.05, -0.16, 0.485), gun across the belly
+_LOWd = (0.20, 0.20, -0.141)
 BELT_L = Vector((0.30, -0.07, 0.40))                                 # left hand dips to the belt
 LEL = (1, -0.3, -0.7)                                                # left elbow out and down for the low work
 reload_derringer = keyed([
     (0.00, {}),
     (0.10, dict(dg=(0.0, 0.02, -0.01), dr=(0, -55, 0), ease=snap)),                           # snap muzzle-down
-    (0.24, dict(dg=_LOW, dr=(90, -12, 0), lh=('w', 122, -6, 0), lel=LEL)),                     # palm under the muzzle
-    (0.30, dict(lh=('w', 118, 18, 0), ease=snap)),                                            # tip the barrels open
+    (0.24, dict(dg=_LOW, dr=(90, -12, 0), lh=('w', 134, -6, 0), lel=LEL)),                     # palm under the muzzle
+    (0.30, dict(lh=('w', 130, 18, 0), ease=snap)),                                            # tip the barrels open
     (0.44, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.48, dict()),
-    (0.62, dict(lh=('w', 124, 2, 0), lel=LEL)),                                               # rounds in
-    (0.66, dict(lh=('w', 114, 2, 0), dg=_LOWd)),
-    (0.70, dict(lh=('w', 126, 2, 0), dg=_LOW)),
+    (0.62, dict(lh=('w', 136, 2, 0), lel=LEL)),                                               # rounds in
+    (0.66, dict(lh=('w', 138, 2, 0), dg=_LOWd)),
+    (0.70, dict(lh=('w', 138, 2, 0), dg=_LOW)),
     (0.82, dict(dg=(0.02, 0.03, 0.02), dr=(8, 30, 0), lh='rest', lel=(0.4, 1, -0.1), ease=snap)),  # flick shut
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
@@ -562,7 +562,7 @@ reload_derringer = keyed([
 reload_snubnose = keyed([
     (0.00, {}),
     (0.14, dict(dg=_LOW, dr=(90, 25, -70), lh=('w', 100, -44, 0), lel=LEL)),                  # cylinder out, rod up
-    (0.20, dict(dg=(0.21, 0.14, -0.13), lh=('w', 82, -44, 0), ease=snap)),                   # punch the ejector rod
+    (0.20, dict(dg=(0.20, 0.20, -0.125), lh=('w', 82, -44, 0), ease=snap)),                   # punch the ejector rod
     (0.26, dict(dg=_LOW, dr=(90, -35, -70), lh=('w', 108, -60, 0))),                          # tip down, empties fall
     (0.40, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.45, dict()),
@@ -576,11 +576,11 @@ reload_snubnose = keyed([
 
 reload_semiauto = keyed([
     (0.00, {}),
-    (0.12, dict(dg=(0.215, 0.12, -0.14), dr=(0, 0, -90), lh=BELT_L, lel=(0.6, 0.5, -0.3))),     # on its side, well to the left: mag drops
-    (0.16, dict(dg=(0.215, 0.12, -0.128), ease=snap)),
-    (0.30, dict(dg=(0.215, 0.12, -0.14))),
+    (0.12, dict(dg=(0.205, 0.18, -0.135), dr=(0, 0, -90), lh=BELT_L, lel=(0.6, 0.5, -0.3))),     # on its side, well to the left: mag drops
+    (0.16, dict(dg=(0.205, 0.18, -0.123), ease=snap)),
+    (0.30, dict(dg=(0.205, 0.18, -0.135))),
     (0.46, dict(lh=('w', -30, -152, 0), lel=LEL)),                                            # fresh mag under the well
-    (0.54, dict(lh=('w', -30, -128, 0), dg=(0.205, 0.12, -0.14), ease=snap)),               # seat it
+    (0.54, dict(lh=('w', -30, -128, 0), dg=(0.195, 0.18, -0.135), ease=snap)),               # seat it
     (0.62, dict(lh=('w', 140, 12, -46), dg=_LOW, dr=(90, 0, 0))),                             # muzzle left: pinch the slide
     (0.68, dict(lh=('w', 112, 12, -46))),                                                     # rack
     (0.71, dict(lh=('w', 140, 12, -60), ease=snap)),
