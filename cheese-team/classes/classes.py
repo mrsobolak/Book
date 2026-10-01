@@ -402,17 +402,17 @@ def rocketguy(P, T):
     chrome = A.mat_metal('M_Chrome', '#e8e8ea', rough=0.12, scratches=0.4)
     a, b = 0.252, 0.188
     H = hat_frame(T, fwd=math.radians(-2), side=math.radians(-11), lift=0.0, shift=(0.004, 0.004))
-    prof = [(1.0, -0.150), (1.0, -0.100), (1.0, -0.050), (0.997, 0.0), (0.975, 0.040), (0.925, 0.076), (0.845, 0.107),
-            (0.725, 0.132), (0.565, 0.149), (0.38, 0.159), (0.19, 0.164), (0.0, 0.166)]
+    prof = [(1.0, -0.100), (1.0, -0.070), (1.0, -0.035), (0.997, 0.0), (0.975, 0.034), (0.925, 0.064), (0.845, 0.090),
+            (0.725, 0.110), (0.565, 0.124), (0.38, 0.132), (0.19, 0.136), (0.0, 0.138)]
     shell = A.lathe(prof, a, b, e=4.0, n=128, cap_bottom=False)
     def cut_z(fx, fy):                       # opening: brow edge high at the front, cheek guards, low at the back
         th = math.degrees(abs(math.atan2(fx / a, -fy / b)))      # 0 = straight ahead, 180 = back
         if th < 50:
-            return -0.058 + 0.010 * (th / 50) ** 2
+            return -0.030 + 0.008 * (th / 50) ** 2
         if th < 78:
             u = (th - 50) / 28
-            return -0.048 - 0.072 * (3 * u * u - 2 * u ** 3)
-        return -0.120 + 0.012 * min(1.0, (th - 78) / 60)
+            return -0.022 - 0.066 * (3 * u * u - 2 * u ** 3)
+        return -0.088 + 0.010 * min(1.0, (th - 78) / 60)
     dele = []
     for f in shell.faces:
         c = f.calc_center_median()
@@ -436,7 +436,7 @@ def rocketguy(P, T):
     # three chrome visor snaps across the brow
     sbvh = A.bvh_of(A.lathe(prof, a * 1.0, b * 1.0, e=4.0, n=128, cap_bottom=False))
     for k, sx in enumerate((-0.085, 0.0, 0.085)):
-        loc, nor, idx, d = sbvh.ray_cast(Vector((sx, -1.0, -0.028)), Vector((0, 1, 0)))
+        loc, nor, idx, d = sbvh.ray_cast(Vector((sx, -1.0, -0.006)), Vector((0, 1, 0)))
         if loc is None:
             continue
         nor = nor if nor.y < 0 else -nor
@@ -448,7 +448,7 @@ def rocketguy(P, T):
     rubber_g = A.mat_plain('M_GoggleRubber', '#2a2522', rough=0.6, bump=0.06, bscale=500)
     lens = mat_lens('M_GoggleLens', '#3d2309')
     strap = A.mat_plain('M_GoggleStrap', '#3c3a37', rough=0.75, col2='#2a2826', nscale=300, bump=0.12, bscale=900)
-    gz = 0.078
+    gz = 0.062
     gr = 1.42                                 # goggle size factor
     centers = []
     for sx in (-0.074, 0.074):

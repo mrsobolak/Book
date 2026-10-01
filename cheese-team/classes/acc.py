@@ -537,7 +537,7 @@ def fit_hat(P, objs, check, pivot, u, v, n, rng_deg=8.0, step_deg=2.0, clear=0.0
                     lo = mid
                 else:
                     hi = mid
-            score = hi + 0.0004 * (abs(i) + abs(j))      # prefer small tilts when it barely matters
+            score = hi + 0.0025 * (abs(i) + abs(j))      # prefer small tilts unless they buy a clearly lower seat
             if best is None or score < best[0]:
                 best = (score, i * step_deg, j * step_deg, hi, R)
     if best is None:
