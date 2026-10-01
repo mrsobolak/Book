@@ -493,7 +493,7 @@ def pearl(name):
     g = NT(name)
     swirl = g.noise(9, 8, 0.7, distort=3.5)
     fine = g.noise(40, 6, 0.6, distort=1.5)
-    base = g.ramp(swirl, 0.25, 0.85, srgb('#bdb4a3'), srgb('#f3eee4'))
+    base = g.ramp(swirl, 0.2, 0.9, srgb('#9e937e'), srgb('#efe8da'))
     tintc = g.ramp(fine, 0.3, 0.7, srgb('#e9d6d2'), srgb('#d5e2d6'))
     g.set('Base Color', g.mix(0.35, base, tintc))
     g.set('Roughness', g.math('ADD', 0.12, g.math('MULTIPLY', fine, 0.12)))

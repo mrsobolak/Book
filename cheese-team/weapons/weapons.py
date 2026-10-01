@@ -243,24 +243,24 @@ BUILDERS['Revolver'] = revolver
 
 # ================================================================== 2. DERRINGER (Outlaw, secondary)
 def derringer():
-    nickel = wk.steel('M_DerNickel', base='#aba79e', bare='#a5803f', rough=0.16, wear=1.3, scratch=1.0, edge_gain=12.0, tint_var=0.04)
-    nickel_dk = wk.steel('M_DerNickelDark', base='#8e8a83', bare='#8f6f37', rough=0.30, wear=0.8, scratch=0.6, edge_gain=12.0)
+    nickel = wk.steel('M_DerNickel', base='#8f8b83', bare='#a5803f', rough=0.16, wear=1.3, scratch=1.0, edge_gain=12.0, tint_var=0.04)
+    nickel_dk = wk.steel('M_DerNickelDark', base='#77736c', bare='#8f6f37', rough=0.30, wear=0.8, scratch=0.6, edge_gain=12.0)
     bore = wk.steel('M_DerBore', base='#1b1b1c', bare='#3a3a3c', rough=0.5, wear=0.0, scratch=0.0)
     pearl = wk.pearl('M_DerPearl')
 
-    # ---- barrel block: two stacked .41 barrels, top rib, side flutes, hinge lug at the top rear
-    bb = rounded([(0.0, 13.0, 2), (74.0, 13.0, 2.5), (76.0, 11.0, 1.5), (76.0, -12.0, 1.5), (74.0, -13.5, 2.5), (0.0, -13.5, 2)], n=6)
-    barrels = make('Der_Barrels', profile(bb, -8.6, 8.6), nickel, bevel=0.0016, seg=5, angle=30)
+    # ---- barrels: two round tubes fused into a figure-8, joined by a web, top rib, hinge lug at the top rear
+    tubes = []
     for (bv, nm) in ((6.2, 'up'), (-6.7, 'dn')):
-        cut(barrels, cyl(W(20.0, bv, 0), W(80.0, bv, 0), 0.0052, n=40), 'bore_' + nm)
-        cut(barrels, lathe([(5.2, 75.3), (6.4, 76.4), (6.4, 78.0)], n=40, axis_v=bv), 'crown_' + nm)
-        make('Der_Bore_' + nm, lathe([(5.25, 40.0), (5.25, 75.0)], n=32, axis_v=bv, cap0=True, cap1=False), bore, smooth=True)
-    for side in (1, -1):
-        g = box((0, 0, 0), (0.0016, 0.070, 0.0024))
-        transform(g, Matrix.Translation(W(39.0, -0.3, side * 8.6)))
-        cut(barrels, g, 'flute%d' % side)
-    rib = rounded([(3.0, 12.5, 0), (73.0, 12.5, 0), (72.0, 15.0, 1.5), (4.0, 15.0, 1.5)])
-    make('Der_Rib', profile(rib, -2.6, 2.6), nickel, bevel=0.0007)
+        t = make('Der_Barrel_' + nm, lathe([(7.4, 0.0), (7.6, 1.0), (7.6, 74.5), (7.0, 76.0)], n=64, axis_v=bv), nickel,
+                 bevel=0.0008, angle=40)
+        cut(t, cyl(W(20.0, bv, 0), W(80.0, bv, 0), 0.0052, n=40), 'bore')
+        cut(t, lathe([(5.2, 75.3), (6.2, 76.3), (6.2, 78.0)], n=40, axis_v=bv), 'crown')
+        make('Der_Bore_' + nm, lathe([(5.25, 40.0), (5.25, 75.0)], n=32, axis_v=bv, cap0=True, cap1=False), bore)
+        tubes.append(t)
+    web = rounded([(1.0, -1.0, 0), (74.0, -1.0, 0), (74.0, 1.0, 0), (1.0, 1.0, 0)])
+    make('Der_Web', profile(web, -5.6, 5.6), nickel, bevel=0.0006)
+    rib = rounded([(2.0, 11.5, 0), (73.5, 11.5, 0), (72.5, 15.6, 1.5), (3.0, 15.6, 1.5)])
+    make('Der_Rib', profile(rib, -2.4, 2.4), nickel, bevel=0.0007)
     make('Der_FrontSight', sphere(W(70.5, 15.6, 0), 0.0016, seg=16, rings=8, scale=(0.8, 1.6, 1.0)), nickel)
     hl = rounded([(-4.0, 11.0, 3), (5.0, 11.0, 0), (5.0, 18.0, 3.5), (-4.0, 18.0, 3.5)])
     make('Der_HingeLug', profile(hl, -5.0, 5.0), nickel, bevel=0.0010)
@@ -268,7 +268,7 @@ def derringer():
         make('Der_HingePin%d' % side, cyl(W(0.5, 14.5, side * 5.0), W(0.5, 14.5, side * 6.2), 0.0021, n=20), nickel_dk)
 
     # ---- frame: hammer housing + recoil shield behind the barrels, lip under them, spur-trigger sheath
-    fr = rounded([(0.0, 11.0, 0), (0.0, -13.0, 0), (14.0, -13.5, 0), (14.0, -16.5, 2), (-4.0, -17.5, 3), (-9.0, -24.0, 2.5),
+    fr = rounded([(0.0, 11.0, 0), (0.0, -13.0, 0), (12.0, -13.0, 0), (12.0, -16.5, 2), (-4.0, -17.5, 3), (-9.0, -24.0, 2.5),
                   (-12.5, -24.0, 2), (-13.5, -15.0, 0), (-24.0, -12.0, 0), (-28.0, 0.0, 6), (-22.0, 10.0, 6), (-9.0, 12.0, 3)], n=8)
     frm = make('Der_Frame', profile(fr, -8.2, 8.2), nickel, bevel=0.0014, seg=5, angle=30)
     cut(frm, box(W(-16.0, 9.0, 0), (0.0056, 0.020, 0.020)), 'hammerslot')
