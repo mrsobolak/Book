@@ -1415,7 +1415,7 @@ def _case(c, m, mats, fired=False):
     make('Primer', lathe([(0.0, -0.15), (2.2 if prof[0][0] < 6 else 2.6, -0.15), (2.2 if prof[0][0] < 6 else 2.6, 0.4), (0.0, 0.4)],
                          n=24, cap0=False, cap1=False), mats['primer'], bevel=0.0)
     if fired:                                                        # firing-pin dent
-        make('Dent', lathe([(0.0, -0.4), (0.7, -0.4), (0.9, -0.1)], n=16, cap0=False, cap1=False), mats['primer'], bevel=0.0)
+        make('Dent', lathe([(0.0, -0.4), (0.7, -0.4), (0.9, -0.1), (0.0, -0.1)], n=16, cap0=False, cap1=False), mats['primer'], bevel=0.0)
     return L
 
 
@@ -1453,7 +1453,7 @@ def shotshell():
     make('Ss_Primer', lathe([(0.0, -0.15), (3.0, -0.15), (3.0, 0.4), (0.0, 0.4)], n=24, cap0=False, cap1=False), m['primer'])
     def crimp(i, k, r, a):
         return r * (1.0 - (0.06 if k == 3 else 0.0) * (0.5 + 0.5 * math.cos(6 * a)))
-    make('Ss_Hull', lathe([(10.25, 15.0), (10.3, 64.0), (9.6, 67.5), (5.0, 69.0), (0.0, 69.4)], n=48, cap0=False, cap1=False,
+    make('Ss_Hull', lathe([(0.0, 15.0), (10.25, 15.0), (10.3, 64.0), (9.6, 67.5), (5.0, 69.0), (0.0, 69.4)], n=48, cap0=False, cap1=False,
                           shape=crimp), hull, bevel=0.0)
     PIVOT['Shotgun12_Shell'] = (0.0, 0.0)
     return 'Shotgun12_Shell'
@@ -1465,6 +1465,16 @@ def buckshot():
     return 'Shotgun12_Pellet'
 
 
+def _closed(prof):
+    """close a lathe profile onto the axis at both ends: a solid, so normals point out (edge-wear masks need that)"""
+    prof = list(prof)
+    if prof[0][0] > 0:
+        prof = [(0.0, prof[0][1])] + prof
+    if prof[-1][0] > 0:
+        prof = prof + [(0.0, prof[-1][1])]
+    return prof
+
+
 def rocket():
     """TF2 'stock' style rocket (concept sheet): blunt nose cap, fat cone warhead, dark collar, long grey motor body with a
     dark band, flared nozzle at the back. Body fits the launcher tube (ID 89 mm); origin at the nozzle, nose along +u."""
@@ -1474,20 +1484,20 @@ def rocket():
     tip = wk.steel('M_RkTip', base='#26282b', bare='#8d9095', rough=0.45, wear=1.0, scratch=0.6)
     noz = wk.steel('M_RkNozzle', base='#1b1c1e', bare='#6a6c70', rough=0.5, wear=1.0, scratch=0.5)
     # flared nozzle bell + neck
-    make('Rk_Nozzle', lathe([(0.0, 22.0), (26.0, 20.0), (36.0, 3.0), (41.0, 0.0), (43.0, 1.5), (43.0, 9.0), (40.0, 12.0),
-                             (36.0, 22.0), (32.0, 36.0), (30.5, 52.0), (31.0, 60.0)], n=56, cap0=False, cap1=False), noz, bevel=0.0)
-    make('Rk_Throat', lathe([(0.0, 21.0), (12.0, 21.0), (12.0, 23.0), (0.0, 23.0)], n=24, cap0=False, cap1=False), dark)
+    make('Rk_Nozzle', lathe(_closed([(0.0, 22.0), (26.0, 20.0), (36.0, 3.0), (41.0, 0.0), (43.0, 1.5), (43.0, 9.0), (40.0, 12.0),
+                             (36.0, 22.0), (32.0, 36.0), (30.5, 52.0), (31.0, 60.0)]), n=56, cap0=False, cap1=False), noz, bevel=0.0)
+    make('Rk_Throat', lathe(_closed([(0.0, 21.0), (12.0, 21.0), (12.0, 23.0), (0.0, 23.0)]), n=24, cap0=False, cap1=False), dark)
     # motor body
-    make('Rk_Body', lathe([(31.0, 60.0), (35.5, 68.0), (36.0, 74.0), (36.0, 470.0)], n=56, cap0=False, cap1=False), grey)
-    make('Rk_BandRear', lathe([(36.0, 74.0), (37.2, 76.0), (37.2, 100.0), (36.0, 102.0)], n=56, cap0=False, cap1=False), dark)
-    make('Rk_BandMid', lathe([(36.0, 300.0), (37.5, 303.0), (37.5, 352.0), (36.0, 355.0)], n=56, cap0=False, cap1=False), dark)
+    make('Rk_Body', lathe(_closed([(31.0, 60.0), (35.5, 68.0), (36.0, 74.0), (36.0, 470.0)]), n=56, cap0=False, cap1=False), grey)
+    make('Rk_BandRear', lathe(_closed([(36.0, 74.0), (37.2, 76.0), (37.2, 100.0), (36.0, 102.0)]), n=56, cap0=False, cap1=False), dark)
+    make('Rk_BandMid', lathe(_closed([(36.0, 300.0), (37.5, 303.0), (37.5, 352.0), (36.0, 355.0)]), n=56, cap0=False, cap1=False), dark)
     # collar where the warhead meets the motor
-    make('Rk_Collar', lathe([(36.0, 470.0), (38.5, 472.0), (38.5, 492.0), (37.0, 496.0)], n=56, cap0=False, cap1=False), dark)
+    make('Rk_Collar', lathe(_closed([(36.0, 470.0), (38.5, 472.0), (38.5, 492.0), (37.0, 496.0)]), n=56, cap0=False, cap1=False), dark)
     # warhead: short swell to the widest point, groove, long cone to the nose
-    make('Rk_Head', lathe([(37.0, 496.0), (40.0, 512.0), (43.5, 540.0), (44.0, 556.0), (44.0, 572.0)], n=56, cap0=False, cap1=False), head)
-    make('Rk_Groove', lathe([(44.0, 572.0), (41.5, 574.0), (41.5, 580.0), (44.0, 582.0)], n=56, cap0=False, cap1=False), dark)
-    make('Rk_Cone', lathe([(44.0, 582.0), (43.0, 600.0), (33.0, 640.0), (22.0, 676.0), (17.0, 690.0)], n=56, cap0=False, cap1=False), head)
-    make('Rk_Tip', lathe([(17.0, 690.0), (15.0, 692.0), (15.0, 708.0), (12.0, 714.0), (0.0, 716.0)], n=40, cap0=False, cap1=False), tip)
+    make('Rk_Head', lathe(_closed([(37.0, 496.0), (40.0, 512.0), (43.5, 540.0), (44.0, 556.0), (44.0, 572.0)]), n=56, cap0=False, cap1=False), head)
+    make('Rk_Groove', lathe(_closed([(44.0, 572.0), (41.5, 574.0), (41.5, 580.0), (44.0, 582.0)]), n=56, cap0=False, cap1=False), dark)
+    make('Rk_Cone', lathe(_closed([(44.0, 582.0), (43.0, 600.0), (33.0, 640.0), (22.0, 676.0), (17.0, 690.0)]), n=56, cap0=False, cap1=False), head)
+    make('Rk_Tip', lathe(_closed([(17.0, 690.0), (15.0, 692.0), (15.0, 708.0), (12.0, 714.0), (0.0, 716.0)]), n=40, cap0=False, cap1=False), tip)
     PIVOT['Rocket'] = (0.0, 0.0)
     return 'Rocket'
 
