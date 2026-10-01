@@ -1478,8 +1478,8 @@ def _closed(prof):
 def rocket():
     """TF2 'stock' style rocket (concept sheet): blunt nose cap, fat cone warhead, dark collar, long grey motor body with a
     dark band, flared nozzle at the back. Body fits the launcher tube (ID 89 mm); origin at the nozzle, nose along +u."""
-    grey = wk.paint('M_RkGrey', '#4a4e52', under='#6e7276', rough=0.55, wear=0.35, scuff=0.35, col_var=0.06)
-    head = wk.paint('M_RkHead', '#393c3f', under='#686b6f', rough=0.5, wear=0.4, scuff=0.35, col_var=0.06)
+    grey = wk.paint('M_RkGrey', '#36393c', under='#5e6266', rough=0.55, wear=0.35, scuff=0.35, col_var=0.06)
+    head = wk.paint('M_RkHead', '#27292c', under='#56595d', rough=0.5, wear=0.4, scuff=0.35, col_var=0.06)
     dark = wk.paint('M_RkDark', '#18191b', under='#4a4c50', rough=0.6, wear=0.3, scuff=0.3)
     tip = wk.steel('M_RkTip', base='#26282b', bare='#8d9095', rough=0.45, wear=1.0, scratch=0.6)
     noz = wk.steel('M_RkNozzle', base='#1b1c1e', bare='#6a6c70', rough=0.5, wear=1.0, scratch=0.5)
