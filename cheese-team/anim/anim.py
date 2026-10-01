@@ -685,41 +685,32 @@ reload_lever = keyed([
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
-reload_smg = keyed([                                                 # left hand keeps the fore-end; mag rolled under, right swaps
+reload_smg = keyed([                                                 # left hand keeps the fore-end; mag rolled on top, right swaps
     (0.00, {}),
-    (0.12, dict(dg=(0, 0, 0.06), dr=(0, 4, 90), rh=('w', 120, 0, 262), rel=(-1, 0.4, -0.6))),
-    (0.20, dict(rh=('w', 120, 0, 320), ease=snap)),                                           # yank it down
-    (0.36, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
-    (0.40, dict()),
-    (0.54, dict(rh=('w', 120, 0, 320), rel=(-1, 0.4, -0.6))),
-    (0.62, dict(rh=('w', 120, 0, 262), dg=(0, 0, 0.066), ease=snap)),                         # seat
-    (0.70, dict(dg=(0, 0, 0.06))),
-    (0.84, dict(rh='grip', dr=(0, 0, 0), dg=(0, 0, 0), rel=REL_T)),
+    (0.08, dict(dg=(0.072, -0.034, -0.12))),                                                  # out and down first
+    (0.16, dict(dr=(0, 4, -90), rh=('w', 120, 0, 262), rel=(-1, 0.3, -0.2))),
+    (0.24, dict(rh=('w', 120, 0, 320), ease=snap)),                                           # yank it out the top
+    (0.38, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
+    (0.42, dict()),
+    (0.56, dict(rh=('w', 120, 0, 320), rel=(-1, 0.3, -0.2))),
+    (0.64, dict(rh=('w', 120, 0, 262), dg=(0.072, -0.034, -0.126), ease=snap)),               # seat
+    (0.72, dict(dg=(0.072, -0.034, -0.12))),
+    (0.86, dict(rh='grip', dr=(0, 0, 0), dg=(0, 0, 0), rel=REL_T)),
     (1.00, {}),
 ])
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
 _VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
-RFREE = Vector((-0.30, -0.04, 0.50))                                 # right hand parked low at the back-right
-_SIDE = dict(dg=(-0.06, 0.0, -0.11), dr=(0, 90, 0), tw=0)            # stood up beside the right hip (outside the wedge)
-_CORNER = dict(dg=(-0.18, -0.03, -0.11), dr=(-55, 90, 0), tw=55)     # squared up, walked round the front-right corner
-_HANDOFF = dict(dg=(0.094, -0.094, -0.11), dr=(-55, 90, 0), tw=55)   # front, where both hands reach it
-reload_launcher = keyed([                                            # stand it up, left hand steadies, right drops a rocket in
+_BACK = (-0.163, 0.076, 0.0)                                         # slid 0.18 m back along the tube (body frame)
+reload_launcher = keyed([                                            # RPG-style: slide it back, shove a rocket in the front
     (0.00, {}),
-    (0.06, dict(lh='rest', lel=(0.4, 1, -0.1))),
-    (0.15, dict(_SIDE)),
-    (0.25, dict(_CORNER)),
-    (0.31, dict(_HANDOFF, lh=('w', 500, 0, 86), lel=(1, 0.2, -0.6))),
-    (0.36, dict(_VERT, rh=RFREE, rel=(-1, 0.4, -0.3))),
-    (0.42, dict(rh=BELT_R, rel=(-1, 0.5, -0.2))),
-    (0.47, dict()),
-    (0.58, dict(rh=('w', 1064, 0, -86), rel=(-1, 0.2, -0.4))),                                # rocket over the muzzle
-    (0.65, dict(rh=('w', 1004, 0, -86), dg=(0.15, -0.107, -0.12), ease=snap)),               # drop it in
-    (0.70, dict(rh=('w', 1064, 0, -86), dg=(0.15, -0.107, -0.11))),
-    (0.76, dict(_HANDOFF, rh='grip', rel=REL_T)),
-    (0.82, dict(_CORNER, lh='rest', lel=(0.4, 1, -0.1))),
-    (0.90, dict(_SIDE)),
-    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, lh=None, lel=(1, 0.0, -0.8))),
+    (0.14, dict(dg=_BACK, lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.30, dict()),
+    (0.46, dict(lh=('w', 1060, -4, 0), lel=(1, 0.0, -0.8))),                                  # rocket at the muzzle
+    (0.56, dict(lh=('w', 1000, -4, 0), dg=(-0.172, 0.08, 0.0), ease=snap)),                   # shove it home
+    (0.62, dict(lh=('w', 1060, -4, 0), dg=_BACK)),
+    (0.80, dict(lh=None, dg=(0, 0, 0))),
+    (1.00, {}),
 ])
 
 # ---- blueprint: present it (fire), flip the page (reload)
