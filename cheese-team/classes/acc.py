@@ -637,7 +637,7 @@ def puff(name, P, outline_xz, thick, mat, bone='spine_01', edge=0.022, res=0.003
                 h = -bury * min(1.0, d / 0.004)
             loc, nor = P.hit((x, -1.0, z), (0, 1, 0))
             if loc is None:
-                verts.append(Vector((x, FRONT_Y + 0.05, z))); keep.append(False)
+                verts.append(Vector((x, FRONT_Y, z))); keep.append(None)
                 continue
             y = loc.y
             if hole_clamp and y > FRONT_Y + 0.003 and abs(x) < 0.186:
@@ -651,7 +651,7 @@ def puff(name, P, outline_xz, thick, mat, bone='spine_01', edge=0.022, res=0.003
         for j in range(nz):
             q = i * (nz + 1) + j
             idx = (q, q + nz + 1, q + nz + 2, q + 1)
-            if any(keep[k] for k in idx):
+            if all(keep[k] is not None for k in idx) and any(keep[k] for k in idx):
                 faces.append(idx)
     bm = bm_from(verts, faces)
     bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
