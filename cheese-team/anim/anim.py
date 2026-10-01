@@ -339,7 +339,7 @@ HOLDS = {
     # (left shoulder forward) and the gun lies across it while still pointing straight ahead (hold2 reach solver)
     'rifle': dict(twist=-65, grip=Vector((-0.09, -0.27, 0.635)), rot=dict(yaw=65, pitch=0, roll=0),
                   relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, -0.2, -0.6))),
-    'heavy': dict(twist=-55, grip=Vector((-0.12, -0.24, 0.635)), rot=dict(yaw=55, pitch=0, roll=0),
+    'heavy': dict(twist=-55, sway=0.5, grip=Vector((-0.12, -0.24, 0.635)), rot=dict(yaw=55, pitch=0, roll=0),
                   relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, 0.0, -0.8))),
     # clipboard: held by its right edge, face tilted up toward the eyes (and the over-the-shoulder camera)
     'board': dict(twist=0, grip=Vector((-0.12, -0.30, 0.54)), rot=dict(yaw=180, pitch=35, roll=0),
@@ -389,7 +389,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     lean = Matrix.Identity(4)
     if moving:
         ax = Vector((0, 0, 1)).cross(g['dir']).normalized()
-        lean = Matrix.Rotation(math.radians(3.5), 4, ax)
+        lean = Matrix.Rotation(math.radians(3.5 * (hold.get('sway', 1.0) if isinstance(hold, dict) else 1.0)), 4, ax)
     hd = rig.pb['spine_01'].matrix.translation.copy()
     # ---- legs
     for side_n, sx, ph0 in (('l', 1, 0.0), ('r', -1, 0.5)):
@@ -411,7 +411,8 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     if two:
         grip2 = H['grip2'].copy(); rot2 = dict(H['rot2'])
     if moving:
-        bobv = Vector((0.004 * math.sin(2 * PI * t), 0, 0.006 * math.sin(4 * PI * t + 0.6)))
+        sw_k = H.get('sway', 1.0)
+        bobv = Vector((0.004 * math.sin(2 * PI * t), 0, 0.006 * math.sin(4 * PI * t + 0.6))) * sw_k
         grip += bobv; rot['yaw'] += 1.5 * math.sin(2 * PI * t)
         if two:
             grip2 += Vector((-bobv.x, 0, 0.006 * math.sin(4 * PI * t + 2.2))); rot2['yaw'] -= 1.5 * math.sin(2 * PI * t)
@@ -738,17 +739,18 @@ reload_lever = keyed([
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
-reload_smg = keyed([                                                 # gun rolled so the side mag hangs down; left hand swaps it
+_SQ = dict(dg=(-0.06, 0.01, -0.135), dr=(-65, 0, 0), tw=65)         # squared up, gun low front-right, side mag toward the left hand
+reload_smg = keyed([                                                 # let go of the fore-end, square up, swap, blade back in
     (0.00, {}),
-    (0.08, dict(dg=(0.09, -0.04, 0.03))),                                                     # push it out first
-    (0.16, dict(dr=(0, 4, 90), lh=('w', 120, 0, 266), lel=(1, -0.2, -0.6))),
-    (0.24, dict(lh=('w', 120, 0, 304), ease=snap)),                                           # yank it down
-    (0.40, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.44, dict()),
-    (0.58, dict(lh=('w', 120, 0, 304), lel=(1, -0.2, -0.6))),
-    (0.66, dict(lh=('w', 120, 0, 266), dg=(0.09, -0.04, 0.036), ease=snap)),                   # seat
-    (0.72, dict(dg=(0.09, -0.04, 0.03))),
-    (0.86, dict(lh=None, lel=None, dr=(0, 0, 0), dg=(0, 0, 0))),
+    (0.08, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.22, dict(_SQ, lh=('w', 120, 0, 253), lel=(1, -0.2, -0.6))),
+    (0.28, dict(lh=('w', 120, 0, 320), ease=snap)),                                           # yank it out
+    (0.42, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.46, dict()),
+    (0.60, dict(lh=('w', 120, 0, 320), lel=(1, -0.2, -0.6))),
+    (0.68, dict(lh=('w', 120, 0, 253), dg=(-0.066, 0.01, -0.135), ease=snap)),               # seat
+    (0.74, dict(dg=(-0.06, 0.01, -0.135), lh='rest', lel=(0.4, 1, -0.1))),
+    (0.90, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, lh=None, lel=None)),
     (1.00, {}),
 ])
 
@@ -794,7 +796,7 @@ WDEF = {
                        fire=(32, fire_lever, False), reload=(84, reload_lever)),
     'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(240, -57, 0)),
                       fire=(12, shake(12, 0.004, 1.5, 4), True), reload=(64, reload_smg)),
-    'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.15, -0.27, 0.61)), support=(700, -87, 0)),
+    'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.15, -0.27, 0.59)), support=(700, -87, 0)),
                            fire=(30, kick(30, 0.022, 0.016, 6, 0.0, decay=5.0), False), reload=(76, reload_launcher)),
     'Minigun':   dict(hold='heavy', over=dict(support=(228, -166, 0)), fire=(12, shake(12, 0.006, 1.2, 6), True), reload=None),
     'Blueprint': dict(hold='board', over=dict(hold_pt=(10, 0, 128)), fire=(24, fire_board, False), reload=(44, reload_board)),
