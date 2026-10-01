@@ -787,6 +787,54 @@ def rag_towel_mat(name='M_ShopTowel'):
     return m
 
 
+def alpha_mat(m):
+    """use the image alpha for coverage (soft decal edges)"""
+    nt = m.node_tree
+    tx = next(n for n in nt.nodes if n.type == 'TEX_IMAGE'); bs = next(n for n in nt.nodes if n.type == 'BSDF_PRINCIPLED')
+    nt.links.new(tx.outputs['Alpha'], bs.inputs['Alpha'])
+    for attr, val in (('surface_render_method', 'BLENDED'), ('blend_method', 'BLEND')):
+        try:
+            setattr(m, attr, val)
+        except (AttributeError, TypeError):
+            pass
+    try:
+        m.use_backface_culling = True
+    except AttributeError:
+        pass
+    return m
+
+
+def tex_decal(P, name, cx, cz, L, W, ang, mat, flip=False, off=0.0009, nu=28, nv=10):
+    """textured quad decal (u along the swipe) projected onto the FRONT of the body, UV 0..1"""
+    import bmesh
+    ud = Vector((math.cos(ang), 0, math.sin(ang))); vd = Vector((-math.sin(ang), 0, math.cos(ang)))
+    verts = []; uvs = []; faces = []; ok = []
+    for i in range(nu + 1):
+        for j in range(nv + 1):
+            u = (i / nu - 0.5) * L; v = (j / nv - 0.5) * W
+            p = Vector((cx, 0, cz)) + ud * u + vd * v
+            loc, nor = P.hit((p.x, -1.0, p.z), (0, 1, 0))
+            ok.append(loc is not None)
+            y = (loc.y if loc is not None else A.FRONT_Y) - off
+            verts.append(Vector((p.x, y, p.z))); uvs.append((i / nu, (1 - j / nv) if flip else j / nv))
+    for i in range(nu):
+        for j in range(nv):
+            q = i * (nv + 1) + j
+            idx = (q, q + nv + 1, q + nv + 2, q + 1)
+            if all(ok[k] for k in idx):
+                faces.append(idx)
+    bm = A.bm_from(verts, faces)
+    bmesh.ops.delete(bm, geom=[v for v in bm.verts if not v.link_faces], context='VERTS')
+    uvl = bm.loops.layers.uv.new('UVMap')
+    bm.verts.index_update()
+    # bm_from keeps creation order; map back through coordinates
+    lut = {tuple(round(c, 7) for c in vv): uv for vv, uv in zip(verts, uvs)}
+    for f in bm.faces:
+        for lp in f.loops:
+            lp[uvl].uv = lut[tuple(round(c, 7) for c in lp.vert.co)]
+    return A.make_obj(name, bm, mat, 'spine_01', smooth=True)
+
+
 def smudge_outline(cx, cz, length, width, ang, seed, fingers=3):
     """finger-swipe smear: a few parallel, tapering streaks merged into one ragged outline"""
     rng = random.Random(seed)
@@ -922,14 +970,13 @@ def mechanic(P, T):
     print('mech cap fit', A.fit_hat(P, cap, cap[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=4.0))
     print('mech cap drape', A.drape(P, cap, cap[:2] + [o for o in cap if o.name == 'Mech_Brim'], H.col[2][:3]))
     obs += cap
-    # black grease smudges (finger swipes) on the wedge
-    gm = grease_mat()
-    front = A.frame_matrix(Vector((0, A.FRONT_Y, 0)), Vector((1, 0, 0)), Vector((0, 0, 1)), Vector((0, -1, 0)))
-    for k, (cx, cz, L, W, ang) in enumerate(((-0.040, 0.628, 0.105, 0.040, math.radians(52)),
-                                            (-0.136, 0.880, 0.064, 0.034, math.radians(-58)),
-                                            (0.150, 0.648, 0.058, 0.030, math.radians(-60)))):
-        ol = smudge_outline(cx, cz, L, W, ang, seed=k * 7 + 3)
-        obs.append(A.decal('Mech_Grease%d' % k, P, ol, front, (0, 1, 0), gm, off=0.0009, res=0.003))
+    # black grease smudges (finger swipes) on the wedge: soft alpha decals
+    gm = A.mat_image('M_GreaseSmear', 'grease_smear.png', rough=0.35, bump=0.0)
+    alpha_mat(gm)
+    for k, (cx, cz, L, W, ang, flip) in enumerate(((-0.040, 0.630, 0.118, 0.050, math.radians(38), False),
+                                                  (-0.140, 0.885, 0.078, 0.036, math.radians(-62), True),
+                                                  (0.150, 0.650, 0.064, 0.030, math.radians(-118), False))):
+        obs.append(tex_decal(P, 'Mech_Grease%d' % k, cx, cz, L, W, ang, gm, flip=flip))
     # red shop rag stuffed into the big jaw hole, a tail hanging out
     rag = A.mat_plain('M_ShopRag', '#b3231d', rough=0.9, col2='#8c1813', nscale=70, bump=0.35, bscale=1400)
     ragt = rag_towel_mat()

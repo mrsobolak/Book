@@ -108,6 +108,42 @@ def bandaid(name='bandaid'):
     im.save(os.path.join(OUT, name + '.png'))
 
 
+def grease(name='grease_smear'):
+    """RGBA finger-swipe grease smear (u along the swipe): 3-4 soft streaks, thick at the start, dragging out"""
+    W, H = 1024, 384
+    rng = np.random.RandomState(5)
+    alpha = np.zeros((H, W)); dark = np.zeros((H, W))
+    yy, xx = np.mgrid[0:H, 0:W].astype(float)
+    t = xx / W
+    lanes = [0.30, 0.47, 0.63, 0.78]
+    for k, c in enumerate(lanes):
+        c += 0.02 * rng.randn()
+        wd = (0.115 - 0.012 * k) * (1.0 - 0.5 * t) * (0.6 + 0.4 * np.clip(t * 6, 0, 1))
+        cy = (c + 0.04 * np.sin(t * 5 + k) + 0.05 * t * (k - 1.5) * 0.4) * H
+        d = np.abs(yy - cy) / (wd * H + 1e-6)
+        streak = np.clip(1.0 - d ** 2.6, 0, 1)
+        fade = np.clip(1.2 - t * (0.95 + 0.25 * rng.rand()), 0, 1) ** 0.9 * np.clip((t - 0.03) / 0.10, 0, 1)
+        alpha = np.maximum(alpha, streak * fade * (0.97 - 0.06 * k))
+    # thick blob where the finger first pressed + speckle + streak texture
+    blob = np.exp(-(((xx - 0.12 * W) / (0.075 * W)) ** 2 + ((yy - 0.54 * H) / (0.33 * H)) ** 2) ** 1.5)
+    alpha = np.maximum(alpha, blob * 0.97)
+    grain = np.asarray(Image.fromarray((rng.rand(H, W) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.2))) / 255.0
+    streaks = np.asarray(Image.fromarray((rng.rand(H, W // 16) * 255).astype(np.uint8)).resize((W, H), Image.BILINEAR).filter(ImageFilter.GaussianBlur(0.8))) / 255.0
+    alpha = alpha * (0.82 + 0.18 * streaks) * (0.9 + 0.2 * grain)
+    alpha = alpha * np.clip((1 - t) / 0.1, 0, 1) * np.clip(t / 0.03, 0, 1) * np.clip(np.minimum(yy, H - yy) / (0.06 * H), 0, 1)
+    for _ in range(140):
+        x0, y0 = rng.rand() * W * 0.95, rng.rand() * H
+        r = rng.rand() * 3 + 1
+        alpha = np.maximum(alpha, np.exp(-(((xx - x0) ** 2 + (yy - y0) ** 2) / (r * r))) * 0.55 * (alpha > 0.05))
+    a = np.asarray(Image.fromarray((np.clip(alpha, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.6))) / 255.0
+    col = np.zeros((H, W, 3))
+    lo = np.array([16, 13, 10]); hi = np.array([62, 50, 38])
+    m = np.clip(1.0 - a, 0, 1)[..., None]
+    col = lo + (hi - lo) * m * (0.7 + 0.3 * grain[..., None])
+    rgba = np.dstack([col, a * 255]).astype(np.uint8)
+    Image.fromarray(rgba, 'RGBA').save(os.path.join(OUT, name + '.png'))
+
+
 if __name__ == '__main__':
-    paisley(); southwest(); trucker_mesh(); bandaid()
+    paisley(); southwest(); trucker_mesh(); bandaid(); grease()
     print(sorted(os.listdir(OUT)))
