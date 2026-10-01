@@ -1,0 +1,106 @@
+{
+ "name": "SM_FlagCheese_Bleu",
+ "draft": false,
+ "tris": 2134,
+ "budget": 3000,
+ "within_budget": true,
+ "lod1_tris": null,
+ "target_xyz": [
+  1.2,
+  1.2,
+  0.42
+ ],
+ "dims_xyz": [
+  1.1699,
+  1.212,
+  0.42
+ ],
+ "dims_dev": [
+  -0.025,
+  0.01,
+  0.0
+ ],
+ "pivot": "center",
+ "pivot_shift": [
+  0.0227,
+  0.0004,
+  -0.0
+ ],
+ "bbox_min": [
+  -0.5849,
+  -0.606,
+  -0.21
+ ],
+ "bbox_max": [
+  0.5849,
+  0.606,
+  0.21
+ ],
+ "texture": 2048,
+ "px_per_m": 877.1,
+ "uv_coverage": 0.68,
+ "area_m2": 3.706,
+ "ucx": 1,
+ "slots": [
+  "M_FlagCheese_Bleu"
+ ],
+ "materials": {
+  "bleu_rind_80bbf5": {
+   "recipe": "bleu_rind",
+   "slot": "base"
+  },
+  "bleu_paste_43e342": {
+   "recipe": "bleu_paste",
+   "slot": "base"
+  }
+ },
+ "ctx": {
+  "edge_r": 0.0215,
+  "cav_d": 0.0548,
+  "ao_d": 0.3905,
+  "bevel_r": 0.0025
+ },
+ "note": "Pivot at the wheel centre. Wedge (45 deg) faces +X.",
+ "seconds": 221.6,
+ "log": [
+  [
+   "bake",
+   "MASK_FlagCheese_Bleu",
+   47.6
+  ],
+  [
+   "bake",
+   "COL_FlagCheese_Bleu",
+   14.3
+  ],
+  [
+   "bake",
+   "RM_FlagCheese_Bleu",
+   4.5
+  ],
+  [
+   "bake",
+   "NRM_FlagCheese_Bleu",
+   50.9
+  ],
+  [
+   "textures",
+   "FlagCheese_Bleu"
+  ],
+  [
+   "render",
+   "SM_FlagCheese_Bleu_preview.jpg",
+   73.0
+  ]
+ ],
+ "files": [
+  "SM_FlagCheese_Bleu.fbx",
+  "SM_FlagCheese_Bleu.glb",
+  "SM_FlagCheese_Bleu.report.json",
+  "SM_FlagCheese_Bleu_preview.jpg",
+  "T_FlagCheese_Bleu_BaseColor.png",
+  "T_FlagCheese_Bleu_Normal.gl.png",
+  "T_FlagCheese_Bleu_Normal.png",
+  "T_FlagCheese_Bleu_ORM.png"
+ ]
+}

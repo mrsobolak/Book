@@ -1,0 +1,162 @@
+{
+ "name": "SM_VaultDoor_Open",
+ "draft": false,
+ "tris": 7550,
+ "budget": 8000,
+ "within_budget": true,
+ "lod1_tris": 3775,
+ "target_xyz": [
+  0.7,
+  3.7,
+  3.7
+ ],
+ "dims_xyz": [
+  0.731,
+  4.068,
+  3.8861
+ ],
+ "dims_dev": [
+  0.044,
+  0.099,
+  0.05
+ ],
+ "pivot": "bottom",
+ "pivot_shift": [
+  0.0095,
+  0.091,
+  1.943
+ ],
+ "bbox_min": [
+  -0.3655,
+  -2.034,
+  0.0
+ ],
+ "bbox_max": [
+  0.3655,
+  2.034,
+  3.8861
+ ],
+ "texture": 2048,
+ "px_per_m": 237.7,
+ "uv_coverage": 0.548,
+ "area_m2": 40.647,
+ "ucx": 8,
+ "slots": [
+  "M_VaultDoor_Open"
+ ],
+ "materials": {
+  "steel_d2d895": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "steel_0fd569": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "rubber_728960": {
+   "recipe": "rubber",
+   "slot": "base"
+  },
+  "steel_fa7f92": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "steel_f144d7": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "steel_3ecb06": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "steel_14e3a2": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "brass_bf175e": {
+   "recipe": "brass",
+   "slot": "base"
+  },
+  "steel_bc237d": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "chrome_e9c007": {
+   "recipe": "chrome",
+   "slot": "base"
+  },
+  "brass_4cb147": {
+   "recipe": "brass",
+   "slot": "base"
+  },
+  "steel_9f8608": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "steel_beec8b": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "iron_08de57": {
+   "recipe": "iron",
+   "slot": "base"
+  },
+  "steel_810007": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "paint_4d6b0b": {
+   "recipe": "paint",
+   "slot": "base"
+  }
+ },
+ "ctx": {
+  "edge_r": 0.0338,
+  "cav_d": 0.0962,
+  "ao_d": 0.7673,
+  "bevel_r": 0.0093
+ },
+ "note": "Round vault door shown open, standing on its own (rests on its two lowest locking bolts). Outer face +X. Hinge barrel/blocks sit outboard of the disc on -Y, so bbox Y is ~9% over (deliberate). Hinge pin axis (vertical) at x=+0.15, y=-2.00 from the disc centre.",
+ "seconds": 370.7,
+ "log": [
+  [
+   "bake",
+   "MASK_VaultDoor_Open",
+   83.7
+  ],
+  [
+   "bake",
+   "COL_VaultDoor_Open",
+   20.0
+  ],
+  [
+   "bake",
+   "RM_VaultDoor_Open",
+   11.9
+  ],
+  [
+   "bake",
+   "NRM_VaultDoor_Open",
+   82.6
+  ],
+  [
+   "textures",
+   "VaultDoor_Open"
+  ],
+  [
+   "render",
+   "SM_VaultDoor_Open_preview.jpg",
+   128.3
+  ]
+ ],
+ "files": [
+  "SM_VaultDoor_Open.fbx",
+  "SM_VaultDoor_Open.glb",
+  "SM_VaultDoor_Open_LOD1.fbx",
+  "SM_VaultDoor_Open_preview.jpg",
+  "T_VaultDoor_Open_BaseColor.png",
+  "T_VaultDoor_Open_Normal.gl.png",
+  "T_VaultDoor_Open_Normal.png",
+  "T_VaultDoor_Open_ORM.png"
+ ]
+}
