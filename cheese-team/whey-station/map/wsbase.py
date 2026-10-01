@@ -112,43 +112,60 @@ def base(K, T):
     K.prop('pallet_stack', 14.0, 0, 13.6, 0.1, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
     K.light(17, 9.3, 4, '#ffe9c8', 1.6, 18)
     K.area('Loading Yard', 10, -6, 24, 15, 0, team=T)
-    # ---------------- FLAG ROOM (d 12-30, z -24..-6): plain TF2 walls, open floor, capture pad ----------------
+    # ---------------- FLAG ROOM (d 12-30, z -24..-6): plain TF2 block walls with pilasters, open floor, capture pad + beacon ----------------
     K.wall2('z', -24, -6, 12, WT, 0, 8)
     K.wall2('z', -24, -4, 30, WT, 0, 8, holes=[(-18, -14, 0, 3.2)])
     P.opening('z', -18, -14, 30, WT, 0, 3.2, mat='TF_Steel')
     K.slab('TF_Ceiling', 12, -24, 30, -6, 8.0, 8.3, holes=[(16.5, -18, 22.5, -12)], col=False)
     for z in (-21.5, -8.5):
         P.hbeam(12, 30, z, 8.0, d=0.4, w=0.2)
+    # pilasters give the walls rhythm (concrete, steel foot)
+    for (a0, b0, a1, b1) in ((15.7, -23.8, 16.3, -23.5), (22.7, -23.8, 23.3, -23.5),          # back wall
+                             (12.2, -20.3, 12.5, -19.7), (12.2, -10.3, 12.5, -9.7),            # west wall
+                             (29.5, -22.3, 29.8, -21.7), (29.5, -10.3, 29.8, -9.7)):           # east wall
+        K.box('TF_Conc', a0, 0, b0, a1, 8.0, b1)
+        K.box('TF_Steel', a0 - 0.03, 0, b0 - 0.03 if b0 > -23.8 else b0, a1 + 0.03, 0.25, b1 + 0.03)
     fx, fy, fz = 19.5, 0.0, -15.0          # clear of the hatch stair (d 24.3..30)
-    K.box('TF_Tile', fx - 4.5, 0.0, fz - 4.5, fx + 4.5, 0.012, fz + 4.5, bevel=False)   # white tile apron
-    # capture pad: concrete step, glowing team ring, tile top, centre marker
-    K.cyl('TF_Hazard', fx, 0.0, fz, 3.45, 0.02, seg=48)
-    K.cyl('TF_Conc', fx, 0.0, fz, 3.0, 0.15, seg=48, col=True)
-    K.cyl(tm('TF_Glow'), fx, 0.15, fz, 2.78, 0.14, seg=48)
-    K.cyl('TF_Tile', fx, 0.15, fz, 2.6, 0.15, seg=48, col=True)
-    K.cyl('TF_Conc', fx, 0.3, fz, 0.55, 0.12, seg=24, col=True)
-    K.cyl(tm('TF_Glow'), fx, 0.42, fz, 0.38, 0.02, seg=24)
+    # floor: white tile apron with a steel edge
+    K.box('TF_Tile', fx - 4.5, 0.0, fz - 4.5, fx + 4.5, 0.012, fz + 4.5, bevel=False)
+    for (a0, b0, a1, b1) in ((fx - 4.58, fz - 4.58, fx + 4.58, fz - 4.5), (fx - 4.58, fz + 4.5, fx + 4.58, fz + 4.58),
+                             (fx - 4.58, fz - 4.5, fx - 4.5, fz + 4.5), (fx + 4.5, fz - 4.5, fx + 4.58, fz + 4.5)):
+        K.box('TF_Steel', a0, 0.0, b0, a1, 0.02, b1, bevel=False)
+    # capture pad: hazard ring, concrete step with a steel lip and bolts, glowing team channel, tile top, flag socket
+    K.cyl('TF_Hazard', fx, 0.0, fz, 3.45, 0.016, seg=64)
+    K.cyl('TF_Conc', fx, 0.0, fz, 3.1, 0.12, seg=64, col=True)
+    K.cyl('TF_Steel', fx, 0.09, fz, 3.13, 0.04, seg=64)
+    for k in range(12):
+        a = k * PI / 6
+        K.cyl('TF_Steel', fx + 2.95 * math.cos(a), 0.12, fz + 2.95 * math.sin(a), 0.05, 0.025, seg=6)
+    K.cyl(tm('TF_Glow'), fx, 0.12, fz, 2.82, 0.1, seg=64)
+    K.cyl('TF_Tile', fx, 0.12, fz, 2.65, 0.12, seg=64, col=True)
+    K.cyl('TF_Steel', fx, 0.24, fz, 0.75, 0.04, seg=32)
+    K.cyl(tm('TF_Glow'), fx, 0.28, fz, 0.55, 0.012, seg=32)
+    K.cyl('TF_Steel', fx, 0.28, fz, 0.12, 0.25, seg=12)                                     # flag socket
+    # capture beacon: a conical steel lamp hung from a beam across the skylight, team-colour glow ring underneath
     K.box('Glass', fx - 3, 8.05, fz - 3, fx + 3, 8.1, fz + 3)
-    # capture lamp: a round steel hood hanging over the pad on three cables, glowing team colour underneath
-    TP = tm('TF_Paint')
-    K.cyl('TF_Steel', fx, 5.6, fz, 2.8, 0.25, seg=48)
-    K.cyl(TP, fx, 5.63, fz, 2.84, 0.16, seg=48)
-    K.cyl(tm('TF_Glow'), fx, 5.58, fz, 2.5, 0.02, seg=48)
-    for k in range(3):
-        a = k * 2 * PI / 3 + 0.5
-        K.cyl('TF_Steel', fx + 2.3 * math.cos(a), 5.85, fz + 2.3 * math.sin(a), 0.025, 2.15, seg=6)
-    # team backdrop behind the pad: corrugated team-colour cladding framed in steel on the back wall
-    K.box(tm('TF_Corr'), 15.0, 0.0, -23.8, 24.0, 7.5, -23.7)
-    for d in (15.0, 24.0):
-        K.box('TF_Steel', d - 0.1, 0.0, -23.8, d + 0.1, 7.6, -23.62)
-    K.box('TF_Steel', 14.9, 7.5, -23.8, 24.1, 7.7, -23.62)
-    K.light(fx, 7.5, fz, '#ffb070' if T == 'C' else '#8ab8ff', 2.6, 14)
-    K.light(fx, 4.8, fz, '#fff4e0', 1.2, 10)
-    # low cover walls for the defenders, one by each ground door
+    for (a0, b0, a1, b1) in ((16.5, -18.0, 22.5, -17.8), (16.5, -12.2, 22.5, -12.0), (16.5, -17.8, 16.7, -12.2), (22.3, -17.8, 22.5, -12.2)):
+        K.box('TF_Steel', a0, 7.85, b0, a1, 8.0, b1)                                       # skylight frame
+    K.box('TF_Steel', 16.7, 7.6, fz - 0.15, 22.3, 7.85, fz + 0.15)                         # hanger beam
+    K.cyl('TF_Steel', fx, 6.4, fz, 0.06, 1.2, seg=10)                                      # drop rod
+    K.cyl('TF_Steel', fx, 6.1, fz, 0.35, 0.3, seg=24)                                      # hub
+    K.cyl('TF_Steel', fx, 5.55, fz, 2.3, 0.55, seg=64, r2=0.45)                            # cone hood
+    K.cyl(tm('TF_Paint'), fx, 5.43, fz, 2.33, 0.12, seg=64)                                # thin team rim
+    K.cyl(tm('TF_Glow'), fx, 5.41, fz, 2.25, 0.02, seg=64)                                 # glow ring...
+    K.cyl('TF_Steel', fx, 5.39, fz, 1.65, 0.02, seg=48)                                    # ...around a steel reflector
+    K.cyl(tm('TF_Glow'), fx, 5.37, fz, 0.3, 0.02, seg=24)
+    K.light(fx, 5.0, fz, '#ffb070' if T == 'C' else '#8ab8ff', 2.4, 12)
+    K.light(fx, 7.2, fz, '#fff4e0', 1.0, 12)
+    # ceiling fluorescents
+    for (d, z) in ((14.5, -20.5), (14.5, -9.5), (27.0, -9.5), (27.0, -21.5)):
+        K.lamp_prop(d, 8.0, z, color='#fff2dc', intensity=1.3, dist=13)
+    # low cover walls for the defenders, one by each ground door (concrete, steel cap and corner guards)
     for (a0, b0, a1, b1) in ((13.4, -9.8, 16.6, -9.4), (25.0, -20.6, 28.2, -20.2)):
         K.box('TF_Conc', a0, 0, b0, a1, 1.2, b1, col=True)
-        K.box('TF_Steel', a0 - 0.03, 1.2, b0 - 0.03, a1 + 0.03, 1.3, b1 + 0.03)
-    K.light(15, 7.4, -9, '#fff0d8', 1.0, 12); K.light(26, 7.4, -21, '#fff0d8', 1.0, 12)
+        K.box('TF_Steel', a0 - 0.03, 1.2, b0 - 0.03, a1 + 0.03, 1.28, b1 + 0.03)
+        for a in (a0 - 0.04, a1 - 0.08):
+            K.box('TF_Steel', a, 0, b0 - 0.04, a + 0.12, 1.2, b1 + 0.04)
     K.area('Flag Room', 12, -24, 30, -6, 0, team=T, kind='flag')
     K.label('FLAG', fx, 2.0, fz, team=T, kind='flag')
     # ---------------- main corridor ----------------
