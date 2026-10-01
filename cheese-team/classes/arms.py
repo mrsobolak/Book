@@ -52,23 +52,24 @@ def lengthen(ku=KU, kl=KL):
     # ---- bones (edit in armature space; descendants of the lower arm ride the wrist)
     B2A = A2B.inverted()
     vw = bpy.context.view_layer
-    prev = vw.objects.active
     for o in vw.objects:
         o.select_set(False)
     arm.hide_set(False); arm.select_set(True); vw.objects.active = arm
-    bpy.ops.object.mode_set(mode='EDIT')
-    eb = arm.data.edit_bones
-    for s in ('l', 'r'):
-        H1, T1, T2, d1, d2 = plan[s]
-        e1 = B2A.to_3x3() @ d1; e2 = B2A.to_3x3() @ d2
-        up = eb['upperarm_' + s]; lo = eb['lowerarm_' + s]
-        up.tail = up.tail + e1
-        lo.head = lo.head + e1; lo.tail = lo.tail + e2
-        for c in lo.children_recursive:
-            c.head = c.head + e2; c.tail = c.tail + e2
-    bpy.ops.object.mode_set(mode='OBJECT')
+    win = bpy.context.window_manager.windows[0]
+    ctx = dict(window=win, screen=win.screen, active_object=arm, object=arm, view_layer=vw,
+               selected_objects=[arm], selected_editable_objects=[arm])
+    with bpy.context.temp_override(**ctx):
+        bpy.ops.object.mode_set(mode='EDIT')
+        eb = arm.data.edit_bones
+        for s in ('l', 'r'):
+            H1, T1, T2, d1, d2 = plan[s]
+            e1 = B2A.to_3x3() @ d1; e2 = B2A.to_3x3() @ d2
+            up = eb['upperarm_' + s]; lo = eb['lowerarm_' + s]
+            up.tail = up.tail + e1
+            lo.head = lo.head + e1; lo.tail = lo.tail + e2
+            for c in lo.children_recursive:
+                c.head = c.head + e2; c.tail = c.tail + e2
+        bpy.ops.object.mode_set(mode='OBJECT')
     arm.select_set(False)
-    if prev:
-        vw.objects.active = prev
     arm['arm_k'] = (ku, kl)
     vw.update()
