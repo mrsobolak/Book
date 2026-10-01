@@ -41,6 +41,21 @@ MATS = {
     'Stainless': ('metal_plate_02', 2.0, '#b9bcbc', 0.32, 0.85), 'SteelPlate': ('metal_plate_02', 2.0, '#6d6c69', 0.5, 0.6),
     'Grid': ('rusty_metal_grid', 1.8, '#6c7a78', 0.6, 0.4), 'RustCoarse': ('rust_coarse_01', 2.2, '#6f4a33', 0.85, 0.2),
 }
+# --- TF2-style ("illustrative") set: procedurally painted textures from tools/tf_textures.py (textures_tf/) ---
+MATS.update({
+    'TF_Wall': ('tf_wall_block', 4.0, '#d9d0bb', 0.85, 0), 'TF_Dado': ('tf_wall_dado', 2.0, '#7d8274', 0.8, 0),
+    'TF_Floor': ('tf_floor_dark', 4.0, '#3f4042', 0.7, 0), 'TF_Tile': ('tf_tile_white', 2.0, '#ebe8e0', 0.35, 0),
+    'TF_Steel': ('tf_steel_dark', 2.0, '#4d5154', 0.55, 0.3), 'TF_Conc': ('tf_concrete', 4.0, '#a9a69d', 0.9, 0),
+    'TF_Brick': ('tf_brick', 2.0, '#8e4f3a', 0.9, 0), 'TF_Shutter': ('tf_shutter', 2.0, '#7f8287', 0.6, 0.2),
+    'TF_Grate': ('tf_grate', 0.5, '#3a3c3f', 0.6, 0.4), 'TF_Wood': ('tf_wood', 1.2, '#ad8a56', 0.8, 0),
+    'TF_Hazard': ('tf_hazard', 0.5, '#e0b52c', 0.6, 0), 'TF_Machine': ('tf_machine', 3.0, '#7d989b', 0.5, 0.2),
+    'TF_Ceiling': ('tf_ceiling', 2.0, '#c9c5ba', 0.9, 0), 'TF_Arrow': ('tf_sign_arrow', 1.0, '#cfcdc6', 0.6, 0),
+    'TF_Paint_C': ('tf_paint_metal', 2.4, '#b4561c', 0.55, 0.1), 'TF_Paint_B': ('tf_paint_metal', 2.4, '#2f5f94', 0.55, 0.1),
+    'TF_Corr_C': ('tf_corr', 2.0, '#a85420', 0.6, 0.2), 'TF_Corr_B': ('tf_corr', 2.0, '#2c5888', 0.6, 0.2),
+    'TF_Emblem_C': ('tf_emblem', 1.0, '#c8601c', 0.6, 0), 'TF_Emblem_B': ('tf_emblem', 1.0, '#33669f', 0.6, 0),
+    'TF_Bulb': (None, 1, '#fff2c8', 0.3, 0),
+})
+SIGN_PREFIX = ('TF_Emblem', 'TF_Arrow')      # these get 0..1 UVs per face (one picture per sign face)
 FLOORS = [0.0]          # walking levels used for floor-grime; the map module sets this
 
 
@@ -217,6 +232,37 @@ class Kit:
                             self.col(c - t / 2, ya, S[i], c + t / 2, yb, S[i + 1])
                         run = None
 
+    def wall2(self, axis, s0, s1, c, t, y0, y1, holes=(), lower='TF_Dado', upper='TF_Wall', band=1.2, trim='TF_Steel', col=True):
+        """TF2-style wall: darker painted lower band, cream block upper part, thin steel trim line between"""
+        yb = y0 + band
+        if y1 <= yb + 0.05:
+            self.wall(lower, axis, s0, s1, c, t, y0, y1, holes, col=col, band=False); return
+        self.wall(lower, axis, s0, s1, c, t, y0, yb, holes, col=col, band=False)
+        self.wall(upper, axis, s0, s1, c, t, yb, y1, holes, col=col, band=False)
+        # trim strip on both faces, skipping holes that cross the band
+        cuts = sorted([(h[0], h[1]) for h in holes if h[2] < yb + 0.06 and h[3] > yb - 0.06])
+        segs, a = [], s0
+        for h0, h1 in cuts:
+            if h0 > a: segs.append((a, min(h0, s1)))
+            a = max(a, h1)
+        if a < s1: segs.append((a, s1))
+        for a0, a1 in segs:
+            for f in (-1, 1):
+                cc0, cc1 = c + f * t / 2, c + f * (t / 2 + 0.035)
+                if axis == 'x':
+                    self.box(trim, a0, yb - 0.05, min(cc0, cc1), a1, yb + 0.05, max(cc0, cc1))
+                else:
+                    self.box(trim, min(cc0, cc1), yb - 0.05, a0, max(cc0, cc1), yb + 0.05, a1)
+
+    def lamp(self, x, yc, z, drop=2.0, light=True, color='#ffe7c2', intensity=1.4, dist=16):
+        """hanging industrial lamp: cable from ceiling yc, shade, bulb"""
+        yl = yc - drop
+        self.cyl('TF_Steel', x, yl + 0.35, z, 0.012, drop - 0.35, seg=6)
+        self.cyl('TF_Steel', x, yl, z, 0.42, 0.35, seg=16, r2=0.08)
+        self.cyl('TF_Bulb', x, yl - 0.06, z, 0.14, 0.08, seg=10)
+        if light:
+            self.light(x, yl - 0.3, z, color, intensity, dist)
+
     # ---------- helpers ----------
     @staticmethod
     def rect_minus(x0, z0, x1, z1, holes, fn):
@@ -315,19 +361,35 @@ def finish_bmesh(b, mat, bevel=0.012):
     b.normal_update()
     uv = b.loops.layers.uv.new('UVMap')
     colr = b.loops.layers.float_color.new('Col')
+    sign = mat.startswith(SIGN_PREFIX)
+    tf = mat.startswith('TF_')
     for f in b.faces:
         n = f.normal
         ax, ay, az = abs(n.x), abs(n.y), abs(n.z)
         horiz = az >= ax and az >= ay
-        for l in f.loops:
-            co = l.vert.co
+        if sign:
             if horiz:
+                pa = [(l.vert.co.x, l.vert.co.y) for l in f.loops]
+            elif ax >= ay:
+                pa = [(-l.vert.co.y if n.x > 0 else l.vert.co.y, l.vert.co.z) for l in f.loops]
+            else:
+                pa = [(l.vert.co.x if n.y < 0 else -l.vert.co.x, l.vert.co.z) for l in f.loops]
+            us = [a for a, _ in pa]; vs = [b_ for _, b_ in pa]
+            u0, u1, v0, v1 = min(us), max(us), min(vs), max(vs)
+        for li, l in enumerate(f.loops):
+            co = l.vert.co
+            if sign:
+                l[uv].uv = ((pa[li][0] - u0) / max(1e-6, u1 - u0), (pa[li][1] - v0) / max(1e-6, v1 - v0))
+            elif horiz:
                 l[uv].uv = (co.x, co.y)
             elif ax >= ay:
                 l[uv].uv = (co.y, co.z)
             else:
                 l[uv].uv = (co.x, co.z)
-            g = 1.0 + 0.10 * noise.noise(co * 0.21) + 0.05 * noise.noise(co * 1.3)
+            if tf:
+                g = 1.0 + 0.04 * noise.noise(co * 0.15)
+            else:
+                g = 1.0 + 0.10 * noise.noise(co * 0.21) + 0.05 * noise.noise(co * 1.3)
             if not horiz:
                 h = co.z - floor_below(co.z)
                 g *= 1.0 - 0.28 * max(0.0, 1.0 - h / 0.65)
@@ -357,6 +419,11 @@ def make_material(name, texdir):
     bsdf.inputs['Roughness'].default_value = rough
     bsdf.inputs['Metallic'].default_value = metal
     lin = hex_lin(col)
+    if key == 'TF_Bulb':
+        bsdf.inputs['Base Color'].default_value = (*lin, 1)
+        bsdf.inputs['Emission Color'].default_value = (*lin, 1)
+        bsdf.inputs['Emission Strength'].default_value = 6.0
+        return m
     if key == 'Glass':
         bsdf.inputs['Base Color'].default_value = (*lin, 1)
         bsdf.inputs['Alpha'].default_value = 0.45
