@@ -37,10 +37,11 @@ def ov(active=None, selected=None):
 
 
 def build(cls):
-    for m in ('classes', 'acc'):
+    for m in ('classes', 'acc', 'arms'):
         sys.modules.pop(m, None)
-    import acc, classes
+    import acc, classes, arms
     bpy.ops.wm.open_mainfile(filepath=os.path.join(HERE, 'src', 'cheese', 'CheesePlayer.blend'))
+    arms.lengthen()
     P = acc.Probe(); T = acc.top_frame(P)
     classes.BUILDERS[cls](P, T)
     return acc, classes
