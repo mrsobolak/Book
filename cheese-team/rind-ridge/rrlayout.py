@@ -30,8 +30,10 @@ MAX_GRADE = 0.10
 #  alcove pads are cut straight into a cliff (no blend: the rock rises sheer round the building)
 PADS = {
     'cheddar_spawn': (-196, -170, -168, -147, 2.3, True),     # Cheddar's bunker in the south canyon wall
+    'cheddar_yard':  (-198, -147, -166, -134, 2.3, False),    # level yard in front of it
     'ranch':         (-96, -102, -74, -86, 'A', False),       # Cheddar forward spawn after A (the barn)
     'mine':          (68, -108, 90, -93, 'B', False),         # Bleu forward spawn until B (mine head house)
     'sawmill':       (104, 48, 124, 66, 'C', False),            # Cheddar forward spawn after C
     'bleu_spawn':    (-16, 25, 4, 40, 72.0, True),             # Bleu's bunker in the summit spire
+    'bleu_yard':     (-18, 14, 6, 25, 72.0, False),
 }
