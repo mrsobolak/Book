@@ -1422,7 +1422,7 @@ def snubnose():
              depth=lambda t: (12.5 + 2.0 * math.sin(PI * min(1.0, t * 1.1)), 13.0 + 3.0 * t), width=lambda t: 14.5 + 1.8 * math.sin(PI * t * 0.9),
              e=2.3, butt=0.14)
     R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=44, nth=56)
-    make('Sn_Grip', wk.loft([r[:-1] for r in R], closed=True, cap1=True), wood)
+    make('Sn_Grip', wk.loft([r[:-1] for r in R], closed=True, cap0=True, cap1=True), wood)
     for sgn in (1, -1):
         wk.screw(g.point(0.42, PI / 2 if sgn > 0 else -PI / 2, 1.0, 0.1), Vector((sgn, 0, 0)), r=0.0022, mat=dark_dk, name='Sn_GripScrew', slot_ang=0.8)
     c = g.centre(0.4)
