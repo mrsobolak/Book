@@ -157,7 +157,7 @@ WEDGE_BOXES = [(Vector((x0, y0, z0)), Vector((x1, 0.153, z1))) for (z0, z1, x0, 
     (0.875, 0.925, -0.185, 0.196, -0.144),
     (0.925, 1.000, -0.181, 0.095, -0.112))]                   # measured slabs (rest), eye bulge included
 IK_MISSES = []
-ARM_R = 0.012                                     # stick radius + a hair of air
+ARM_R = 0.0105                                    # stick radius + a hair of air
 
 
 def _seg_hits_box(p0, p1, lo, hi):
@@ -767,7 +767,7 @@ WDEF = {
     'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(240, -57, 0)),
                       fire=(12, shake(12, 0.004, 1.5, 4), True), reload=(64, reload_smg)),
     'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.15, -0.27, 0.61)), support=(700, -87, 0)),
-                           fire=(30, kick(30, 0.05, 0.02, 8, 0.0, decay=5.0), False), reload=(76, reload_launcher)),
+                           fire=(30, kick(30, 0.034, 0.016, 6, 0.0, decay=5.0), False), reload=(76, reload_launcher)),
     'Minigun':   dict(hold='heavy', over=dict(support=(228, -166, 0)), fire=(12, shake(12, 0.006, 1.2, 6), True), reload=None),
     'Blueprint': dict(hold='board', over=dict(hold_pt=(10, 0, 128)), fire=(24, fire_board, False), reload=(44, reload_board)),
 }
