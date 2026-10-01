@@ -230,25 +230,26 @@ def acc_tree_rest(rig):
     return rig._acc_rest
 
 
-def forearm_radius(rig, side):
-    """stick radius, or the radius of whatever accessory is skinned to the forearm (spiked wristbands...)"""
-    cache = getattr(rig, '_fr', None)
+def forearm_cuff(rig, side):
+    """(radius, t0, t1) of whatever accessory is skinned to the forearm (spiked wristbands...), t along the forearm;
+    None when the forearm is a bare stick"""
+    cache = getattr(rig, '_cuff', None)
     if cache is None:
-        cache = rig._fr = {}
+        cache = rig._cuff = {}
         rig.arm.data.pose_position = 'REST'; bpy.context.view_layer.update()
         C = (rig.arm.matrix_world @ Matrix.Scale(100.0, 4)).inverted()
         for sd in ('l', 'r'):
             b = rig.arm.data.bones['lowerarm_' + sd]
-            h = rig.C(b.head_local); t = rig.C(b.tail_local); ax = (t - h).normalized()
-            r = ARM_R
+            h = rig.C(b.head_local); t = rig.C(b.tail_local); L = (t - h).length; ax = (t - h) / L
+            r = 0.0; ts = []
             for o in rig.acc:
                 gi = {g.index: g.name for g in o.vertex_groups}; M = C @ o.matrix_world
                 for v in o.data.vertices:
                     ws = {gi.get(g.group): g.weight for g in v.groups}
                     if ws and max(ws, key=ws.get) == 'lowerarm_' + sd:
-                        p = M @ v.co - h
-                        r = max(r, (p - ax * p.dot(ax)).length + 0.002)
-            cache[sd] = r
+                        p = M @ v.co - h; a = p.dot(ax)
+                        r = max(r, (p - ax * a).length + 0.002); ts.append(a / L)
+            cache[sd] = (r, max(0.0, min(ts) - 0.02), min(1.0, max(ts) + 0.02)) if ts else None
         rig.arm.data.pose_position = 'POSE'; bpy.context.view_layer.update()
     return cache[side]
 
@@ -303,7 +304,10 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
         if nh == 0 and wtree is not None:
             Ep, Wp, Sp = (rig.C(back @ rig.A(q)) for q in (E, W, Sa))
             Wc = Wp - (Wp - Ep).normalized() * 0.026          # the stick ends inside the hand ball, which holds the gun
-            nh = 10 * (_seg_hits_tree(wtree, Sp, Ep, ARM_R) + _seg_hits_tree(wtree, Ep, Wc, forearm_radius(rig, side)))
+            nh = 10 * (_seg_hits_tree(wtree, Sp, Ep, ARM_R) + _seg_hits_tree(wtree, Ep, Wc, ARM_R))
+            cuff = forearm_cuff(rig, side)
+            if nh == 0 and cuff:
+                nh = 10 * _seg_hits_tree(wtree, Ep.lerp(Wp, cuff[1]), Ep.lerp(Wp, cuff[2]), cuff[0])
         if nh == 0:
             best = pv; break
         if nh < least[0]:
