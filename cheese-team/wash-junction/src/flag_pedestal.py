@@ -528,15 +528,4 @@ A.ucx_hull([(x, y, 0.0) for x, y in poly12(A_F + G_W, B_F + G_W)] + [(x, y, Z_F)
 dk = poly12(A_D, B_D)
 A.ucx_hull([(x, y, Z_F) for x, y in dk] + [(x, y, Z_D) for x, y in dk])
 A.ucx_cyl((0, 0, (Z_D - 0.01 + Z_TT) / 2), R_CO, Z_TT - Z_D + 0.01, seg=12)
-if os.environ.get("PED_VIEW"):     # draft helper: PED_VIEW="az,el[,w,h]" re-aims the draft camera
-    v = [float(x) for x in os.environ["PED_VIEW"].split(",")]
-    A.render_opts = dict(az=v[0], el=v[1], res=(int(v[2]), int(v[3])) if len(v) > 3 else (1280, 960))
-ob = A.build()
-if K.DRAFT and ob is not None and os.environ.get("PED_CLOSE"):   # draft helper: close-up "cx,cy,cz,size"
-    import bpy
-    c = [float(x) for x in os.environ["PED_CLOSE"].split(",")]
-    bm = K.transform(K.box(c[3], c[3], c[3]), at=c[:3])
-    me = bpy.data.meshes.new("_frame"); bm.to_mesh(me); bm.free()
-    fr = bpy.data.objects.new("_frame", me); bpy.context.scene.collection.objects.link(fr)
-    fr.hide_render = True
-    A._render([fr], os.path.join(A.dir, "_draft_close.jpg"), draft=True)
+A.build()
