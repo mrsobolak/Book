@@ -1,5 +1,5 @@
 # The twelve CheeseTeam weapons. Each builder fills the WPN collection with parts (joined into one object at export).
-import bpy, bmesh, math, random
+import bpy, bmesh, math, random, os
 from mathutils import Vector, Matrix, noise
 import wk
 from wk import W, MM, PI, rounded, arc, profile, lathe, cyl, box, sphere, tube, ribbon, make, cut, frame, transform
@@ -1127,7 +1127,7 @@ def blueprint():
     for i in range(nu + 1):
         for j in range(nv + 1):
             s = i / nu; t = j / nv
-            x = (s - 0.5) * pw; z = (t - 0.5) * ph - 12.0
+            x = (s - 0.5) * pw; z = (t - 0.5) * ph + 4.0
             lift = 1.2 + 0.6 * math.sin(PI * s) * math.sin(PI * t)
             for (cs, ct, amp) in ((1, 0, 22.0), (0, 0, 9.0), (1, 1, 5.0), (0, 1, 3.0)):
                 d = math.hypot((s - cs) / 0.28, (t - ct) / 0.28)
@@ -1189,6 +1189,165 @@ def blueprint():
 
 
 BUILDERS['Blueprint'] = blueprint
+
+
+# ================================================================== 11. MINIGUN (Greg, primary)
+def minigun():
+    gun = wk.steel('M_MgBarrels', base='#3a3d42', bare='#a8abb0', rough=0.36, wear=1.2, scratch=1.0, edge_gain=9.0, tint_var=0.08)
+    gun_dk = wk.steel('M_MgDark', base='#202225', bare='#8f9297', rough=0.42, wear=1.0, scratch=0.8, edge_gain=9.0)
+    red = wk.paint('M_MgRed', '#6e1512', under='#3f4246', rough=0.5, wear=1.5, scuff=1.4, col_var=0.14)
+    brass = wk.steel('M_MgBrass', base='#a8823a', bare='#d8b66e', rough=0.32, wear=0.4, scratch=0.5)
+    rub = wk.rubber('M_MgRubber', '#141414')
+    starm = wk.NT('M_MgStar')
+    tx = starm.node('ShaderNodeTexImage'); tx.image = bpy.data.images.load(os.path.join(wk.TEX, 'star_paint.png'), check_existing=True)
+    uvn = starm.node('ShaderNodeUVMap'); uvn.uv_map = 'UVMap'; starm.link(uvn.outputs[0], tx.inputs['Vector'])
+    starm.set('Base Color', tx.outputs['Color']); starm.set('Alpha', tx.outputs['Alpha']); starm.set('Roughness', 0.45); starm.set('Metallic', 0.6)
+    try:
+        starm.m.surface_render_method = 'BLENDED'
+    except Exception:
+        pass
+    # ---- boxy red body
+    BW = 70.0
+    bd = rounded([(-180, 70, 10), (120, 70, 8), (140, 50, 6), (140, -60, 6), (120, -78, 8), (-180, -78, 10)], n=6)
+    body = make('Mg_Body', profile(bd, -BW, BW), red, bevel=0.0035, seg=5)
+    for sd in (1, -1):
+        for (u, v) in ((-160, 55), (-160, -62), (100, 55), (100, -62), (-30, 55), (-30, -62)):
+            wk.screw(W(u, v, sd * BW), Vector((sd, 0, 0)), r=0.0032, mat=gun_dk, name='Mg_Bolt', slot_ang=u * 0.02)
+        pan = rounded([(-150, 40, 6), (60, 40, 6), (60, -48, 6), (-150, -48, 6)])
+        make('Mg_SidePanel%d' % sd, profile(pan, sd * BW - (0 if sd > 0 else 2.5), sd * BW + (2.5 if sd > 0 else 0)), red, bevel=0.0015)
+    # vents on top
+    for k in range(6):
+        make('Mg_Vent', profile(rounded([(-140 + k * 18, 68, 2), (-130 + k * 18, 68, 2), (-130 + k * 18, 73, 2), (-140 + k * 18, 73, 2)]), -40, 40),
+             gun_dk, bevel=0.0010)
+    # ---- painted gold sheriff star on the left side (+x)
+    sw = 110.0
+    verts = []; faces = []; uvs = []
+    for i in range(2):
+        for j in range(2):
+            uu = -95 + (i - 0.5) * sw; vv = -4 + (j - 0.5) * sw
+            verts.append(W(uu, vv, BW + 2.6)); uvs.append((1 - i, j))
+    faces = [(0, 2, 3, 1)]
+    sb = wk.bm_from(verts, faces)
+    uvl = sb.loops.layers.uv.new('UVMap'); sb.verts.index_update()
+    for f in sb.faces:
+        for lp in f.loops:
+            lp[uvl].uv = uvs[lp.vert.index]
+    bmesh.ops.recalc_face_normals(sb, faces=sb.faces[:])
+    make('Mg_Star', sb, starm.m)
+    # ---- rotor: front plate, six barrels, mid clamp, muzzle clamp, centre spindle
+    RC = 30.0                    # barrel circle radius
+    make('Mg_Spindle', lathe([(14.0, 140.0), (14.0, 640.0)], n=32), gun_dk)
+    make('Mg_RotorDrum', lathe([(0, 140.0), (46.0, 140.0), (48.0, 145.0), (48.0, 205.0), (46.0, 210.0), (0, 210.0)], n=64), gun_dk, bevel=0.0)
+    for (u, r, nm) in ((420.0, 46.0, 'Mid'), (612.0, 44.0, 'Muzzle')):
+        cl = lathe([(0, u - 9), (r, u - 9), (r + 1.5, u - 7), (r + 1.5, u + 7), (r, u + 9), (0, u + 9)], n=64)
+        co = make('Mg_Clamp' + nm, cl, gun_dk)
+        for k in range(6):
+            a = PI / 2 + k * PI / 3
+            cut(co, cyl(W(u - 20, RC * math.sin(a), RC * math.cos(a)), W(u + 20, RC * math.sin(a), RC * math.cos(a)), 0.0102, n=24), 'b%d' % k)
+    for k in range(6):
+        a = PI / 2 + k * PI / 3
+        v, x = RC * math.sin(a), RC * math.cos(a)
+        bo = make('Mg_Barrel%d' % k, lathe([(11.0, 205.0), (11.0, 260.0), (10.0, 270.0), (10.0, 620.0), (10.6, 622.0), (10.6, 636.0),
+                                              (10.0, 638.0)], n=32, axis_v=v, x=x), gun)
+        cut(bo, cyl(W(600, v, x), W(645, v, x), 0.0056, n=24), 'bore')
+    # ---- carry handle on top, side grip
+    hp = [W(-150, 70, 0), W(-150, 120, 0), W(-120, 140, 0), W(60, 140, 0), W(90, 120, 0), W(90, 70, 0)]
+    make('Mg_CarryHandle', tube(wk.spline(hp, 6), 0.0110, n=20), gun_dk)
+    make('Mg_HandleGrip', lathe([(14.0, -110.0), (14.0, 50.0)], n=32, axis_v=140.0), rub)
+    sg = [W(-40, 0, -BW), W(-40, 0, -BW - 40), W(-40, -10, -BW - 70)]
+    make('Mg_SideGripArm', tube(sg, 0.0110, n=20), gun_dk)
+    g = Grip((-40.0, -10.0), (-44.0, -60.0), (-50.0, -110.0), depth=lambda t: (17.0, 19.0), width=lambda t: 16.0, e=2.4, butt=0.06)
+    R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=36, nth=48)
+    go = make('Mg_SideGrip', wk.loft([r[:-1] for r in R], closed=True, cap1=True), rub)
+    go.data.transform(Matrix.Translation((-(BW + 70) * MM, 0, 0)))
+    # ---- ammo drum on the right side + feed chute + belt of brass rounds
+    DX = -BW - 95.0
+    drum = lathe([(0, -160.0), (78.0, -160.0), (82.0, -155.0), (82.0, 30.0), (78.0, 35.0), (0, 35.0)], n=96, axis_v=-40.0, x=DX)
+    make('Mg_Drum', drum, red, bevel=0.0)
+    for k in range(5):
+        u = -140 + k * 40
+        make('Mg_DrumRib', lathe([(82.0, u), (84.5, u + 1), (84.5, u + 6), (82.0, u + 7)], n=96, axis_v=-40.0, x=DX, cap0=False, cap1=False), gun_dk)
+    make('Mg_DrumBracket', profile(rounded([(-120, -20, 6), (0, -20, 6), (0, -60, 6), (-120, -60, 6)]), -BW - 18, -BW), gun_dk, bevel=0.0015)
+    # belt: links + rounds arching from the drum top into the body
+    bp = [W(-60, 42, DX + 10), W(-55, 85, DX + 40), W(-50, 95, -BW - 30), W(-45, 70, -BW + 2)]
+    P = wk.spline(bp, 10)
+    out = bmesh.new()
+    acc = 0.0
+    samples = [P[0]]
+    for a_, b_ in zip(P[:-1], P[1:]):
+        seg = (b_ - a_).length
+        acc += seg
+        if acc >= 0.0115:
+            samples.append(b_); acc = 0.0
+    for p in samples:
+        rnd = lathe([(0, 0.0), (5.5, 0.0), (5.5, 40.0), (4.8, 44.0), (4.6, 52.0), (3.0, 58.0), (0, 60.0)], n=16)
+        transform(rnd, Matrix.Translation(p + Vector((0, 0.030, 0))))
+        me = bpy.data.meshes.new('tmp'); rnd.to_mesh(me); rnd.free(); out.from_mesh(me); bpy.data.meshes.remove(me)
+    make('Mg_BeltRounds', out, brass)
+    links = []
+    for p in samples:
+        lb = box(p + Vector((0, 0.010, 0)), (0.0130, 0.012, 0.0030))
+        me = bpy.data.meshes.new('tmp'); lb.to_mesh(me); lb.free(); links.append(me)
+    lo = bmesh.new()
+    for me in links:
+        lo.from_mesh(me); bpy.data.meshes.remove(me)
+    make('Mg_BeltLinks', lo, gun_dk, bevel=0.0006)
+    PIVOT['Minigun'] = (-80.0, -60.0)
+    return 'Minigun'
+
+
+BUILDERS['Minigun'] = minigun
+
+
+# ================================================================== 12. SNUB-NOSE REVOLVER (Greg, secondary)
+def snubnose():
+    dark = wk.steel('M_SnDark', base='#1a1b1e', bare='#a3a6ab', rough=0.33, wear=1.3, scratch=0.9, edge_gain=11.0)
+    dark_dk = wk.steel('M_SnDarkDk', base='#111214', bare='#94979c', rough=0.36, wear=0.8, scratch=0.6, edge_gain=11.0)
+    wood = wk.wood('M_SnWood', light='#6a3a1c', dark='#2a1309', rough=0.4, ring=24.0, axis='Z', grain=0.5)
+    lead = wk.steel('M_SnLead', base='#606266', bare='#7b7e82', rough=0.55, wear=0.0, scratch=0.0, metallic=0.85)
+    cax = -12.0
+    fo = rounded([(-7, 9.5, 3), (-2, 11.5, 2), (36, 11.5, 3), (41, 9.5, 3), (41, -18.0, 4), (36, -32.0, 8), (20, -36.0, 10), (-7, -36.5, 0)], n=8)
+    win = rounded([(-0.5, -30.5, 3.0), (35.5, -30.5, 3.0), (35.5, 6.5, 3.0), (-0.5, 6.5, 3.0)], n=8)
+    fob = make('Sn_Frame', profile(fo, -12.8, 12.8, holes=[win]), dark, bevel=0.0017, seg=5, angle=30)
+    cut(fob, cyl(W(34.0, 0, 0), W(50, 0, 0), 0.0084, n=40), 'barrelseat')
+    # short 2" barrel with full-length underlug + ramp front sight
+    bar = make('Sn_Barrel', lathe([(8.2, 38.0), (8.2, 88.0), (7.6, 90.0)], n=40), dark, bevel=0.0)
+    cut(bar, cyl(W(70, 0, 0), W(95, 0, 0), 0.0046, n=32), 'bore')
+    make('Sn_Underlug', profile(rounded([(40, -2, 0), (86, -2, 3), (86, -15, 4), (40, -16, 0)]), -5.5, 5.5), dark, bevel=0.0012)
+    make('Sn_FrontSight', profile(rounded([(70, 6, 0), (86, 6, 0), (84, 12.5, 2), (80, 12.5, 1.5)]), -1.6, 1.6), dark, bevel=0.0004)
+    # five-shot cylinder (fluted)
+    cy = make('Sn_Cylinder', lathe([(11.0, 0.3), (17.6, 0.3), (18.4, 1.6), (18.4, 34.2), (17.4, 35.4), (7.0, 35.4)], n=80, axis_v=cax), dark)
+    for k in range(5):
+        a = PI / 2 + 2 * PI * k / 5
+        cv, cx = cax + 11.8 * math.sin(a), 11.8 * math.cos(a)
+        cut(cy, cyl(W(22.0, cv, cx), W(37.0, cv, cx), 0.0050, n=32), 'ch%d' % k)
+        make('Sn_Bullet%d' % k, lathe([(4.8, 26.0), (4.8, 30.0), (4.3, 31.6), (3.2, 32.8), (1.6, 33.6), (0.0, 33.9)], n=24, axis_v=cv, x=cx), lead)
+        a2 = a + PI / 5
+        fl = cyl(W(6.0, cax + 21.4 * math.sin(a2), 21.4 * math.cos(a2)), W(29.0, cax + 21.4 * math.sin(a2), 21.4 * math.cos(a2)), 0.0050, n=24)
+        cut(cy, fl, 'fl%d' % k)
+    # hammer, trigger, guard
+    hm = rounded([(-6, 6, 1.5), (-7, -6, 2), (-13, -12, 3), (-19, -8, 3), (-22, 3, 4), (-27, 10, 3), (-30, 14, 2), (-24, 16, 2), (-15, 10, 3)], n=6)
+    make('Sn_Hammer', profile(hm, -3.0, 3.0), dark_dk, bevel=0.0005)
+    sp = rounded([(-23.5, 12.5, 1.5), (-30, 12.0, 2), (-33, 15.5, 2), (-31, 18.5, 2), (-24.5, 16.5, 1.5)])
+    make('Sn_HammerSpur', profile(sp, -5.0, 5.0), dark_dk, bevel=0.0006)
+    make('Sn_Trigger', profile(rounded([(4, -35, 0), (3, -43, 3), (0, -50, 3), (-3.5, -54, 2), (-5.5, -53, 2), (-2.5, -47, 3), (-1, -41, 3), (-1, -35, 0)]),
+                               -2.2, 2.2), dark_dk, bevel=0.0005)
+    gp = [Vector(W(u, v, 0)) for (u, v) in [(13, -35.5), (14.5, -43), (11.5, -52), (4, -58.0), (-4, -59), (-10, -55.5), (-12.5, -47), (-12.5, -39)]]
+    make('Sn_TriggerGuard', tube(wk.spline(gp, 8), 0.0041, n=20, flat=0.42), dark)
+    # rounded wooden grip
+    g = Grip((-16.0, -28.0), (-17.0, -64.0), (-34.0, -86.0),
+             depth=lambda t: (12.5 + 2.0 * math.sin(PI * min(1.0, t * 1.1)), 13.0 + 3.0 * t), width=lambda t: 14.5 + 1.8 * math.sin(PI * t * 0.9),
+             e=2.3, butt=0.14)
+    R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=44, nth=56)
+    make('Sn_Grip', wk.loft([r[:-1] for r in R], closed=True, cap1=True), wood)
+    for sgn in (1, -1):
+        wk.screw(g.point(0.42, PI / 2 if sgn > 0 else -PI / 2, 1.0, 0.1), Vector((sgn, 0, 0)), r=0.0022, mat=dark_dk, name='Sn_GripScrew', slot_ang=0.8)
+    c = g.centre(0.4)
+    PIVOT['SnubNose'] = (c.x, c.y)
+    return 'SnubNose'
+
+
+BUILDERS['SnubNose'] = snubnose
 
 
 def build(name):
