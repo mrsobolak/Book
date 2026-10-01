@@ -318,7 +318,7 @@ def finish(cls, export_root, res=2048, logp=None):
 def lineup(export_root, path):
     bpy.ops.wm.read_homefile(use_empty=True)
     sc = bpy.context.scene
-    x = -2.5 * 0.62
+    x = -2.5 * 0.72
     tops = []
     for cls in CLASSES:
         before = set(bpy.data.objects)
@@ -326,19 +326,21 @@ def lineup(export_root, path):
             bpy.ops.import_scene.gltf(filepath=os.path.join(export_root, cls, '%s.glb' % cls))
         new = [o for o in bpy.data.objects if o not in before]
         roots = [o for o in new if o.parent is None]
+        hold = bpy.data.objects.new('Slot_' + cls, None); sc.collection.objects.link(hold)
+        hold.location.x = x                                  # parent to an offset empty: animations keep the offset
         for r in roots:
-            r.location.x += x
+            r.parent = hold
         for o in new:
             if o.type == 'ARMATURE':
                 ad = o.animation_data
                 acts = [a for a in bpy.data.actions if 'Idle' in a.name and 'Pistol' not in a.name]
                 if ad and acts:
                     ad.action = acts[-1]
-        x += 0.62
+        x += 0.72
     sc.frame_set(6)
-    cam_d = bpy.data.cameras.new('LineCam'); cam_d.lens = 50
+    cam_d = bpy.data.cameras.new('LineCam'); cam_d.lens = 60
     cam = bpy.data.objects.new('LineCam', cam_d); sc.collection.objects.link(cam)
-    cam.location = (0.0, -5.2, 1.05); cam.rotation_euler = (math.radians(86), 0, 0)
+    cam.location = (0.0, -6.0, 0.95); cam.rotation_euler = (math.radians(87), 0, 0)
     sc.camera = cam
     for nm_, loc, en, size in (('Key', (2.5, -3.5, 4.0), 1500.0, 4.0), ('Fill', (-4.0, -2.5, 2.0), 500.0, 5.0),
                                ('Rim', (0.0, 3.5, 3.0), 900.0, 4.0)):
