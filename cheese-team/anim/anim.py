@@ -150,8 +150,12 @@ class Rig:
 
 # ------------------------------------------------------------------ collision-aware arm IK
 # the wedge (rest char space, metres): main block + the googly-eye bulge on the front face
-WEDGE_BOXES = [(Vector((-0.215, -0.115, 0.575)), Vector((0.203, 0.155, 1.0))),
-               (Vector((-0.18, -0.156, 0.675)), Vector((0.17, -0.10, 0.885)))]
+WEDGE_BOXES = [(Vector((x0, y0, z0)), Vector((x1, 0.153, z1))) for (z0, z1, x0, x1, y0) in (
+    (0.575, 0.675, -0.212, 0.200, -0.112),
+    (0.675, 0.725, -0.205, 0.197, -0.135),
+    (0.725, 0.875, -0.196, 0.198, -0.152),
+    (0.875, 0.925, -0.185, 0.196, -0.144),
+    (0.925, 1.000, -0.181, 0.095, -0.112))]                   # measured slabs (rest), eye bulge included
 IK_MISSES = []
 ARM_R = 0.012                                     # stick radius + a hair of air
 
