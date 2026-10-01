@@ -12,3 +12,4 @@ tex/stencil_backblast.png
 tex/camo_tape.png
 tex/blueprint.png
 tex/star_paint.png
+wfinish.py
