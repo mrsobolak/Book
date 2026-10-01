@@ -540,7 +540,7 @@ BUILDERS['RocketGuy'] = rocketguy
 
 
 # ================================================================== 4. SNIPER
-def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.150, D=0.122, yc=0.012):
+def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.138, D=0.084, yc=-0.004, min_z=0.808):
     """quilted ear flap hanging from the cap band down the side face (sgn=+1: character's left, +x)"""
     import bmesh
     # where the cap band sits on this side: lowest cap point per y slice
@@ -560,12 +560,13 @@ def ear_flap(P, cap_obs, sgn, name, mat, trim, W=0.150, D=0.122, yc=0.012):
     def side_x(y, z):
         loc, nor = P.hit((sgn * 1.0, y, z), (-sgn, 0, 0))
         return abs(loc.x) if loc is not None else 0.205
+    D = min(D, min(rim_z(yc - W / 2), rim_z(yc + W / 2)) + 0.014 - min_z)   # stay above the shoulder (arm sticks)
     nu, nv = 22, 18
     verts = []; faces = []; uvs = []
     for j in range(nv + 1):
         v = j / nv * D
-        q = max(0.0, (v - 0.42 * D) / (0.58 * D))
-        hw = W / 2 * math.sqrt(max(0.0, 1 - q * q)) if q < 1 else 0.0
+        q = max(0.0, (v - 0.55 * D) / (0.45 * D))
+        hw = W / 2 * math.sqrt(max(0.0, 1 - q ** 2.6)) if q < 1 else 0.0
         hw = max(hw, 0.004)
         for i in range(nu + 1):
             u = (i / nu * 2 - 1)
@@ -688,12 +689,12 @@ def sniper(P, T):
     # a long piece of dry grass where a mouth would be
     straw = A.mat_plain('M_DryGrass', '#cdb06a', rough=0.7, col2='#a88848', nscale=200, bump=0.08, bscale=900)
     root = Vector((MOUTH.x - 0.004, A.FRONT_Y + 0.006, 0.652))
-    d = Vector((0.66, -0.66, 0.02)).normalized()
+    d = Vector((0.82, -0.50, 0.10)).normalized()
     pts = []
     for i in range(25):
         t = i / 24
         pts.append(root + d * 0.205 * t + Vector((0, 0, -0.045 * t * t)) + Vector((0.004 * math.sin(t * 5), 0, 0)))
-    bm = A.tube(pts, lambda t: 0.0032 * (1 - 0.35 * t), n=8, flat=0.85)
+    bm = A.tube(pts, lambda t: 0.0038 * (1 - 0.35 * t), n=8, flat=0.85)
     obs.append(A.make_obj('Sniper_GrassStem', bm, straw, 'spine_01'))
     # seed head: alternating spikelets along the last stretch + a couple of nodes on the stem
     head = A.mat_plain('M_GrassHead', '#b8954f', rough=0.75, col2='#8f6f35', nscale=300, bump=0.1, bscale=1200)
