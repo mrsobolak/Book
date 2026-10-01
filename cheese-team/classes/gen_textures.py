@@ -135,9 +135,9 @@ def grease(name='grease_smear'):
         x0, y0 = rng.rand() * W * 0.95, rng.rand() * H
         r = rng.rand() * 3 + 1
         alpha = np.maximum(alpha, np.exp(-(((xx - x0) ** 2 + (yy - y0) ** 2) / (r * r))) * 0.55 * (alpha > 0.05))
-    a = np.asarray(Image.fromarray((np.clip(alpha, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.6))) / 255.0
+    a = np.asarray(Image.fromarray((np.clip(alpha * 1.45, 0, 1) * 255).astype(np.uint8)).filter(ImageFilter.GaussianBlur(1.6))) / 255.0
     col = np.zeros((H, W, 3))
-    lo = np.array([16, 13, 10]); hi = np.array([62, 50, 38])
+    lo = np.array([12, 10, 8]); hi = np.array([44, 36, 28])
     m = np.clip(1.0 - a, 0, 1)[..., None]
     col = lo + (hi - lo) * m * (0.7 + 0.3 * grain[..., None])
     rgba = np.dstack([col, a * 255]).astype(np.uint8)

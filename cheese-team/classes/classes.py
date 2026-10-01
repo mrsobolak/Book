@@ -973,9 +973,9 @@ def mechanic(P, T):
     # black grease smudges (finger swipes) on the wedge: soft alpha decals
     gm = A.mat_image('M_GreaseSmear', 'grease_smear.png', rough=0.35, bump=0.0)
     alpha_mat(gm)
-    for k, (cx, cz, L, W, ang, flip) in enumerate(((-0.040, 0.630, 0.118, 0.050, math.radians(38), False),
-                                                  (-0.140, 0.885, 0.078, 0.036, math.radians(-62), True),
-                                                  (0.150, 0.650, 0.064, 0.030, math.radians(-118), False))):
+    for k, (cx, cz, L, W, ang, flip) in enumerate(((-0.044, 0.632, 0.150, 0.068, math.radians(38), False),
+                                                  (-0.140, 0.890, 0.096, 0.048, math.radians(-62), True),
+                                                  (0.152, 0.652, 0.078, 0.040, math.radians(-118), False))):
         obs.append(tex_decal(P, 'Mech_Grease%d' % k, cx, cz, L, W, ang, gm, flip=flip))
     # red shop rag stuffed into the big jaw hole, a tail hanging out
     rag = A.mat_plain('M_ShopRag', '#b3231d', rough=0.9, col2='#8c1813', nscale=70, bump=0.35, bscale=1400)
