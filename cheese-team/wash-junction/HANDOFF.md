@@ -26,6 +26,29 @@ session on your PC can pick up the work and use your local MCP servers (blender 
 
 The cloud session stays as it is, and the local one becomes its own copy.
 
+## Keep working in a CLOUD session but drive your PC's Blender (blender2 as a custom connector)
+Cloud sessions can't reach your PC directly, and this environment's network policy blocks tunnel hosts. Connectors are
+different: claude.ai connects to them from Anthropic's side and hands the tools to new cloud sessions. So turn blender2
+into a remote MCP server:
+1. On the PC, open Blender, enable the BlenderMCP addon and click **Connect**. It listens on localhost:9876.
+2. Expose the blender2 MCP server over HTTP, using the command shown in Claude Desktop → blender2 → Edit config:
+   ```powershell
+   npx -y supergateway --stdio "C:\path\to\blender-mcp.exe" --outputTransport streamableHttp --port 8000
+   ```
+3. Give it a public HTTPS URL:
+   ```powershell
+   winget install Cloudflare.cloudflared
+   cloudflared tunnel --url http://localhost:8000
+   ```
+   This prints `https://<random>.trycloudflare.com`.
+4. Go to claude.ai → Customize → Connectors → **+** → *Add custom connector* and use the URL `https://<random>.trycloudflare.com/mcp`.
+5. Start a **new** cloud session (connectors load at session start) and tell it to read this file.
+Notes:
+- **Security:** that URL can run arbitrary Python on your PC through Blender. Only run the tunnel while working,
+  never share the URL, and close it afterwards. For something permanent, use a named Cloudflare tunnel with Access
+  login instead of a quick tunnel.
+- The quick-tunnel URL changes on every restart, so update the connector, or use a named tunnel or a static domain.
+
 ## Where the work stands
 Finished meshes, each with FBX + LOD1 (when over 5k tris) + GLB + BaseColor/Normal(DirectX)/ORM + report:
 - SM_FlagCheese_Cheddar and SM_FlagCheese_Bleu (`src/flag_cheese.py`), with previews
