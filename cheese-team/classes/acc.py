@@ -598,3 +598,34 @@ def drape(P, objs, check, n, band=0.065, maxd=0.04, clear=0.0025, bins=72, step=
             me.update()
     apply(1.0)
     return sum(field) / bins, min(field), max(field)
+
+
+def puff(name, P, outline_xz, thick, mat, bone='spine_01', edge=0.022, res=0.0035, sink_edge=0.002, power=0.55, hole_clamp=True):
+    """a soft, domed cartoon shape (sideburns, patches) on the FRONT face: outline in (x, z), triangulated + refined,
+    each vertex lifted toward the viewer by thick * (dist_to_outline / edge) ** power; the rim is buried by sink_edge
+    so it grows out of the cheese with no visible seam. Holes under it are bridged (hole_clamp)."""
+    bm = bmesh.new()
+    V = [bm.verts.new((x, 0.0, z)) for (x, z) in outline_xz]
+    f = bm.faces.new(V)
+    bmesh.ops.triangulate(bm, faces=[f])
+    for _ in range(8):
+        long = [e for e in bm.edges if e.calc_length() > res]
+        if not long:
+            break
+        bmesh.ops.subdivide_edges(bm, edges=long, cuts=1, use_grid_fill=True)
+        bmesh.ops.triangulate(bm, faces=bm.faces[:])
+    bmesh.ops.beautify_fill(bm, faces=bm.faces[:], edges=bm.edges[:])
+    segs = [(Vector(outline_xz[i]), Vector(outline_xz[(i + 1) % len(outline_xz)])) for i in range(len(outline_xz))]
+    def dseg(p, a, b):
+        ab = b - a; t = max(0.0, min(1.0, (p - a).dot(ab) / max(ab.length_squared, 1e-12)))
+        return (p - (a + ab * t)).length
+    for v in bm.verts:
+        p2 = Vector((v.co.x, v.co.z))
+        d = min(dseg(p2, a, b) for a, b in segs)
+        h = thick * min(1.0, d / edge) ** power - sink_edge * max(0.0, 1.0 - d / (edge * 0.35))
+        loc, nor = P.hit((v.co.x, -1.0, v.co.z), (0, 1, 0))
+        y = loc.y if loc is not None else FRONT_Y
+        if hole_clamp and y > FRONT_Y + 0.003 and abs(v.co.x) < 0.186:
+            y = FRONT_Y
+        v.co = Vector((v.co.x, y - h, v.co.z))
+    return make_obj(name, bm, mat, bone, smooth=True)

@@ -217,7 +217,7 @@ def mrshotgun(P, T):
     A.uv_box(cap[1], 30.0)
     cap.append(A.make_obj('Shotgun_CapLining', A.transform(bml, H), A.mat_plain('M_CapLining', '#1d1b1a', rough=0.85, bump=0.02), 'spine_01', solid=0.002))
     billm = A.mat_felt('M_TruckerBill', '#b3302a', '#9a2822', rough=0.65, fiber=0.2)
-    seam = A.mat_plain('M_TruckerSeam', '#8f221c', rough=0.6, bump=0.0)
+    seam = A.mat_plain('M_TruckerSeam', '#d9cfbd', rough=0.6, bump=0.0)
     for k in range(6):
         ang = k / 6 * 2 * PI + PI / 6
         pts = []
@@ -270,35 +270,29 @@ def mrshotgun(P, T):
             d = Vector((sgn * 1.0, -0.12, up * 0.9)).normalized()
             specs.append((root, d, L, r, Vector((0, 0, -0.10)), 0.55))
         obs.append(clumps(P, 'Shotgun_Brow%s' % ('L' if sgn > 0 else 'R'), hair, specs, follow_face=0.005))
-    # big bushy mutton chops: layered clumps from the temple down the cheek, the lower ones curling in to the mouth
+    # big bushy mutton chops: one soft domed mass per side (narrow at the temple, wide over the jaw corner, tufted
+    # lower edge), plus a few loose 3D tufts on the tips so the silhouette is hairy, not a flat sticker
+    chop_ol = [(0.196, 0.868), (0.199, 0.800), (0.199, 0.720), (0.198, 0.650), (0.191, 0.598), (0.174, 0.627), (0.157, 0.590),
+               (0.139, 0.623), (0.119, 0.597), (0.105, 0.630), (0.083, 0.626), (0.098, 0.655), (0.126, 0.676), (0.150, 0.700),
+               (0.171, 0.734), (0.177, 0.780), (0.176, 0.825), (0.181, 0.868)]
+    tips = [(0.191, 0.598), (0.157, 0.590), (0.119, 0.597), (0.083, 0.626)]
     for sgn in (-1, 1):
+        ol = [(sgn * x, z) for (x, z) in chop_ol]
+        if sgn < 0:
+            ol.reverse()
+        obs.append(A.puff('Shotgun_Chop%s' % ('L' if sgn > 0 else 'R'), P, ol, 0.024, hair, edge=0.026))
         specs = []
-        # (x, z, dir x (+ = outward), length, radius): narrow at the temple, a wide fluffy fan over the jaw corner
-        lay = [(0.188, 0.855, 0.05, 0.075, 0.020), (0.186, 0.815, 0.02, 0.080, 0.023), (0.182, 0.772, -0.02, 0.085, 0.026),
-               (0.180, 0.730, -0.10, 0.085, 0.029), (0.176, 0.690, -0.25, 0.085, 0.031), (0.160, 0.668, -0.55, 0.080, 0.030),
-               (0.135, 0.655, -0.95, 0.072, 0.027), (0.110, 0.648, -1.35, 0.060, 0.022),
-               # second (front) layer for volume
-               (0.190, 0.790, 0.0, 0.070, 0.018), (0.186, 0.712, -0.15, 0.075, 0.023), (0.165, 0.680, -0.45, 0.070, 0.024),
-               (0.140, 0.668, -0.85, 0.062, 0.021)]
-        base = []
-        for i in range(12):
-            t = i / 11
-            p, _ = face_point(P, sgn * (0.184 - 0.060 * t ** 2.2), 0.835 - 0.190 * t, 0.002)
-            base.append(p)
-        bm = A.tube(base, lambda t: 0.014 + 0.020 * t ** 0.8, n=14, flat=0.55, up=Vector((0, -1, 0)))
-        obs.append(A.make_obj('Shotgun_ChopBase%s' % ('L' if sgn > 0 else 'R'), bm, hair, 'spine_01', subsurf=1))
-        for k, (x0, z0, dx, L, r) in enumerate(lay):
-            front = k >= 8
-            root, _ = face_point(P, sgn * x0, z0, -0.004 + (0.009 if front else 0.0))
-            d = Vector((sgn * dx, -0.22 - (0.08 if front else 0.0), -1.0)).normalized()
-            specs.append((root, d, L, r, Vector((-sgn * 0.25, -0.10, 0.15)), 0.62))
-        obs.append(clumps(P, 'Shotgun_Chop%s' % ('L' if sgn > 0 else 'R'), hair, specs, follow_face=0.004))
+        for (x, z) in tips:
+            root, _ = face_point(P, sgn * (x + 0.012 * (1 if x > 0.12 else -0.5)), z + 0.030, 0.004)
+            d = Vector((sgn * (x - 0.15) * 4.0, -0.25, -1.0)).normalized()
+            specs.append((root, d, 0.040, 0.0105, Vector((-sgn * 0.3, -0.1, 0.1)), 0.6))
+        obs.append(clumps(P, 'Shotgun_ChopTufts%s' % ('L' if sgn > 0 else 'R'), hair, specs, follow_face=0.003))
     # shotgun shells pushed into the cheese holes, like a bandolier
     hull = A.mat_plain('M_ShellHull', '#b4231f', rough=0.38, col2='#8f1915', nscale=60, bump=0.05)
     brass = A.mat_metal('M_ShellBrass', '#d9a441', rough=0.28)
     prim = A.mat_metal('M_ShellPrimer', '#c9c2b6', rough=0.3)
-    # front: the centre hole and the low +x hole (the -x jaw hole is under the mutton chop), tipped so the red hulls show
-    for k, ((hx, hz), ax) in enumerate((((0.039, 0.649), Vector((-0.40, -0.80, 0.45))), ((0.123, 0.602), Vector((0.30, -0.85, -0.20))))):
+    # front: the centre hole (the jaw-corner holes are under the mutton chops), tipped so the red hull shows
+    for k, ((hx, hz), ax) in enumerate((((0.039, 0.649), Vector((-0.40, -0.80, 0.45))),)):
         obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, Vector((hx, A.FRONT_Y, hz)), ax.normalized(), hull, brass, prim, depth=0.18)
     # -x side face: a row of three, like a bandolier
     for k, (y, z, ax) in enumerate(((-0.098, 0.643, Vector((-1, -0.25, 0.25))), (-0.072, 0.776, Vector((-1, -0.15, 0.40))), (0.066, 0.795, Vector((-1, 0.1, 0.35))))):
