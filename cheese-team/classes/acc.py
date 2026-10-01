@@ -720,3 +720,21 @@ def extrude_outline(loops, thick, F=None):
     if F is not None:
         transform(bm, F)
     return bm
+
+
+def conform_bottom(P, ob, normal, clear=0.0015):
+    """press any vertex of `ob` that is below the body surface (along -normal) up onto it: a crown wall that was
+    made long enough meets the uneven top exactly, with no gap and no clipping"""
+    n = Vector(normal).normalized()
+    mw = ob.matrix_world; inv = mw.inverted(); me = ob.data
+    moved = 0
+    for v in me.vertices:
+        w = mw @ v.co
+        loc, nor = P.hit(w + n * 1.0, -n)
+        if loc is None:
+            continue
+        h = (w - loc).dot(n)
+        if h < clear:
+            v.co = inv @ (w + n * (clear - h)); moved += 1
+    me.update()
+    return moved

@@ -1093,10 +1093,10 @@ def heavy(P, T):
     band = A.mat_plain('M_HeavyBand', '#3a2416', rough=0.5, col2='#26170e', nscale=160, bump=0.25, bscale=420)
     silver = A.mat_metal('M_HeavyBuckle', '#dcd8cf', rough=0.2)
     a, b = 0.128, 0.142
-    H = hat_frame(T, fwd=math.radians(-4), side=math.radians(-9), lift=-0.004, shift=(0.010, 0.004))
+    H = hat_frame(T, fwd=math.radians(-4), side=math.radians(-3), lift=0.010, shift=(0.010, 0.004))
     hat = []
     # crown: tall cattleman crown, slightly tapered, rounded top edge
-    crown = [(1.0, -0.150), (1.0, -0.06), (1.0, 0.0), (0.985, 0.04), (0.965, 0.08), (0.94, 0.12), (0.915, 0.155), (0.895, 0.178), (0.87, 0.192),
+    crown = [(1.0, -0.090), (1.0, -0.06), (1.0, -0.03), (1.0, 0.0), (0.985, 0.04), (0.965, 0.08), (0.94, 0.12), (0.915, 0.155), (0.895, 0.178), (0.87, 0.192),
              (0.82, 0.200), (0.6, 0.204), (0.0, 0.206)]
     bm = A.revolve(crown, a, b, n=96, closed=False)
     def shape_crown(v):
@@ -1139,6 +1139,7 @@ def heavy(P, T):
     bk = A.extrude_outline([outer, inner], 0.003, A.frame_matrix(p, x, y, z))
     hat.append(A.make_obj('Heavy_Buckle', A.transform(bk, H), silver, 'spine_01'))
     print('heavy hat settle', A.settle(P, hat, Vector(H.col[2][:3]), clear=0.004, check=[brim_ob]))
+    print('heavy crown conform', A.conform_bottom(P, hat[0], Vector(H.col[2][:3])))
     obs += hat
     # thick handlebar moustache: combed clumps, ends curled up and out (clear of the eyes)
     hair = A.mat_plain('M_HeavyStache', '#5e3a1f', rough=0.55, col2='#3f2513', nscale=70, bump=0.06, bscale=260)
