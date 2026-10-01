@@ -241,6 +241,78 @@ def revolver():
 BUILDERS['Revolver'] = revolver
 
 
+# ================================================================== 2. DERRINGER (Outlaw, secondary)
+def derringer():
+    nickel = wk.steel('M_DerNickel', base='#cfcbc2', bare='#a5803f', rough=0.22, wear=1.3, scratch=1.0, edge_gain=12.0, tint_var=0.04)
+    nickel_dk = wk.steel('M_DerNickelDark', base='#a9a59d', bare='#8f6f37', rough=0.30, wear=0.8, scratch=0.6, edge_gain=12.0)
+    bore = wk.steel('M_DerBore', base='#1b1b1c', bare='#3a3a3c', rough=0.5, wear=0.0, scratch=0.0)
+    pearl = wk.pearl('M_DerPearl')
+
+    # ---- barrel block: two stacked .41 barrels, top rib, side flutes, hinge lug at the top rear
+    bb = rounded([(0.0, 13.0, 2), (74.0, 13.0, 2.5), (76.0, 11.0, 1.5), (76.0, -12.0, 1.5), (74.0, -13.5, 2.5), (0.0, -13.5, 2)], n=6)
+    barrels = make('Der_Barrels', profile(bb, -8.6, 8.6), nickel, bevel=0.0016, seg=5, angle=30)
+    for (bv, nm) in ((6.2, 'up'), (-6.7, 'dn')):
+        cut(barrels, cyl(W(20.0, bv, 0), W(80.0, bv, 0), 0.0052, n=40), 'bore_' + nm)
+        cut(barrels, lathe([(5.2, 75.3), (6.4, 76.4), (6.4, 78.0)], n=40, axis_v=bv), 'crown_' + nm)
+        make('Der_Bore_' + nm, lathe([(5.25, 40.0), (5.25, 75.0)], n=32, axis_v=bv, cap0=True, cap1=False), bore, smooth=True)
+    for side in (1, -1):
+        g = box((0, 0, 0), (0.0016, 0.070, 0.0024))
+        transform(g, Matrix.Translation(W(39.0, -0.3, side * 8.6)))
+        cut(barrels, g, 'flute%d' % side)
+    rib = rounded([(3.0, 12.5, 0), (73.0, 12.5, 0), (72.0, 15.0, 1.5), (4.0, 15.0, 1.5)])
+    make('Der_Rib', profile(rib, -2.6, 2.6), nickel, bevel=0.0007)
+    make('Der_FrontSight', sphere(W(70.5, 15.6, 0), 0.0016, seg=16, rings=8, scale=(0.8, 1.6, 1.0)), nickel)
+    hl = rounded([(-4.0, 11.0, 3), (5.0, 11.0, 0), (5.0, 18.0, 3.5), (-4.0, 18.0, 3.5)])
+    make('Der_HingeLug', profile(hl, -5.0, 5.0), nickel, bevel=0.0010)
+    for side in (1, -1):
+        make('Der_HingePin%d' % side, cyl(W(0.5, 14.5, side * 5.0), W(0.5, 14.5, side * 6.2), 0.0021, n=20), nickel_dk)
+
+    # ---- frame: hammer housing + recoil shield behind the barrels, lip under them, spur-trigger sheath
+    fr = rounded([(0.0, 11.0, 0), (0.0, -13.0, 0), (14.0, -13.5, 0), (14.0, -16.5, 2), (-4.0, -17.5, 3), (-9.0, -24.0, 2.5),
+                  (-12.5, -24.0, 2), (-13.5, -15.0, 0), (-24.0, -12.0, 0), (-28.0, 0.0, 6), (-22.0, 10.0, 6), (-9.0, 12.0, 3)], n=8)
+    frm = make('Der_Frame', profile(fr, -8.2, 8.2), nickel, bevel=0.0014, seg=5, angle=30)
+    cut(frm, box(W(-16.0, 9.0, 0), (0.0056, 0.020, 0.020)), 'hammerslot')
+    cut(frm, box(W(-6.5, -20.5, 0), (0.0040, 0.0060, 0.011)), 'triggerslot')
+    # locking lever (right side) + screws
+    lv = rounded([(-3.0, 1.0, 2.5), (6.0, 3.5, 1.5), (6.0, 6.5, 1.5), (-3.0, 7.0, 2.5)])
+    make('Der_Lever', profile(lv, -9.6, -8.2), nickel_dk, bevel=0.0004)
+    wk.screw(W(-1.5, 4.0, -9.6), Vector((-1, 0, 0)), r=0.0016, mat=nickel_dk, name='Der_Screw')
+    for (u, v) in ((-17.0, -6.0), (8.0, -15.0)):
+        for side in (1, -1):
+            wk.screw(W(u, v, side * 8.2), Vector((side, 0, 0)), r=0.0015, mat=nickel_dk, name='Der_Screw', slot_ang=u * 0.1)
+
+    # ---- hammer with checkered spur
+    hm = rounded([(-9.5, 6.0, 1.5), (-10.5, -3.0, 2), (-17.0, -6.0, 3), (-22.0, 2.0, 4), (-25.0, 11.0, 3), (-29.0, 17.5, 2),
+                  (-26.5, 20.5, 2), (-20.0, 17.0, 3), (-13.5, 12.5, 2)])
+    make('Der_Hammer', profile(hm, -2.7, 2.7), nickel_dk, bevel=0.0005)
+    sp = rounded([(-24.0, 16.0, 1.5), (-29.5, 16.5, 2), (-31.0, 20.5, 2), (-26.0, 21.5, 1.5)])
+    spur = make('Der_HammerSpur', profile(sp, -4.2, 4.2), nickel_dk, bevel=0.0005)
+    for k in range(5):
+        u = -25.5 - k * 1.1
+        gb = box((0, 0, 0), (0.010, 0.00045, 0.0010))
+        transform(gb, Matrix.Translation(W(u, 21.3 + (u + 25.5) * 0.15, 0)))
+        cut(spur, gb, 'knurl%d' % k)
+
+    # ---- spur trigger (no guard)
+    tg = rounded([(-4.6, -17.0, 0), (-5.2, -23.0, 2), (-7.0, -28.5, 2), (-9.3, -29.0, 1.5), (-8.6, -24.5, 2), (-8.0, -17.0, 0)])
+    make('Der_Trigger', profile(tg, -1.6, 1.6), nickel_dk, bevel=0.0004)
+
+    # ---- bird's-head grip in pearl between nickel straps
+    g = Grip((-18.0, -13.0), (-19.0, -38.0), (-38.0, -50.0),
+             depth=lambda t: (8.0 + 2.5 * t, 8.5 + 3.5 * math.sin(PI * min(1.0, t * 1.2))),
+             width=lambda t: 8.8 + 1.4 * math.sin(PI * t * 0.8), e=2.3, butt=0.10)
+    grip_parts('Der_Grip', g, pearl, nickel, strap=0.32, nt=36)
+    for sgn in (1, -1):
+        wk.screw(g.point(0.45, PI / 2 if sgn > 0 else -PI / 2, 1.0, 0.15), Vector((sgn, 0, 0)), r=0.0016, mat=nickel_dk,
+                 name='Der_GripScrew', slot_ang=1.1)
+    c = g.centre(0.40)
+    PIVOT['Derringer'] = (c.x, c.y)
+    return 'Derringer'
+
+
+BUILDERS['Derringer'] = derringer
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
