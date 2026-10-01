@@ -321,11 +321,45 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
             best = pv; break
         if nh < least[0]:
             least = (nh, pv)
-    if best is None:
-        best = least[1]
-        IK_MISSES.append((side, tuple(round(c, 3) for c in target)))
+    if best is None:                                              # no clean elbow in the fast model: let the real meshes decide
+        best = _mesh_pick(rig, side, target, b3, to_rest, u, p0, least[1])
+        if best is None:
+            IK_MISSES.append((side, tuple(round(c, 3) for c in target)))
+            best = least[1]
     pole_posed = to_rest.inverted().to_3x3() @ best
     rig.two_bone(up, lo, rig.A(target), pole_posed, b3=b3)
+
+
+def _arm_hits(rig, side):
+    """actual posed-mesh overlaps of one arm (stick + hand) with the wedge, hats and the held gun"""
+    mw = rig.arm.matrix_world; k = rig.s
+    groups = ('upperarm_' + side, 'lowerarm_' + side, 'hand_' + side)
+    arm = _bvh([rig.body], only_groups=groups)
+    wedge = _bvh([rig.body], only_groups=('spine_01', 'pelvis', 'aim', 'root'))
+    sh = [(mw @ rig.arm.pose.bones['upperarm_' + side].head, 0.05 * k)]
+    hs = [(mw @ rig.arm.pose.bones['lowerarm_' + side].tail, 0.034 * k)]
+    n = _ov(wedge, arm, sh)
+    if rig.acc:
+        n += _ov(_bvh(rig.acc, only_groups=('spine_01', 'aim')), arm, sh)
+    wobjs = [o for w in rig.weapons.values() for o in w['objs']]
+    if wobjs:
+        n += _ov(_bvh(wobjs), _bvh([rig.body], only_groups=groups[:2]), hs)
+    return n
+
+
+def _mesh_pick(rig, side, target, b3, to_rest, u, p0, fallback):
+    up, lo = 'upperarm_' + side, 'lowerarm_' + side
+    inv = to_rest.inverted().to_3x3(); best = (10 ** 9, None)
+    for k in range(0, 24):
+        ang = math.radians(((k + 1) // 2) * 15.0 * (1 if k % 2 else -1))
+        pv = Matrix.Rotation(ang, 3, u) @ p0
+        rig.two_bone(up, lo, rig.A(target), inv @ pv, b3=b3)
+        n = _arm_hits(rig, side)
+        if n == 0:
+            return pv
+        if n < best[0]:
+            best = (n, pv)
+    return None
 
 
 # ------------------------------------------------------------------ hold definitions
