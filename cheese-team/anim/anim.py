@@ -561,27 +561,27 @@ reload_derringer = keyed([
 
 reload_snubnose = keyed([
     (0.00, {}),
-    (0.14, dict(dg=_LOW, dr=(90, 25, -70), lh=('w', 100, -44, 0), lel=LEL)),                  # cylinder out, rod up
-    (0.20, dict(dg=(0.20, 0.20, -0.125), lh=('w', 82, -44, 0), ease=snap)),                   # punch the ejector rod
-    (0.26, dict(dg=_LOW, dr=(90, -35, -70), lh=('w', 108, -60, 0))),                          # tip down, empties fall
+    (0.14, dict(dg=_LOW, dr=(90, 25, -70), lh=('w', 132, -16, 0), lel=LEL)),                  # cylinder out, palm on the rod tip
+    (0.20, dict(dg=(0.20, 0.20, -0.125), lh=('w', 122, -16, 0), ease=snap)),                   # punch the ejector rod
+    (0.26, dict(dg=_LOW, dr=(90, -35, -70), lh=('w', 140, -30, 0))),                          # tip down, empties fall
     (0.40, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.45, dict()),
-    (0.58, dict(lh=('w', 104, -10, 34), lel=LEL)),                                            # speedloader
-    (0.63, dict(lh=('w', 96, -10, 34), dg=_LOWd)),
-    (0.67, dict(lh=('w', 108, -10, 36), dg=_LOW)),
-    (0.76, dict(dr=(80, 0, 10), lh=('w', 100, -10, 40), ease=snap)),                           # palm it shut
+    (0.58, dict(lh=('w', 134, -6, 22), lel=LEL)),                                            # speedloader
+    (0.63, dict(lh=('w', 126, -6, 22), dg=_LOWd)),
+    (0.67, dict(lh=('w', 138, -6, 24), dg=_LOW)),
+    (0.76, dict(dr=(80, 0, 10), lh=('w', 132, -6, 30), ease=snap)),                           # palm it shut
     (0.86, dict(dg=(0.04, 0.03, 0.0), dr=(10, 6, 0), lh='rest', lel=(0.4, 1, -0.1))),
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
 reload_semiauto = keyed([
     (0.00, {}),
-    (0.12, dict(dg=(0.205, 0.18, -0.135), dr=(0, 0, -90), lh=BELT_L, lel=(0.6, 0.5, -0.3))),     # on its side, well to the left: mag drops
-    (0.16, dict(dg=(0.205, 0.18, -0.123), ease=snap)),
-    (0.30, dict(dg=(0.205, 0.18, -0.135))),
-    (0.46, dict(lh=('w', -30, -152, 0), lel=LEL)),                                            # fresh mag under the well
-    (0.54, dict(lh=('w', -30, -128, 0), dg=(0.195, 0.18, -0.135), ease=snap)),               # seat it
-    (0.62, dict(lh=('w', 140, 12, -46), dg=_LOW, dr=(90, 0, 0))),                             # muzzle left: pinch the slide
+    (0.12, dict(dg=(0.195, 0.18, -0.135), dr=(0, 0, -90), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),  # on its side, well left: mag drops
+    (0.16, dict(dg=(0.195, 0.18, -0.123), ease=snap)),
+    (0.30, dict(dg=(0.195, 0.18, -0.135))),
+    (0.46, dict(lh=('w', -30, -196, 0), lel=LEL)),                                            # fresh mag under the well
+    (0.54, dict(lh=('w', -30, -178, 0), dg=(0.185, 0.18, -0.135), ease=snap)),               # seat it
+    (0.62, dict(lh=('w', 140, 12, -46), dg=_LOW, dr=(90, 0, 0), rel=(-1, 0.3, -0.7))),                             # muzzle left: pinch the slide
     (0.68, dict(lh=('w', 112, 12, -46))),                                                     # rack
     (0.71, dict(lh=('w', 140, 12, -60), ease=snap)),
     (0.84, dict(dg=(0.03, 0.02, 0.0), dr=(4, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
