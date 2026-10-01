@@ -399,7 +399,7 @@ HOLDS = {
                   relbow=Vector((-1, 0.2, -0.6)), lelbow=Vector((1, -0.2, -0.8))),
     # minigun at the hip: right hand on the rear grip, left hand on the top carry bar
     'heavy': dict(twist=0, sway=0.5, grip=Vector((-0.05, -0.20, 0.36)), rot=dict(yaw=0, pitch=0, roll=0),
-                  relbow=Vector((-1, 0.3, -0.5)), lelbow=Vector((1, -0.3, 0.2))),
+                  relbow=Vector((-1, 0.3, -0.5)), lelbow=Vector((1, -0.2, -0.7))),
     # launcher on the right shoulder, beside the head
     'shoulder': dict(twist=0, sway=0.6, grip=Vector((-0.34, -0.30, 0.70)), rot=dict(yaw=0, pitch=2, roll=0),
                      relbow=Vector((-1, 0.3, -0.8)), lelbow=Vector((0.6, -0.4, -1))),
