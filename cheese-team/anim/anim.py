@@ -740,28 +740,30 @@ reload_lever = keyed([
 # ---- SMG: side mag (sticks out the left), left hand swaps it
 reload_smg = keyed([                                                 # gun rolled so the side mag hangs down; left hand swaps it
     (0.00, {}),
+    (0.08, dict(dg=(0.09, -0.04, 0.03))),                                                     # push it out first
     (0.16, dict(dr=(0, 4, 90), lh=('w', 120, 0, 266), lel=(1, -0.2, -0.6))),
-    (0.24, dict(lh=('w', 120, 0, 326), ease=snap)),                                           # yank it down
+    (0.24, dict(lh=('w', 120, 0, 304), ease=snap)),                                           # yank it down
     (0.40, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.44, dict()),
-    (0.58, dict(lh=('w', 120, 0, 326), lel=(1, -0.2, -0.6))),
-    (0.66, dict(lh=('w', 120, 0, 266), dg=(0, 0, 0.006), ease=snap)),                          # seat
-    (0.72, dict(dg=(0, 0, 0))),
-    (0.86, dict(lh=None, lel=None, dr=(0, 0, 0))),
+    (0.58, dict(lh=('w', 120, 0, 304), lel=(1, -0.2, -0.6))),
+    (0.66, dict(lh=('w', 120, 0, 266), dg=(0.09, -0.04, 0.036), ease=snap)),                   # seat
+    (0.72, dict(dg=(0.09, -0.04, 0.03))),
+    (0.86, dict(lh=None, lel=None, dr=(0, 0, 0), dg=(0, 0, 0))),
     (1.00, {}),
 ])
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
 _VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
-_BACK = (-0.205, 0.144, 0.0)                                         # slid 0.18 m back along the tube (body frame)
+_BACK = (-0.180, 0.126, 0.0)                                         # slid 0.18 m back along the tube (body frame)
 reload_launcher = keyed([                                            # RPG-style: slide it back, shove a rocket in the front
     (0.00, {}),
     (0.14, dict(dg=_BACK, lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.30, dict()),
-    (0.46, dict(lh=('w', 1060, -40, 0), lel=(1, 0.0, -0.8))),                                  # rocket at the muzzle
-    (0.56, dict(lh=('w', 1000, -40, 0), dg=(-0.213, 0.150, 0.0), ease=snap)),                   # shove it home
-    (0.62, dict(lh=('w', 1060, -40, 0), dg=_BACK)),
-    (0.80, dict(lh=None, dg=(0, 0, 0))),
+    (0.46, dict(lh=('w', 1060, -60, 0), lel=(1, 0.0, -0.8))),                                  # rocket at the muzzle
+    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.188, 0.132, 0.0), ease=snap)),                   # shove it home
+    (0.62, dict(lh=('w', 1060, -60, 0), dg=_BACK)),
+    (0.70, dict(lh=('w', 880, -120, 0))),                                                     # back under the tube
+    (0.82, dict(lh=None, dg=(0, 0, 0))),
     (1.00, {}),
 ])
 
