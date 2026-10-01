@@ -383,7 +383,7 @@ class NT:
         self.link(bev.outputs[0], d.inputs[0]); self.link(geo.outputs['Normal'], d.inputs[1])
         e = self.math('MULTIPLY', self.math('SUBTRACT', 1.0, d.outputs['Value']), gain, clamp=True)
         n = self.noise(bscale, 8, 0.7)
-        nm = self.bw(self.ramp(n, 0.35 - 0.3 * breakup, 0.75))
+        nm = self.bw(self.ramp(n, 0.45 - 0.2 * breakup, 0.70))
         return self.math('MULTIPLY', e, nm, clamp=True)
 
     def scratches(self, density=1.0, scale=40.0):
@@ -634,7 +634,7 @@ def spline(pts, sub=6, closed=False):
     return out
 
 
-def tape(name, col='#76787b'):
+def tape(name, col='#5f6266'):
     """silver duct tape: cloth scrim weave, crinkles, satin sheen, dirty"""
     g = NT(name)
     dirt = g.noise(25, 6, 0.6)
@@ -644,9 +644,9 @@ def tape(name, col='#76787b'):
     wv1 = g.node('ShaderNodeTexWave'); wv1.inputs['Scale'].default_value = 1100.0; wv1.bands_direction = 'X'
     wv2 = g.node('ShaderNodeTexWave'); wv2.inputs['Scale'].default_value = 1100.0; wv2.bands_direction = 'Z'
     g.link(g.co, wv1.inputs['Vector']); g.link(g.co, wv2.inputs['Vector'])
-    crink = g.noise(160, 6, 0.75, distort=1.0)
+    crink = g.noise(110, 8, 0.8, distort=1.5)
     h = g.math('ADD', g.math('MULTIPLY', g.math('ADD', wv1.outputs['Fac'], wv2.outputs['Fac']), 0.25), g.math('MULTIPLY', crink, 1.0))
-    g.bump(h, 0.25, 0.0004)
+    g.bump(h, 0.45, 0.0005)
     return g.m
 
 

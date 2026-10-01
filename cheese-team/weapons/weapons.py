@@ -315,12 +315,12 @@ BUILDERS['Derringer'] = derringer
 
 # ================================================================== 3. SAWED-OFF PUMP SHOTGUN (Mr. Shotgun, primary)
 def sawedoff():
-    black = wk.steel('M_SgParkerized', base='#1c1d1f', bare='#9a9da1', rough=0.55, wear=1.1, scratch=1.6, edge_gain=11.0, tint_var=0.08)
+    black = wk.steel('M_SgParkerized', base='#1c1d1f', bare='#8f9297', rough=0.55, wear=0.8, scratch=1.4, edge_gain=6.0, tint_var=0.08)
     black_dk = wk.steel('M_SgParkDark', base='#141516', bare='#8a8d91', rough=0.5, wear=0.8, scratch=1.0, edge_gain=11.0)
     bare = wk.steel('M_SgSawCut', base='#8d9095', bare='#c4c6c9', rough=0.42, wear=0.0, scratch=2.0)
     bolt = wk.steel('M_SgBolt', base='#6d7075', bare='#b5b8bc', rough=0.3, wear=0.5, scratch=1.0)
     wood = wk.wood('M_SgPumpWood', light='#5a3219', dark='#2a1309', rough=0.5, ring=110.0, axis='Y', wear=1.0, grain=0.4)
-    grip_m = wk.plastic('M_SgGripPoly', '#1a1a1b', rough=0.62)
+    grip_m = wk.rubber('M_SgGripPoly', '#0d0d0e', rough=0.7, stipple=0.8)
     duct = wk.tape('M_SgDuctTape')
 
     # ---- receiver
@@ -387,7 +387,7 @@ def sawedoff():
     rcap = rounded([(-4, 18, 4), (8, 18, 0), (8, -22, 0), (-4, -22, 6)])
     make('Sg_RearCap', profile(rcap, -14.5, 14.5), black, bevel=0.0026, seg=5)
     g = Grip((24.0, -30.0), (8.0, -80.0), (-22.0, -124.0),
-             depth=lambda t: (15.0 + 1.5 * math.sin(PI * t), 16.0 + 2.0 * t), width=lambda t: 15.0 + 1.0 * math.sin(PI * t), e=2.6, butt=0.06)
+             depth=lambda t: (19.0 + 2.0 * math.sin(PI * t), 21.0 + 2.5 * t), width=lambda t: 13.5 + 1.2 * math.sin(PI * t), e=2.6, butt=0.06)
     fg = lambda t, th: 1.0 - 0.07 * max(0.0, math.cos(th)) ** 4 * max(0.0, math.sin(PI * (t - 0.18) / 0.62 * 3.0)) * (0.18 < t < 0.80)
     R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=56, nth=56, fn=fg)
     gp = make('Sg_PistolGrip', wk.loft([r[:-1] for r in R], closed=True, cap1=True), grip_m, smooth=True)
