@@ -97,8 +97,9 @@ def base(K, T):
     K.wall2('z', -12, -6, 12, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
     K.wall2('x', 12, 36, -12, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
     K.box('TF_Grate', 12.4, -4.02, -13.6, 35.8, -3.98, -12.6)
-    K.box('TF_Ceiling', 0, -0.33, -16, 12, -0.3, -6)                                # tunnel ceilings (under the slabs above)
-    K.box('TF_Ceiling', 12, -0.33, -16, 36, -0.3, -12)
+    # tunnel ceilings (under the slabs above) -- with the stair openings left open
+    K.slab('TF_Ceiling', 0, -16, 12, -6, -0.33, -0.3, holes=[(1.33, -10, 7.0, -8)], col=False)
+    K.slab('TF_Ceiling', 12, -16, 36, -12, -0.33, -0.3, holes=[(24.33, -15.8, 30.0, -13.6)], col=False)
     K.box('TF_Hazard', 0.2, -4.0, -15.8, 11.8, -3.99, -15.6)                           # floor edge stripes
     K.box('TF_Hazard', 12.0, -4.0, -15.8, 35.8, -3.99, -15.6)
     for (d, z) in ((4, -11), (17, -14), (24, -14), (33, -14)):
