@@ -754,6 +754,172 @@ def semiauto():
 BUILDERS['SemiAuto'] = semiauto
 
 
+# ================================================================== stock lofting
+def stock_loft(name, sections, mat, e=2.6, nth=48, cap0=True, cap1=True):
+    """sections: [(u, v_top, v_bot, half_width)] mm along the weapon -> lofted superellipse body (smooth stocks)"""
+    rings = []
+    S = []
+    for k in range(len(sections) - 1):                             # resample smoothly
+        a = sections[max(0, k - 1)]; b = sections[k]; c = sections[k + 1]; d = sections[min(len(sections) - 1, k + 2)]
+        for i in range(6):
+            t = i / 6
+            S.append(tuple(0.5 * ((2 * b[j]) + (-a[j] + c[j]) * t + (2 * a[j] - 5 * b[j] + 4 * c[j] - d[j]) * t * t +
+                                  (-a[j] + 3 * b[j] - 3 * c[j] + d[j]) * t ** 3) for j in range(4)))
+    S.append(sections[-1])
+    for (u, vt, vb, hw) in S:
+        vc = (vt + vb) / 2; hv = (vt - vb) / 2
+        ring = []
+        for i in range(nth):
+            th = 2 * PI * i / nth
+            c_, s_ = math.cos(th), math.sin(th)
+            px = math.copysign(abs(c_) ** (2 / e), c_); py = math.copysign(abs(s_) ** (2 / e), s_)
+            ring.append(W(u, vc + hv * py, hw * px))
+        rings.append(ring)
+    return make(name, wk.loft(rings, closed=True, cap0=cap0, cap1=cap1), mat)
+
+
+def scope_body(prefix, u0, u1, v, mat, glass, obj_r=26.0, eye_r=21.0, tube_r=12.7):
+    """riflescope along u (front = u1): eyepiece, tube, turrets, objective bell, glass"""
+    prof = [(0.0, u0), (eye_r - 1.5, u0), (eye_r, u0 + 2), (eye_r, u0 + 34), (eye_r - 0.8, u0 + 36), (eye_r, u0 + 38), (eye_r, u0 + 50),
+            (tube_r + 2.0, u0 + 66), (tube_r + 2.0, u0 + 72), (tube_r, u0 + 76), (tube_r, u1 - 92), (tube_r + 1.0, u1 - 88),
+            (obj_r - 2, u1 - 52), (obj_r, u1 - 46), (obj_r, u1 - 2), (obj_r - 1.5, u1), (0.0, u1)]
+    body = make(prefix + '_Scope', lathe(prof, n=64, axis_v=v), mat, bevel=0.0, smooth=True)
+    for (uu, r, nm) in ((u1 - 1.0, obj_r - 3.0, 'Obj'), (u0 + 1.0, eye_r - 3.0, 'Eye')):
+        cut(body, lathe([(r, uu - 6 if nm == 'Obj' else uu - 2), (r, uu + 2 if nm == 'Obj' else uu + 6)], n=48, axis_v=v), 'rec' + nm)
+        gl = lathe([(0, uu - (4.5 if nm == 'Obj' else -4.5)), (r, uu - (4.5 if nm == 'Obj' else -4.5))], n=48, axis_v=v, cap0=False, cap1=False)
+        make(prefix + '_Lens' + nm, lathe([(r - 0.1, uu - 5 if nm == 'Obj' else uu + 3.5), (0.0, uu - 4 if nm == 'Obj' else uu + 4.5)],
+                                          n=48, axis_v=v), glass)
+    tc = (u0 + u1) / 2 - 10
+    tt = lathe([(0, 0), (9.5, 0), (9.5, 14), (8.5, 15.5), (0, 16)], n=40)
+    for (dirv, nm) in (((0, 0, 1), 'Elev'), ((1, 0, 0), 'Wind')):
+        base = cyl(W(tc, v, 0), W(tc, v, 0) + Vector(dirv) * (tube_r + 3.0) * MM, 0.0105, n=40)
+        make(prefix + '_TurretBase' + nm, base, mat)
+        cap = cyl(W(tc, v, 0) + Vector(dirv) * (tube_r + 3.0) * MM, W(tc, v, 0) + Vector(dirv) * (tube_r + 15.0) * MM, 0.0092, n=40)
+        co = make(prefix + '_Turret' + nm, cap, mat)
+        for k in range(20):
+            a = 2 * PI * k / 20
+            nrm = Vector(dirv)
+            x = nrm.orthogonal().normalized(); y = nrm.cross(x)
+            p = W(tc, v, 0) + nrm * (tube_r + 9.0) * MM + (x * math.cos(a) + y * math.sin(a)) * 9.2 * MM
+            g = box((0, 0, 0), (0.0011, 0.0011, 0.0115))
+            transform(g, frame(p, x * math.cos(a) + y * math.sin(a), (x * -math.sin(a) + y * math.cos(a)), nrm))
+            cut(co, g, 'kn%d' % k)
+    return body
+
+
+def mat_glass(name, tint='#2b4a4a'):
+    g = wk.NT(name)
+    g.set('Base Color', (*wk.srgb(tint), 1)); g.set('Roughness', 0.02); g.set('Metallic', 0.6)
+    try:
+        g.set('Coat Weight', 1.0); g.set('Thin Film Thickness', 300.0)
+    except KeyError:
+        pass
+    return g.m
+
+
+def sling(name, pts, width, mat, thick=0.0025, twist=0.0):
+    P = wk.spline(pts, 10)
+    bm = ribbon(P, width, lambda t, tan: Vector((math.cos(twist * t), 0.0, math.sin(twist * t))).normalized()
+                if abs(tan.dot(Vector((math.cos(twist * t), 0, math.sin(twist * t))))) < 0.95 else Vector((0, 0, 1)))
+    wk.set_uv(bm, lambda co: (co.y * 20.0, co.z * 20.0))
+    return make(name, bm, mat, solid=thick)
+
+
+def webbing(name, col):
+    g = wk.NT(name)
+    wv = g.node('ShaderNodeTexWave'); wv.inputs['Scale'].default_value = 2600.0; wv.bands_direction = 'Y'
+    wv2 = g.node('ShaderNodeTexWave'); wv2.inputs['Scale'].default_value = 900.0; wv2.bands_direction = 'Z'
+    g.link(g.co, wv.inputs['Vector']); g.link(g.co, wv2.inputs['Vector'])
+    dirt = g.noise(30, 5, 0.6)
+    c0 = wk.srgb(col)
+    g.set('Base Color', g.ramp(dirt, 0.3, 0.9, tuple(c * 0.6 for c in c0), c0))
+    g.set('Roughness', 0.85)
+    g.bump(g.math('ADD', wv.outputs['Fac'], g.math('MULTIPLY', wv2.outputs['Fac'], 0.5)), 0.25, 0.0003)
+    return g.m
+
+
+# ================================================================== 7. SCOPED BOLT-ACTION RIFLE (Mr. Faraway, primary)
+def boltrifle():
+    blued = wk.steel('M_BrBlued', base='#15171b', bare='#a9acb1', rough=0.28, wear=1.2, scratch=0.9, edge_gain=10.0)
+    blued_dk = wk.steel('M_BrBluedDk', base='#0e0f12', bare='#999ca1', rough=0.33, wear=0.8, scratch=0.5, edge_gain=10.0)
+    walnut = wk.wood('M_BrWalnut', light='#6a3a1c', dark='#241008', rough=0.36, ring=26.0, axis='Y', grain=0.55, wear=0.8)
+    rub = wk.rubber('M_BrButtPad', '#1d1a19', rough=0.8)
+    camo = wk.image_mat('M_BrCamoTape', 'camo_tape.png', rough=0.85, bump=0.15)
+    glass = mat_glass('M_BrGlass')
+    blaze = webbing('M_BrSling', '#f0560c')
+    BV = 0.0
+    # ---- stock: butt -> wrist (pistol grip) -> action area -> forend
+    st = [(-380, 18, -112, 20), (-370, 22, -118, 21), (-300, 15, -96, 19.5), (-220, 6, -72, 17.5), (-160, 0, -55, 15.5),
+          (-118, -2, -46, 14.0), (-92, -4, -86, 14.0), (-70, -6, -82, 14.5), (-48, -8, -40, 16.0), (0, -6, -34, 17.0),
+          (120, -4, -32, 17.0), (260, -3, -28, 15.5), (380, -3, -24, 14.0), (420, -4, -20, 12.0)]
+    stock = stock_loft('Br_Stock', st, walnut, e=2.4)
+    cut(stock, box(W(30, 4, 0), (0.0300, 0.300, 0.020)), 'inlet')               # action inlet
+    cut(stock, cyl(W(150, 0, 0), W(460, 0, 0), 0.0105, n=32), 'barrelchannel')
+    # cheek piece (left) + checkering panels (darker)
+    make('Br_ButtPad', profile(rounded([(-394, 22, 6), (-379, 22, 3), (-379, -120, 4), (-394, -120, 8)], n=6), -21.5, 21.5), rub,
+         bevel=0.0030, seg=4)
+    make('Br_ButtSpacer', profile(rounded([(-380, 22, 0), (-378, 22, 0), (-378, -119, 0), (-380, -119, 0)]), -21.2, 21.2),
+         wk.plastic('M_BrSpacer', '#e8e2d4', rough=0.5), bevel=0.0004)
+    # ---- receiver, bolt, trigger, guard, magazine floorplate
+    make('Br_Receiver', lathe([(15.8, -60.0), (16.5, -55.0), (16.5, 130.0), (15.0, 140.0)], n=48, axis_v=8.0), blued, bevel=0.0)
+    make('Br_RecvTang', profile(rounded([(-90, 0, 4), (-55, 4, 0), (-55, 14, 0), (-85, 6, 4)]), -6.0, 6.0), blued, bevel=0.0010)
+    make('Br_Bolt', lathe([(9.5, -66.0), (9.5, 70.0)], n=32, axis_v=8.0, x=-1.0), blued_dk)
+    make('Br_BoltShroud', lathe([(0, -86.0), (9.0, -86.0), (11.5, -80.0), (12.0, -66.0)], n=32, axis_v=8.0), blued_dk)
+    # bolt handle sticking out to the right, swept back, round knob
+    hp = [W(-40, 8, -10), W(-44, 6, -26), W(-52, 0, -40), W(-58, -8, -50)]
+    make('Br_BoltHandle', tube(wk.spline(hp, 6), 0.0042, n=16), blued_dk)
+    make('Br_BoltKnob', sphere(W(-60, -10, -53), 0.0105, seg=32, rings=16), blued_dk)
+    make('Br_TriggerGuard', profile(rounded([(-60, -36, 4), (10, -36, 4), (8, -46, 6), (-12, -62, 10), (-40, -62, 8), (-58, -48, 6)],
+                                            n=6), -6.5, 6.5, holes=[rounded([(-48, -40, 4), (0, -40, 4), (-12, -56, 8), (-38, -56, 6)], n=6)]),
+         blued, bevel=0.0010)
+    make('Br_Trigger', profile(rounded([(-20, -36, 0), (-21, -44, 2), (-25, -52, 2), (-27.5, -52, 1.5), (-24.5, -44, 2), (-24, -36, 0)]),
+                               -2.4, 2.4), blued_dk, bevel=0.0004)
+    for (u, sd) in ((-75, 1), (30, 1), (110, 1)):
+        make('Br_StockScrew', cyl(W(u, -36.5, 0) + Vector((0, 0, -0.0005)), W(u, -38, 0), 0.0028, n=20), blued_dk)
+    # ---- long tapered barrel with crown, sling swivels
+    bar = lathe([(14.5, 140.0), (14.5, 175.0), (11.0, 230.0), (9.2, 560.0), (8.4, 820.0), (8.4, 823.0)], n=48, axis_v=8.0)
+    bo = make('Br_Barrel', bar, blued, bevel=0.0)
+    cut(bo, cyl(W(780, 8, 0), W(830, 8, 0), 0.0035, n=24), 'bore')
+    cut(bo, lathe([(3.5, 821.0), (5.0, 823.5), (5.0, 826.0)], n=40, axis_v=8.0), 'crown')
+    for (u, v) in ((-300, -96), (360, -26)):
+        make('Br_SwivelStud', cyl(W(u, v + 2, 0), W(u, v - 5, 0), 0.0030, n=16), blued_dk)
+        make('Br_Swivel', tube([W(u, v - 5, 0) + Vector((0, 0.009 * math.sin(a), -0.009 * (1 - math.cos(a)))) for a in [PI * i / 10 for i in range(11)]],
+                               0.0016, n=8), blued_dk)
+    # ---- scope with rings + camo tape wrap
+    SV = 52.0
+    scope_body('Br', -150.0, 210.0, SV, blued, glass, obj_r=27.0, eye_r=21.5, tube_r=12.7)
+    for u in (-30.0, 110.0):
+        ring = lathe([(12.8, u - 6), (16.0, u - 6), (16.5, u - 4), (16.5, u + 4), (16.0, u + 6), (12.8, u + 6), (12.8, u - 6)],
+                     n=48, axis_v=SV, cap0=False, cap1=False)
+        make('Br_ScopeRing', ring, blued_dk)
+        make('Br_RingBase', profile(rounded([(u - 6, 17, 1), (u + 6, 17, 1), (u + 6, SV - 14, 2), (u - 6, SV - 14, 2)]), -7.0, 7.0), blued_dk,
+             bevel=0.0008)
+        for sd in (1, -1):
+            make('Br_RingScrew', cyl(W(u, SV + 15.5, sd * 12.5), W(u, SV + 15.5, sd * 15.5), 0.0022, n=6), blued_dk)
+    for (u_a, u_b, k) in ((-110.0, -62.0, 0), (20.0, 90.0, 1), (130.0, 152.0, 2)):
+        rings = []
+        for j in range(9):
+            uu = u_a + (u_b - u_a) * j / 8
+            r = 12.7
+            ring = []
+            for i in range(65):
+                a = 2 * PI * i / 64 * 3.4 + j * 0.0
+                rr = r + 0.6 + 0.35 * (a / (2 * PI)) + 0.15 * noise.noise(Vector((a, uu * 0.05, k)))
+                ring.append(W(uu + 0.0, SV + rr * math.sin(a), rr * math.cos(a)))
+            rings.append(ring)
+        bm = wk.loft(rings, closed=False, uvs=[(i / 64 * 3.4, j / 8) for j in range(9) for i in range(65)])
+        make('Br_CamoTape%d' % k, bm, camo, solid=0.0004)
+    # ---- blaze-orange sling hanging under the rifle
+    a0 = W(-300, -103, 0); a1 = W(360, -33, 0)
+    sp = [a0, W(-200, -210, 4), W(30, -270, 10), W(250, -170, 6), a1]
+    sling('Br_Sling', sp, 0.032, blaze, twist=0.4)
+    PIVOT['BoltRifle'] = (-84.0, -60.0)
+    return 'BoltRifle'
+
+
+BUILDERS['BoltRifle'] = boltrifle
+
+
 def build(name):
     wk.new_scene()
     BUILDERS[name]()
