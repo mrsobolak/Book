@@ -637,14 +637,19 @@ def rocketlauncher():
     fp = rounded([(950, R - 2, 0), (972, R - 2, 0), (968, R + 18, 2), (956, R + 18, 2)])
     make('Rl_FrontSightBase', profile(fp, -6.0, 6.0), steel, bevel=0.0008)
     make('Rl_FrontPost', profile(rounded([(959, R + 16, 0), (964, R + 16, 0), (963, R + 40, 1.5), (960, R + 40, 1.5)]), -1.4, 1.4), steel)
-    # ---- band + motorcycle stickers
-    for (nm, img, u, a, ww, hh, rot, circ) in (
-            ('Rl_StGouda', 'st_gouda.png', 720, 25, 130, 65, 0, False), ('Rl_StChoppers', 'st_choppers.png', 250, 35, 92, 92, 0, True),
-            ('Rl_StBrie', 'st_brie.png', 470, -8, 116, 58, 7, False), ('Rl_StThrottle', 'st_throttle.png', 850, 60, 104, 52, -6, False),
-            ('Rl_StFlames', 'st_flames.png', 660, 195, 150, 75, -4, False), ('Rl_St88', 'st_88.png', 905, -25, 70, 70, 0, True),
-            ('Rl_StChoppers2', 'st_choppers.png', 300, 165, 84, 84, 20, True), ('Rl_StBrie2', 'st_brie.png', 820, 150, 104, 52, 172, False),
-            ('Rl_StGouda2', 'st_gouda.png', 150, -35, 100, 50, -10, False)):
-        tube_sticker(nm, img, R, u, a, ww, hh, rot, circle=circ)
+    # ---- no stickers/logos: just two wraps of worn duct tape round the tube
+    duct = wk.tape('M_RlTape')
+    for (u0, wd, k) in ((470.0, 46.0, 0), (820.0, 34.0, 1)):
+        rings = []
+        for j in range(7):
+            uu = u0 + wd * j / 6
+            ring = []
+            for i in range(97):
+                a = 2 * PI * i / 96 * 2.2
+                rr = R + 0.45 + 0.35 * (a / (2 * PI)) + 0.12 * noise.noise(Vector((a, uu * 0.05, k)))
+                ring.append(W(uu + 1.5 * math.sin(a * 0.5), rr * math.sin(a), rr * math.cos(a)))
+            rings.append(ring)
+        make('Rl_Tape%d' % k, wk.loft(rings, closed=False), duct, solid=0.0004)
     # ---- loop of chain hanging from the front
     make('Rl_ChainLug', profile(rounded([(962, R - 6, 2), (984, R - 6, 2), (984, R + 4, 3), (962, R + 4, 3)]), 26.0, 34.0), steel, bevel=0.0008)
     a1 = W(973, R - 2, 36); a2 = W(940, -R + 10, 46)
@@ -744,7 +749,6 @@ def semiauto():
                   bevel=0.0022, seg=4)
         wk.screw(W(-12, -36, sd * 13.4), Vector((sd, 0, 0)), r=0.0022, mat=blk_dk, name='Sa_GripScrew')
         wk.screw(W(-20, -94, sd * 13.4), Vector((sd, 0, 0)), r=0.0022, mat=blk_dk, name='Sa_GripScrew')
-    flat_sticker('Sa_SkullSticker', 'st_skull.png', (-19.0, -64.0), 13.45, 22.0, 22.0, rot_deg=-10)
     mb = rounded([(-42, -106, 2), (-4, -106, 2), (-4, -112, 2.5), (-44, -112, 2.5)])
     make('Sa_MagBase', profile(mb, -9.0, 9.0), blk_dk, bevel=0.0010)
     PIVOT['SemiAuto'] = (-22.0, -62.0)

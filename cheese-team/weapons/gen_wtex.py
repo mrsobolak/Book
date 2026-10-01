@@ -249,7 +249,6 @@ def star_paint():
         x, y = c + R * math.cos(a), c + R * math.sin(a)
         d.ellipse((x - 46, y - 46, x + 46, y + 46), fill=(214, 168, 62, 255))
     d.ellipse((c - 150, c - 150, c + 150, c + 150), outline=(120, 82, 22, 255), width=18)
-    ctext(d, (c, c), 'G', B(200), (120, 82, 22, 255))
     a = np.asarray(im).astype(float)
     rng = np.random.RandomState(21)
     n = np.asarray(Image.fromarray((rng.rand(S // 8, S // 8) * 255).astype(np.uint8)).resize((S, S), Image.BICUBIC)) / 255.0
