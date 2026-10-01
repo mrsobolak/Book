@@ -38,12 +38,12 @@ def base(K, T):
     P = wsparts.Parts(K, T)
     tm = P.tm
     # ---------------- floors (ground slab per zone; holes for the stair down and the flag-room hatch) ----------------
-    K.slab('Epoxy', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
+    K.slab('TF_Floor', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
     K.slab('Conc', 0, -24, 12, -6, -0.3, 0.0, holes=[(1.33, -10, 7.0, -8)])     # south stair hall
     K.slab('Hangar', 10, -6, 24, 20, -0.3, 0.0)                                 # loading yard
     K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -16, 30.0, -14)])   # flag room
     K.slab('AntiSlip', 30, -24, 36, -6, -0.3, 0.0)                              # packing corridor
-    K.slab('Epoxy', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
+    K.slab('TF_Floor', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
     K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, col=False)                   # roof
     # ---------------- outer shell ----------------
     K.wall('Brick', 'z', -24, 20, 0, WT, 0, 10)
@@ -54,14 +54,15 @@ def base(K, T):
     P.opening('z', -14, -9, 36, WT, 0, 3.2, mat='Steel')
     P.opening('z', 15.2, 19.8, 36, WT, 6, 9, mat='Steel')
     # ---------------- spawn ----------------
-    K.wall(tm('Paint'), 'x', 0, 10, 6, WT, 0, 10, holes=[(4, 7, 0, 2.8)])
-    K.wall(tm('Paint'), 'x', 0, 10, -6, WT, 0, 10, holes=[(4, 7, 0, 2.8)])
-    K.wall(tm('Paint'), 'z', -6, 6, 10, WT, 0, 10, holes=[(-2.5, 2.5, 0, 3.0)])
-    K.slab('Conc', 0, -6, 10, 6, 5.0, 5.3, col=False)
+    K.wall2('x', 0, 10, 6, WT, 0, 10, holes=[(4, 7, 0, 2.8)], lower=tm('TF_Paint'))
+    K.wall2('x', 0, 10, -6, WT, 0, 10, holes=[(4, 7, 0, 2.8)], lower=tm('TF_Paint'))
+    K.wall2('z', -6, 6, 10, WT, 0, 10, holes=[(-2.5, 2.5, 0, 3.0)], lower=tm('TF_Paint'))
+    K.slab('TF_Ceiling', 0, -6, 10, 6, 5.0, 5.3, col=False)
     for (s0, s1, c, ax) in ((4, 7, 6, 'x'), (4, 7, -6, 'x'), (-2.5, 2.5, 10, 'z')):
         P.opening(ax, s0, s1, c, WT, 0, 3.0 if ax == 'z' else 2.8, mat=tm('SteelT'))
-    K.box(tm('Shutter'), 0.2, 0, -4.6, 0.85, 2.3, 4.6, col=True)               # resupply lockers
+    K.box(tm('TF_Corr'), 0.2, 0, -4.6, 0.85, 2.3, 4.6, col=True)               # resupply lockers
     K.box('Steel', 0.2, 2.3, -4.7, 0.95, 2.4, 4.7)
+    K.box(tm('TF_Emblem'), 0.2, 2.6, -1.0, 0.24, 4.6, 1.0)                               # team emblem over the lockers
     for z in (-3, 3):
         K.box('Planks', 4.2, 0.42, z - 1.5, 4.8, 0.48, z + 1.5)
         for zz in (z - 1.3, z + 1.3):
@@ -70,9 +71,9 @@ def base(K, T):
     K.light(5, 4.6, 0, '#fff1d6', 1.4, 12)
     K.area('Spawn', 0, -6, 10, 6, 0, team=T, kind='spawn')
     # ---------------- north stair hall -> Conveyor Gallery (HIGH route) ----------------
-    K.wall('CMU', 'z', 6, 15.2, 10, WT, 0, 10, holes=[(8, 11, 0, 3.0)])
+    K.wall2('z', 6, 15.2, 10, WT, 0, 10, holes=[(8, 11, 0, 3.0)])
     P.opening('z', 8, 11, 10, WT, 0, 3.0, mat='Steel')
-    K.wall('CMU', 'x', 0, 10, 15.2, WT, 0, 6.0)
+    K.wall2('x', 0, 10, 15.2, WT, 0, 6.0)
     P.stairs(1.5, 7.4, -PI / 2, 2.0, 0.0, 6.0, kind='steel', going=0.25)    # v1 started 0.16 m from the wall: unreachable from below
     P.rail(2.65, 15.2, 9.8, 15.2, 6.0)
     K.light(5, 9.3, 10, '#ffe6c0', 1.0, 12)
@@ -85,11 +86,10 @@ def base(K, T):
         K.cyl('Steel', d, 6.75, 18.45, 0.06, 1.1, axis='z', seg=6); d += 1.0
     for d in (8, 16, 24, 32):
         K.light(d, 9.4, 17.5, '#ffe0b0', 0.9, 10)
-    K.cyl('SteelG', 0.2, 8.9, 19.5, 0.18, 35.6, axis='x', seg=10)
     K.area('Conveyor Gallery', 0, 15.4, 36, 20, 6, team=T)
     # ---------------- south stair hall -> brine sump (LOW route) ----------------
-    K.wall('CMU', 'x', 0, 10, -14, WT, 0, 5)
-    K.wall('CMU', 'z', -14, -6, 10, WT, 0, 5)
+    K.wall2('x', 0, 10, -14, WT, 0, 5)
+    K.wall2('z', -14, -6, 10, WT, 0, 5)
     K.slab('Conc', 0, -14, 10, -6, 5.0, 5.3, col=False)
     P.stairs(1.33, -9, 0, 2.0, -4.0, 0.0, kind='conc')
     P.rail(1.33, -10.05, 7.0, -10.05, 0.0); P.rail(1.33, -7.95, 7.0, -7.95, 0.0); P.rail(1.28, -10, 1.28, -8, 0.0)
@@ -102,7 +102,6 @@ def base(K, T):
     K.wall('Ribbed', 'x', 0, 36, -16, WT, -4.0, -0.3)
     K.wall('Ribbed', 'z', -12, -6, 12, WT, -4.0, -0.3)
     K.wall('Ribbed', 'x', 12, 36, -12, WT, -4.0, -0.3)
-    K.cyl('SteelG', 0.2, -1.0, -15.5, 0.2, 35.8, axis='x', seg=10)
     K.box('Grate', 12.4, -4.02, -13.6, 35.8, -3.98, -12.6)
     for d in (5, 18, 30):
         K.light(d, -0.8, -13.5 if d > 12 else -11, '#9fd0ff', 0.8, 9)
@@ -113,7 +112,7 @@ def base(K, T):
     # ---------------- Loading Yard (hub) ----------------
     K.wall('Brick', 'x', 10, 30, -6, WT, 0, 10, holes=[(14, 18, 0, 3.2)])
     P.opening('x', 14, 18, -6, WT, 0, 3.2, mat=tm('SteelT'))
-    K.wall('CMU', 'z', -6, 15.2, 24, WT, 0, 10, holes=[(-4, 4, 0, 4.5), (8, 11, 0, 3.0), (11.6, 14.6, 1.0, 2.4)])
+    K.wall2('z', -6, 15.2, 24, WT, 0, 10, holes=[(-4, 4, 0, 4.5), (8, 11, 0, 3.0), (11.6, 14.6, 1.0, 2.4)])
     P.opening('z', -4, 4, 24, WT, 0, 4.5, mat=tm('SteelT'), w=0.18)
     P.opening('z', 8, 11, 24, WT, 0, 3.0, mat='Steel')
     P.window('z', 11.6, 14.6, 24, WT, 1.0, 2.4)
@@ -138,8 +137,10 @@ def base(K, T):
     fx, fy, fz = 20.0, 0.0, -19.0
     K.box('SteelPlate', fx - 1.2, 0, fz - 1.2, fx + 1.2, 0.3, fz + 1.2, col=True)
     K.cyl(tm('SteelT'), fx, 0.3, fz, 0.95, 0.05, seg=24)
-    K.box('SafetyY', fx - 1.5, 0.0, fz - 1.5, fx + 1.5, 0.012, fz - 1.3)
-    K.box('SafetyY', fx - 1.5, 0.0, fz + 1.3, fx + 1.5, 0.012, fz + 1.5)
+    K.box('TF_Hazard', fx - 1.5, 0.0, fz - 1.5, fx + 1.5, 0.012, fz - 1.3)
+    K.box('TF_Hazard', fx - 1.5, 0.0, fz + 1.3, fx + 1.5, 0.012, fz + 1.5)
+    K.box('TF_Tile', fx - 3.5, 0.0, fz - 3.5, fx + 3.5, 0.012, fz + 3.5, bevel=False)
+    K.box(tm('TF_Emblem'), fx - 2.5, 2.6, -23.8, fx + 2.5, 7.1, -23.76)                 # team emblem behind the flag
     rng = K.rng
     rack(K, P, 13.0, 19.0, -23.6, -22.5, rng); rack(K, P, 22.0, 28.5, -23.6, -22.5, rng)
     rack(K, P, 15.0, 19.5, -12.6, -11.5, rng); rack(K, P, 12.4, 13.5, -20.5, -8.5, rng)
@@ -149,12 +150,11 @@ def base(K, T):
     K.area('Aging Cellar', 12, -24, 30, -6, 0, team=T, kind='flag')
     K.label('FLAG', fx, 2.0, fz, team=T, kind='flag')
     # ---------------- main corridor ----------------
-    K.wall('TileW', 'x', 24, 36, 4, WT, 0, 10, holes=[(26, 29, 0, 3.0)])
-    K.wall('TileW', 'x', 24, 36, -4, WT, 0, 5, holes=[(31, 35, 0, 3.2)])
-    K.slab('Conc', 24, -4, 36, 4, 5.0, 5.3, col=False)
+    K.wall2('x', 24, 36, 4, WT, 0, 10, holes=[(26, 29, 0, 3.0)], lower='TF_Tile', band=1.4)
+    K.wall2('x', 24, 36, -4, WT, 0, 5, holes=[(31, 35, 0, 3.2)], lower='TF_Tile', band=1.4)
+    K.slab('TF_Ceiling', 24, -4, 36, 4, 5.0, 5.3, col=False)
     P.opening('x', 26, 29, 4, WT, 0, 3.0, mat='Steel')
     P.opening('x', 31, 35, -4, WT, 0, 3.2, mat='Steel')
-    K.cyl('SteelG', 24.2, 4.5, 3.4, 0.16, 11.6, axis='x', seg=10)
     K.light(30, 4.6, 0, '#ffe0b0', 1.0, 10)
     # ---------------- packing corridor ----------------
     K.slab('Conc', 30, -24, 36, -4, 5.0, 5.3, col=False)

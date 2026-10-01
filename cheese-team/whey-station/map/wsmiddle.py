@@ -10,15 +10,13 @@ WT = 0.4          # wall thickness
 
 
 def vat(K, x, z, r=3.0):
-    """curd vat: concrete plinth, stainless drum, cone lid, agitator motor, rim ring, legs of pipework"""
+    """curd vat: concrete plinth, stainless drum, cone lid, agitator motor, rim ring, rim rings"""
     K.box('Conc', x - r - 0.3, 0, z - r - 0.3, x + r + 0.3, 0.5, z + r + 0.3)
     K.cyl('Stainless', x, 0.5, z, r, 5.0, seg=28)
     K.cyl('Stainless', x, 5.5, z, r, 1.3, seg=28, r2=0.9)
     K.cyl('SteelG', x, 5.3, z, r + 0.08, 0.2, seg=28)
-    K.cyl('SteelG', x, 1.0, z, r + 0.06, 0.12, seg=28)
+    K.cyl('TF_Hazard', x, 1.0, z, r + 0.06, 0.25, seg=28)
     K.box('SteelPlate', x - 0.6, 6.8, z - 0.5, x + 0.6, 7.6, z + 0.5)
-    K.cyl('Steel', x, 7.6, z, 0.12, 6.4, seg=8)                        # drive shaft up to the roof beams
-    K.cyl('Stainless', x + r * 0.7, 0.5, z + r * 0.7, 0.18, 4.5, seg=10)   # outlet pipe
     # collision: octagon of three boxes
     a, b = r * 0.94 + 0.3, r * 0.39 + 0.3
     for (u, v) in ((a, b), (b, a), (r * 0.72 + 0.25, r * 0.72 + 0.25)):
@@ -55,6 +53,7 @@ def half(K, T):
     K.wall('Brick', 'z', -24, 24, -30, WT, 0, 16,
            holes=[(4, 10, 0, 4.5), (18.8, 23.8, 6, 9), (-23.8, -18.8, 6, 9), (-18, -14, 0, 3.2)])
     P.opening('z', 4, 10, -30, WT, 0, 4.5, mat=P.tm('SteelT'), w=0.18)
+    K.box(P.tm('TF_Emblem'), -29.8, 5.0, 4.5, -29.76, 9.5, 9.5)                        # team emblem over the main door
     P.opening('z', -18, -14, -30, WT, 0, 3.2, mat='Steel')
     P.opening('z', 18.8, 23.8, -30, WT, 6, 9, mat='Steel')
     P.opening('z', -23.8, -18.8, -30, WT, 6, 9, mat='Steel')
@@ -67,10 +66,10 @@ def half(K, T):
         P.ibeam(x, 19.1, 0, 5.55, w=0.28)
     P.stairs(-8, 18.8 - 32 * 0.27, -PI / 2, 2.0, 0.0, 6.0, kind='steel')           # hall floor -> catwalk
     # conveyor bridge across the pit (x -1.5..1.5), north half z 0..18.8
-    K.box('Plate', -1.5, 5.8, 0, 1.5, 6.0, 18.8, col=True, bevel=False)
+    K.box('TF_Grate', -1.5, 5.8, 0, 1.5, 6.0, 18.8, col=True, bevel=False)
     for s in (-1, 1):
         K.box('Steel', s * 1.25 - 0.12, 5.25, 0, s * 1.25 + 0.12, 5.8, 18.8)
-        P.rail(s * 1.55, 0, s * 1.55, 18.8, 6.0, panel='Plate')
+        P.rail(s * 1.55, 0, s * 1.55, 18.8, 6.0, panel=P.tm('TF_Paint'))
     K.box('SteelG', -0.55, 6.0, 0, 0.55, 6.35, 18.8, col=True)                        # conveyor belt bed (low cover)
     for z in range(1, 18, 2):
         K.cyl('Steel', -0.5, 6.25, z, 0.07, 1.0, axis='x', seg=8)
@@ -83,8 +82,8 @@ def half(K, T):
     P.stairs(-4, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')
     P.rail(-5.05, -8, -5.05, 8, 0.0)
     P.rail(-3.0, 8.05, 5.0, 8.05, 0.0)
-    K.box('SafetyY', -5.2, 0.0, -8.2, -4.9, 0.08, 8.2)
-    K.box('SafetyY', -5.0, 0.0, 7.9, 5.0, 0.08, 8.2)
+    K.box('TF_Hazard', -5.2, 0.0, -8.2, -4.9, 0.08, 8.2)
+    K.box('TF_Hazard', -5.0, 0.0, 7.9, 5.0, 0.08, 8.2)
     # cover: vats and a pump skid
     vat(K, -18, 10.5); vat(K, -18, -10.5); vat(K, -10, -19.5, 2.4)
     pump_skid(K, -13, 0)
@@ -96,19 +95,18 @@ def half(K, T):
     K.wall('Brick', 'x', -40, -30, 24, WT, 0, 10.0)
     K.wall('Brick', 'z', 20, 24, -40, WT, 0, 10.0)                                   # closes the gap beside the base
     # MAIN: L-hallway. Base door (z -4..4) -> north leg -> hall door (z 4..10)
-    K.slab('Epoxy', -40, -4, -30, 10, -0.3, 0.0)
-    K.slab('Conc', -40, -4, -30, 10, 5.0, 5.3, col=False)
-    K.wall('TileW', 'x', -40, -30, -4, WT, 0, 10.0, holes=[(-39.5, -37, 0, 3.0)])
+    K.slab('TF_Floor', -40, -4, -30, 10, -0.3, 0.0)
+    K.slab('TF_Ceiling', -40, -4, -30, 10, 5.0, 5.3, col=False)
+    K.wall2('x', -40, -30, -4, WT, 0, 10.0, holes=[(-39.5, -37, 0, 3.0)], lower='TF_Tile', band=1.4)
     P.opening('x', -39.5, -37, -4, WT, 0, 3.0, mat='Steel')
     K.wall('TileW', 'z', -4, 4, -34, WT, 0, 5.0)                                     # the corner that blocks the sightline
     K.box('Brick', -34, 0, -4, -30, 10, 4, col=True)                                  # solid block behind it
-    K.wall('TileW', 'x', -40, -30, 10, WT, 0, 10.0)
-    K.cyl('SteelG', -40, 4.5, 9.4, 0.18, 10, axis='x', seg=10)
+    K.wall2('x', -40, -30, 10, WT, 0, 10.0, lower='TF_Tile', band=1.4)
     K.light(-37, 4.6, 0, '#ffe0b0', 1.0, 10); K.light(-33, 4.6, 7, '#ffe0b0', 1.0, 10)
     K.area('Main Hallway', -40, -4, -30, 10, 0, team=T)
     # HIGH: gallery room (y 6) from the base conveyor gallery (z 15.2..19.8) to the hall catwalk (z 18.8..23.8)
     K.wall('Brick', 'x', -40, -30, 14, WT, 0, 10.0)
-    K.box('Plate', -40, 5.8, 14.2, -30, 6.0, 23.8, col=True, bevel=False)
+    K.box('TF_Grate', -40, 5.8, 14.2, -30, 6.0, 23.8, col=True, bevel=False)
     K.box('SteelG', -38.5, 6.0, 14.6, -32, 6.85, 15.8, col=True)                      # conveyor = low cover
     for x in range(-38, -32, 2):
         K.cyl('Steel', x, 6.75, 14.65, 0.06, 1.1, axis='z', seg=6)
@@ -125,15 +123,12 @@ def half(K, T):
         K.cyl('Conc', x, 0, z, r + 0.25, 0.4, seg=20)
         K.cyl('Stainless', x, 0.4, z, r, h, seg=20, col=True)
         K.cyl('Stainless', x, 0.4 + h, z, r, 0.6, seg=20, r2=0.4)
-        K.cyl('Steel', x, 0.4 + h + 0.6, z, 0.1, 9.5 - h - 1.0, seg=8)
     K.light(-35, 8.8, -14, '#d8ecff', 1.1, 14)
     K.area('Brine Tanks', -40, -24, -30, -4, 0, team=T)
     # brine tunnel (LOW route) x -40..-5, z -16..-12, y -4 -- ceiling is the floor above
     K.slab('FloorDmg', -40, -16, -5, -12, -4.3, -4.0)
     K.wall('Ribbed', 'x', -40, -5, -16, WT, -4.0, -0.3)
     K.wall('Ribbed', 'x', -40, -5, -12, WT, -4.0, -0.3)
-    K.cyl('SteelG', -40, -1.0, -15.5, 0.2, 35, axis='x', seg=10)
-    K.cyl('Rust', -40, -1.5, -15.4, 0.12, 35, axis='x', seg=8)
     K.box('Grate', -39.6, -4.02, -14.5, -5.4, -3.98, -13.5)
     for x in (-34, -22, -10):
         K.light(x, -0.8, -14, '#9fd0ff', 0.8, 9)
