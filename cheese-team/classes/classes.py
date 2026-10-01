@@ -483,7 +483,7 @@ def rocketguy(P, T):
             spts.append(loc + nn * 0.0048); snor.append(nn)
     bm = A.ribbon(spts, lambda t: 0.026, lambda t, tan: snor[min(len(snor) - 1, int(round(t * (len(snor) - 1))))], thick=0.0)
     helm.append(A.make_obj('Rocket_GoggleStrap', A.transform(bm, H), strap, 'spine_01', solid=0.0022))
-    print('rocket helmet fit', A.fit_hat(P, helm, helm[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=6.0))
+    print('rocket helmet fit', A.fit_hat(P, helm, helm[:2], H.col[3][:3], H.col[0][:3], H.col[1][:3], H.col[2][:3], rng_deg=6.0, near=0.5))
     obs += helm
     # big band-aid over the centre hole, like it's covering a wound; one corner peeling up
     tan = A.mat_image('M_Bandaid', 'bandaid.png', rough=0.6, bump=0.05)

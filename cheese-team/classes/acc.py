@@ -501,7 +501,7 @@ def sink(P, objs, normal, check, clear=0.0015, step=0.002, limit=0.08):
     return drop
 
 
-def fit_hat(P, objs, check, pivot, u, v, n, rng_deg=8.0, step_deg=2.0, clear=0.002, span=0.08):
+def fit_hat(P, objs, check, pivot, u, v, n, rng_deg=8.0, step_deg=2.0, clear=0.002, span=0.08, near=0.06):
     """seat a hat as low as it can go without clipping: tries tilts about the hat's own u/v axes (through pivot) and,
     for each, binary-searches the offset along n where no `check` vertex enters the body. Applies the best one.
     Returns (tilt_u_deg, tilt_v_deg, offset)."""
@@ -512,7 +512,7 @@ def fit_hat(P, objs, check, pivot, u, v, n, rng_deg=8.0, step_deg=2.0, clear=0.0
         for vv in ob.data.vertices:
             w = mw @ vv.co
             loc, nor, i, d = P.bvh.find_nearest(w)
-            if loc is not None and d < 0.06:          # only the part of the hat that can ever touch the head
+            if loc is not None and d < near:          # only the part of the hat that can ever touch the head
                 pts.append(w)
 
     def clips(R, s):
