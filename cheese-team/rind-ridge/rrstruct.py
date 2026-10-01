@@ -155,7 +155,7 @@ def structures(K, S, Hg):
     for name, wall, roofm, holes, team in (
             ('ranch', 'RR_SidingR', 'RR_Tin', {'n': [(-89, -85, 0, 3.6)], 'e': [(-96, -92, 0, 3.0)]}, 'C'),
             ('mine', 'RR_SidingG', 'RR_Tin', {'n': [(74, 78, 0, 3.4)], 'w': [(-101, -98, 0, 3.0)]}, 'B'),
-            ('sawmill', 'RR_Planks', 'RR_Tin', {'s': [(64, 68, 0, 3.6)], 'w': [(30, 34, 0, 3.0)], 'e': [(36, 40, 0, 3.0)]}, 'C')):
+            ('sawmill', 'RR_Planks', 'RR_Tin', {'s': [(110, 114, 0, 3.6)], 'w': [(54, 58, 0, 3.0)], 'n': [(110, 114, 0, 3.0)]}, 'C')):
         x0, z0, x1, z1, _, _ = L.PADS[name]
         y = float(T.pad_y(name))
         building(K, P, x0 + 2, z0 + 2, x1 - 2, z1 - 2, y, 5.0, wall, holes, roof=roofm)

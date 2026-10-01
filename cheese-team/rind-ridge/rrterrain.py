@@ -70,9 +70,9 @@ def carve(X, Z, H, S):
     H2 = H * (1 - w) + T * w
     # building pads
     for name, (x0, z0, x1, z1, y, alcove) in L.PADS.items():
-        if y is None:                                 # forward-spawn pads sit at the level of the nearest track
-            cx, cz = (x0 + x1) / 2, (z0 + z1) / 2
-            y = float(Y[np.argmin(np.hypot(P[:, 0] - cx, P[:, 1] - cz))])
+        if isinstance(y, str):                        # forward-spawn pads sit at the track height of their checkpoint
+            tx, tz, _ = L.TRACK[L.CHECKPOINT_IDX[y]]
+            y = float(Y[np.argmin(np.hypot(P[:, 0] - tx, P[:, 1] - tz))])
         PAD_Y[name] = y
         dx = np.maximum(np.maximum(x0 - X, X - x1), 0); dz = np.maximum(np.maximum(z0 - Z, Z - z1), 0)
         dd = np.hypot(dx, dz)

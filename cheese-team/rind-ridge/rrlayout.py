@@ -26,12 +26,12 @@ TRACK = [
 CHECKPOINT_IDX = {'A': 3, 'B': 8, 'C': 13, 'D': 21, 'FINAL': len(TRACK) - 1}
 TEAMS = {'attack': 'C', 'defend': 'B'}
 MAX_GRADE = 0.09
-# flattened pads for buildings: name -> (x0, z0, x1, z1, y or None = ground at the centre, alcove?)
+# flattened pads for buildings: name -> (x0, z0, x1, z1, y or a checkpoint name = track height there, alcove?)
 #  alcove pads are cut straight into a cliff (no blend: the rock rises sheer round the building)
 PADS = {
     'cheddar_spawn': (-196, -170, -168, -147, 2.3, True),     # Cheddar's bunker in the south canyon wall
-    'ranch':         (-96, -102, -74, -86, None, False),       # Cheddar forward spawn after A (the barn)
-    'mine':          (68, -108, 90, -93, None, False),         # Bleu forward spawn until B (mine head house)
-    'sawmill':       (60, 26, 80, 44, None, False),            # Cheddar forward spawn after C
+    'ranch':         (-96, -102, -74, -86, 'A', False),       # Cheddar forward spawn after A (the barn)
+    'mine':          (68, -108, 90, -93, 'B', False),         # Bleu forward spawn until B (mine head house)
+    'sawmill':       (104, 48, 124, 66, 'C', False),            # Cheddar forward spawn after C
     'bleu_spawn':    (-16, 25, 4, 40, 60.0, True),             # Bleu's bunker in the summit spire
 }
