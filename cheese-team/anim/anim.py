@@ -748,7 +748,7 @@ reload_lever = keyed([
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
-_SQ = dict(dg=(-0.06, 0.01, -0.135), dr=(-25, 0, 0), tw=65)  # muzzle 40 deg left: the stock clears the right side         # squared up, gun low front-right, side mag toward the left hand
+_SQ = dict(dg=(-0.06, 0.01, -0.135), dr=(-25, 0, 0), tw=65)   # squared up, gun low front-right, muzzle 40 deg left (stock clears the hip), side mag to the left hand
 reload_smg = keyed([                                                 # let go of the fore-end, square up, swap, blade back in
     (0.00, {}),
     (0.08, dict(lh='rest', lel=(0.4, 1, -0.1))),
@@ -765,7 +765,7 @@ reload_smg = keyed([                                                 # let go of
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
 _VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
-_BACK = (-0.131, 0.092, 0.0)                                         # slid 0.18 m back along the tube (body frame)
+_BACK = (-0.131, 0.092, 0.0)                                         # slid 0.16 m back along the tube (body frame)
 reload_launcher = keyed([                                            # RPG-style: slide it back, shove a rocket in the front
     (0.00, {}),
     (0.14, dict(dg=_BACK, lh=BELT_L, lel=(0.6, 0.5, -0.3))),
