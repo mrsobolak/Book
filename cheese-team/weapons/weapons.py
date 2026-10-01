@@ -243,8 +243,8 @@ BUILDERS['Revolver'] = revolver
 
 # ================================================================== 2. DERRINGER (Outlaw, secondary)
 def derringer():
-    nickel = wk.steel('M_DerNickel', base='#cfcbc2', bare='#a5803f', rough=0.22, wear=1.3, scratch=1.0, edge_gain=12.0, tint_var=0.04)
-    nickel_dk = wk.steel('M_DerNickelDark', base='#a9a59d', bare='#8f6f37', rough=0.30, wear=0.8, scratch=0.6, edge_gain=12.0)
+    nickel = wk.steel('M_DerNickel', base='#aba79e', bare='#a5803f', rough=0.16, wear=1.3, scratch=1.0, edge_gain=12.0, tint_var=0.04)
+    nickel_dk = wk.steel('M_DerNickelDark', base='#8e8a83', bare='#8f6f37', rough=0.30, wear=0.8, scratch=0.6, edge_gain=12.0)
     bore = wk.steel('M_DerBore', base='#1b1b1c', bare='#3a3a3c', rough=0.5, wear=0.0, scratch=0.0)
     pearl = wk.pearl('M_DerPearl')
 

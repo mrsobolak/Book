@@ -489,16 +489,21 @@ def plastic(name, col, rough=0.45, var=0.06):
 
 
 def pearl(name):
+    """mother-of-pearl: creamy base, layered milky swirls with faint pink/green play, glossy coat"""
     g = NT(name)
-    swirl = g.noise(18, 6, 0.65, distort=2.0)
-    g.set('Base Color', g.ramp(swirl, 0.3, 0.8, srgb('#d9d3c6'), srgb('#f6f2ea')))
-    g.set('Roughness', 0.18)
+    swirl = g.noise(9, 8, 0.7, distort=3.5)
+    fine = g.noise(40, 6, 0.6, distort=1.5)
+    base = g.ramp(swirl, 0.25, 0.85, srgb('#bdb4a3'), srgb('#f3eee4'))
+    tintc = g.ramp(fine, 0.3, 0.7, srgb('#e9d6d2'), srgb('#d5e2d6'))
+    g.set('Base Color', g.mix(0.35, base, tintc))
+    g.set('Roughness', g.math('ADD', 0.12, g.math('MULTIPLY', fine, 0.12)))
     try:
-        g.set('Coat Weight', 0.8); g.set('Coat Roughness', 0.08)
-        g.set('Thin Film Thickness', 380.0)
+        g.set('Coat Weight', 1.0); g.set('Coat Roughness', 0.05)
+        g.set('Thin Film Thickness', 420.0); g.set('Thin Film IOR', 1.5)
+        g.set('Subsurface Weight', 0.15)
     except KeyError:
         pass
-    g.bump(swirl, 0.04)
+    g.bump(g.math('ADD', swirl, g.math('MULTIPLY', fine, 0.5)), 0.05)
     return g.m
 
 
