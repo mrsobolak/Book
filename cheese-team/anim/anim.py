@@ -754,6 +754,7 @@ fire_bolt = combo(kick(40, 0.03, 0.012, 9, 1.0, decay=3.0), keyed([(0.0, {}), (0
 reload_bolt = keyed([(0.0, {})] + _bolt(0.04, 0.30)[:3] + [
     (0.38, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),                                            # rounds from the belt
     (0.42, dict()),
+    (0.48, dict(rh=('w', -60, 120, -110), rel=(-1, 0.3, 0.2))),                              # up and outside the stock
     (0.54, dict(rh=('w', -24, 76, -10), rel=(-1, 0.2, 0.3))),                                 # over the open action
     (0.59, dict(rh=('w', -24, 58, -10), dg=(0, 0, -0.005))),
     (0.64, dict(rh=('w', -24, 76, -10), dg=(0, 0, 0))),
