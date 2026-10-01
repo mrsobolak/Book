@@ -12,7 +12,7 @@ from mathutils.bvhtree import BVHTree
 CH = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseClasses_Blender\export"
 WP = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseWeapons_Blender\export"
 FPS = 30
-WS = 0.5                      # weapon scale relative to real-world size (cheese-sized guns)
+WS = 0.7                      # weapon scale relative to real-world size (cheese-sized guns)
 PI = math.pi
 MM = 0.001
 
@@ -157,8 +157,8 @@ def R(yaw=0.0, pitch=0.0, roll=0.0):
 
 HOLDS = {
     # one-handed pistol: right hand out front-right, left hand relaxed at the side
-    'pistol': dict(grip=Vector((-0.115, -0.285, 0.655)), rot=dict(yaw=4, pitch=2, roll=0), support=None,
-                   lhand=Vector((0.285, -0.075, 0.545)), relbow=Vector((-1, -0.2, -0.6)), lelbow=Vector((1, 0.3, -0.4))),
+    'pistol': dict(grip=Vector((-0.12, -0.285, 0.625)), rot=dict(yaw=5, pitch=0, roll=0), support=None,
+                   lhand=Vector((0.305, -0.03, 0.50)), relbow=Vector((-1, 0.15, -0.5)), lelbow=Vector((1, 0.2, -0.2))),
 }
 
 WEAPON_HOLD = {'Revolver': 'pistol', 'Derringer': 'pistol', 'SemiAuto': 'pistol', 'SnubNose': 'pistol'}
