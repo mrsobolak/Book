@@ -1023,13 +1023,13 @@ def mechanic(P, T):
     obs.append(A.make_obj('Mech_RagTail', bm, ragt, 'spine_01', solid=0.0025, subsurf=1))
     # big combination wrench clipped flat to the +x side face, under the shoulder
     steel = A.mat_metal('M_WrenchSteel', '#c9ccd2', rough=0.22, scratches=0.8)
-    cz, cy = 0.668, 0.012
-    ang = math.radians(16)
+    cz, cy = 0.630, 0.018
+    ang = math.radians(8)
     loc, nor = P.hit((1.0, cy, cz), (-1, 0, 0))
     sx = loc.x if loc is not None else 0.19
     X = Vector((0, math.cos(ang), math.sin(ang))); Y = Vector((0, -math.sin(ang), math.cos(ang))); Z = Vector((1, 0, 0))
     wt = 0.0092
-    wk = 1.28                                                     # big wrench
+    wk = 1.16                                                     # big wrench (fills the side face)
     F = A.frame_matrix(Vector((sx + wt / 2 + 0.0004, cy, cz)), X, Y, Z)
     wb = wrench_mesh(F, thick=wt, k=wk)
     w = A.make_obj('Mech_Wrench', wb, steel, 'spine_01')
