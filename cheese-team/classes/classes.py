@@ -4,7 +4,7 @@ from mathutils import Vector, Matrix, Euler, noise
 import acc as A
 from acc import PI
 
-SCALE = {'Outlaw': 1.0, 'MrShotgun': 1.0, 'RocketGuy': 1.0, 'Sniper': 1.07, 'Mechanic': 1.0, 'Heavy': 1.16}
+SCALE = {'Outlaw': 1.0, 'MrShotgun': 1.0, 'RocketGuy': 1.0, 'Sniper': 1.07, 'Mechanic': 1.0, 'Greg': 1.16}
 EYE_L, EYE_R = Vector((0.087, A.FRONT_Y, 0.78)), Vector((-0.100, A.FRONT_Y, 0.775))   # character's left (+x) / right eye
 MOUTH = Vector((-0.006, A.FRONT_Y, 0.680))
 
@@ -855,64 +855,13 @@ def mechanic(P, T):
 BUILDERS['Mechanic'] = mechanic
 
 
-# ================================================================== 6. HEAVY
-def heavy(P, T):
+# ================================================================== 6. GREG (formerly "Heavy")
+def greg(P, T):
+    """no hat: thick handlebar moustache + gold sheriff star; the class reads by being the tallest"""
     import bmesh
     obs = []
-    felt = A.mat_felt('M_TenGallon', '#d2bc98', '#c2aa84', rough=0.78, fiber=0.35)
-    band = A.mat_plain('M_HeavyBand', '#3a2416', rough=0.5, col2='#26170e', nscale=160, bump=0.25, bscale=420)
-    silver = A.mat_metal('M_HeavyBuckle', '#dcd8cf', rough=0.2)
-    a, b = 0.128, 0.142
-    H = hat_frame(T, fwd=math.radians(-4), side=math.radians(-3), lift=0.010, shift=(0.010, 0.004))
-    hat = []
-    # crown: tall cattleman crown, slightly tapered, rounded top edge
-    crown = [(1.0, -0.090), (1.0, -0.06), (1.0, -0.03), (1.0, 0.0), (0.985, 0.04), (0.965, 0.08), (0.94, 0.12), (0.915, 0.155), (0.895, 0.178), (0.87, 0.192),
-             (0.82, 0.200), (0.6, 0.204), (0.0, 0.206)]
-    bm = A.revolve(crown, a, b, n=96, closed=False)
-    def shape_crown(v):
-        x, y, z = v.x, v.y, v.z
-        hz = max(0.0, min(1.0, (z - 0.06) / 0.14))
-        front = max(0.0, -y / b)
-        x *= 1.0 - 0.20 * front ** 2 * hz ** 1.4                      # front pinches
-        crease = 0.040 * math.exp(-(x / 0.040) ** 2) * hz ** 3 * (1.0 - 0.35 * max(0.0, y / b))
-        z -= crease                                                   # long centre crease, front to back
-        z -= 0.010 * front ** 2 * hz ** 2                             # crown dips a touch toward the front
-        return Vector((x, y, z))
-    A.displace(bm, shape_crown)
-    hat.append(A.make_obj('Heavy_Crown', A.transform(bm, H), felt, 'spine_01', solid=0.004))
-    # brim: huge, taco-curled at the sides, a slight dip front and back, bound edge
-    ra, rb = 0.335 / a, 0.330 / b
-    brim = [(0.85, 0.004), (ra * 0.55, 0.0042), (ra * 0.92, 0.0040), (ra * 0.995, 0.0046), (ra * 1.0, 0.0012), (ra * 0.99, -0.0026),
-            (ra * 0.92, -0.0040), (ra * 0.55, -0.0042), (0.85, -0.004)]
-    def taco(f, s):
-        u = max(0.0, (s / ra - 0.40) / 0.60)
-        return 0.085 * u ** 1.9 * math.cos(f) ** 2 - 0.016 * u ** 2 * math.sin(f) ** 2
-    bm = A.revolve(brim, a, b * (rb / ra), n=128, closed=True, zfn=taco)
-    brim_ob = A.make_obj('Heavy_Brim', A.transform(bm, H), felt, 'spine_01'); hat.append(brim_ob)
-    edge = []
-    for i in range(129):
-        f = 2 * PI * i / 128
-        edge.append(Vector((a * ra * 1.0 * math.cos(f), b * (rb / ra) * ra * math.sin(f), 0.0012 + taco(f, ra))))
-    hat.append(A.make_obj('Heavy_BrimBinding', A.transform(A.tube(edge, 0.0042, n=8, cap=False), H), band, 'spine_01'))
-    # braided leather band with a silver buckle on the left
-    hb = []
-    for (s, z) in ((1.0, 0.002), (1.016, 0.004), (1.02, 0.016), (1.016, 0.028), (1.0, 0.030)):
-        hb.append((s, z))
-    bm = A.revolve(hb, a, b, n=96, closed=True, zfn=lambda f, s: 0.0012 * math.sin(f * 48) * (s > 1.01))
-    hat.append(A.make_obj('Heavy_Band', A.transform(bm, H), band, 'spine_01'))
-    ang = PI - 0.15                                                   # character's right (-x) side, slightly forward
-    p = Vector((a * 1.024 * math.cos(ang), b * 1.024 * math.sin(ang), 0.016))
-    nrm = Vector((math.cos(ang) / a, math.sin(ang) / b, 0)).normalized()
-    z = nrm; x = Vector((0, 0, 1)).cross(z).normalized(); y = z.cross(x)
-    outer = [(-0.016, -0.0135), (0.016, -0.0135), (0.016, 0.0135), (-0.016, 0.0135)]
-    inner = [(-0.010, -0.0080), (-0.010, 0.0080), (0.010, 0.0080), (0.010, -0.0080)]
-    bk = A.extrude_outline([outer, inner], 0.003, A.frame_matrix(p, x, y, z))
-    hat.append(A.make_obj('Heavy_Buckle', A.transform(bk, H), silver, 'spine_01'))
-    print('heavy hat settle', A.settle(P, hat, Vector(H.col[2][:3]), clear=0.004, check=[brim_ob]))
-    print('heavy crown conform', A.conform_bottom(P, hat[0], Vector(H.col[2][:3])))
-    obs += hat
     # thick handlebar moustache: combed clumps, ends curled up and out (clear of the eyes)
-    hair = A.mat_plain('M_HeavyStache', '#5e3a1f', rough=0.55, col2='#3f2513', nscale=70, bump=0.06, bscale=260)
+    hair = A.mat_plain('M_GregStache', '#5e3a1f', rough=0.55, col2='#3f2513', nscale=70, bump=0.06, bscale=260)
     for sgn in (-1, 1):
         pts = []
         z0 = MOUTH.z + 0.006
@@ -938,7 +887,7 @@ def heavy(P, T):
             tb = A.tube(path, lambda t, rs=rs: rs * (0.0255 * (1 - t) ** 0.85 + 0.0015) * min(1.0, 0.55 + t * 9), n=12, flat=0.72,
                         up=Vector((0, -1, 0)))
             tmp = bpy.data.meshes.new('tmp'); tb.to_mesh(tmp); tb.free(); bmh.from_mesh(tmp); bpy.data.meshes.remove(tmp)
-        obs.append(A.make_obj('Heavy_Moustache%s' % ('L' if sgn > 0 else 'R'), bmh, hair, 'spine_01', subsurf=1))
+        obs.append(A.make_obj('Greg_Moustache%s' % ('L' if sgn > 0 else 'R'), bmh, hair, 'spine_01', subsurf=1))
     # gold sheriff's star stuck on the wedge (lower +x cheek), slightly askew
     gold = A.mat_metal('M_SheriffGold', '#e2b54a', rough=0.22, scratches=0.6)
     goldd = A.mat_metal('M_SheriffGoldDark', '#b8892e', rough=0.35, scratches=0.4)
@@ -966,28 +915,28 @@ def heavy(P, T):
         star.append((r * math.cos(ang), r * math.sin(ang)))
     front = A.frame_matrix(Vector((cxs, cy_, cz_)) + Zs * 0.0028, fw, up, Zs)
     st = A.extrude_outline([star], 0.0040, front)
-    so = A.make_obj('Heavy_Star', st, gold, 'spine_01')
+    so = A.make_obj('Greg_Star', st, gold, 'spine_01')
     bv = so.modifiers.new('bevel', 'BEVEL'); bv.width = 0.0012; bv.segments = 2; bv.limit_method = 'ANGLE'
     obs.append(so)
     for i in range(6):                                                 # ball tips
         ang = PI / 2 + rot + 2 * PI * i / 6
         c = front @ Vector(((R - 0.0015) * math.cos(ang), (R - 0.0015) * math.sin(ang), 0.0))
-        obs.append(A.make_obj('Heavy_StarTip%d' % i, A.sphere(c, 0.0062, seg=16, rings_=10), gold, 'spine_01'))
+        obs.append(A.make_obj('Greg_StarTip%d' % i, A.sphere(c, 0.0062, seg=16, rings_=10), gold, 'spine_01'))
     # raised centre disc with an engraved ring and a small embossed star
     disc = A.lathe([(1.0, 0.0), (1.0, 0.0012), (0.92, 0.0022), (0.0, 0.0024)], 0.0175, 0.0175, n=48)
     A.transform(disc, front @ Matrix.Translation((0, 0, 0.0020)))
-    obs.append(A.make_obj('Heavy_StarDisc', disc, gold, 'spine_01'))
+    obs.append(A.make_obj('Greg_StarDisc', disc, gold, 'spine_01'))
     ring = A.revolve([(0.0128, 0.0040), (0.0142, 0.0040), (0.0142, 0.0046), (0.0128, 0.0046)], 1.0, 1.0, n=48)
     A.transform(ring, front)
-    obs.append(A.make_obj('Heavy_StarRing', ring, goldd, 'spine_01'))
+    obs.append(A.make_obj('Greg_StarRing', ring, goldd, 'spine_01'))
     small = []
     for i in range(10):
         ang = PI / 2 + rot + 2 * PI * i / 10
         r = 0.0085 if i % 2 == 0 else 0.0036
         small.append((r * math.cos(ang), r * math.sin(ang)))
     ss = A.extrude_outline([small], 0.0012, front @ Matrix.Translation((0, 0, 0.0048)))
-    obs.append(A.make_obj('Heavy_StarEmboss', ss, goldd, 'spine_01'))
+    obs.append(A.make_obj('Greg_StarEmboss', ss, goldd, 'spine_01'))
     return obs
 
 
-BUILDERS['Heavy'] = heavy
+BUILDERS['Greg'] = greg

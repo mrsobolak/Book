@@ -7,9 +7,9 @@ from mathutils import Vector, Matrix, Euler
 HERE = os.path.dirname(os.path.abspath(__file__))
 if HERE not in sys.path:
     sys.path.insert(0, HERE)
-CLASSES = ['Outlaw', 'MrShotgun', 'RocketGuy', 'Sniper', 'Mechanic', 'Heavy']
+CLASSES = ['Outlaw', 'MrShotgun', 'RocketGuy', 'Sniper', 'Mechanic', 'Greg']
 NICE = {'Outlaw': 'Outlaw', 'MrShotgun': 'Mr. Shotgun', 'RocketGuy': 'Rocket Guy', 'Sniper': 'Sniper', 'Mechanic': 'Mechanic',
-        'Heavy': 'Heavy'}
+        'Greg': 'Greg'}
 
 
 def log(msg, path=None):

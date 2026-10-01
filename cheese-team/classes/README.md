@@ -11,7 +11,7 @@ accessories only, plus a uniform height scale. Accessories are built by code (`a
 | Rocket Guy | 1.00 | open-face motorcycle helmet with scratched goggles on top, big band-aid, spiked leather wristbands |
 | Sniper | 1.07 | blaze-orange hunting cap with ear flaps down, two camo face-paint stripes, a stalk of dry grass |
 | Mechanic | 1.00 | short-brim patterned welder's cap, grease smudges, red shop rag in a hole, big wrench clipped to the side |
-| Heavy | 1.16 | ten-gallon hat, handlebar moustache, gold sheriff star |
+| Greg (was Heavy) | 1.16 | handlebar moustache, gold sheriff star (no hat) |
 
 Build one class: `blender -b -P build_class.py -- <Class> <outdir> [preview|full]`
 
@@ -23,7 +23,7 @@ Build one class: `blender -b -P build_class.py -- <Class> <outdir> [preview|full
 | Rocket Guy | open-face helmet + goggles, band-aid, spiked wristbands | 1.00 |
 | Sniper | camo face paint (no hat) | 1.07 |
 | Mechanic | grease smears, big wrench strapped to the side (no hat) | 1.00 |
-| Heavy | ten-gallon hat, handlebar moustache, sheriff star | 1.16 |
+| Greg (was Heavy) | handlebar moustache, sheriff star (no hat) | 1.16 |
 
 ## Export
 `finish.finish(cls, export_root)` (run inside Blender) builds the class, bakes the accessories to one PBR set
