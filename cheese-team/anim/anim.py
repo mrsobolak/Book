@@ -593,6 +593,7 @@ reload_semiauto = keyed([                                            # one-hande
     (0.26, dict(dg=(-0.05, 0.27, -0.10), dr=(0, 90, 0), rel=(-1, 0.4, 0.2))),                 # muzzle up over the right pouch
     (0.34, dict(dg=(-0.05, 0.27, -0.13), ease=snap)),                                         # seat it on the fresh mag
     (0.40, dict(dg=(-0.05, 0.27, -0.10))),
+    (0.48, dict(dg=(0.06, 0.06, -0.07), dr=(45, 40, 0))),                                      # swing out front
     (0.56, dict(dg=_LOW, dr=(90, 0, 0), lh=('w', 152, 12, -46), lel=LEL, rel=(-1, 0.3, -0.7))),  # across the belly
     (0.62, dict(lh=('w', 122, 12, -46))),                                                     # rack
     (0.65, dict(lh=('w', 152, 12, -60), ease=snap)),
@@ -632,7 +633,7 @@ reload_dual = keyed([
 # ---- machine pistol: 3-round burst; long mag swapped with the gun on its side (mag points left)
 reload_mpistol = keyed([
     (0.00, {}),
-    (0.12, dict(dg=(0.15, 0.12, -0.10), dr=(0, 0, -90), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),
+    (0.12, dict(dg=(0.15, 0.12, -0.10), dr=(0, 0, -50), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),
     (0.16, dict(dg=(0.15, 0.12, -0.088), ease=snap)),
     (0.30, dict(dg=(0.15, 0.12, -0.10))),
     (0.48, dict(lh=('w', 40, -330, 0), lel=LEL)),                                              # new mag under the long well
@@ -684,7 +685,7 @@ reload_lever = keyed([
 SMAG = ('w', 120, 0, 250)
 reload_smg = keyed([
     (0.00, {}),
-    (0.12, dict(lh=SMAG, dr=(0, 6, 15), lel=(1, -0.2, -0.3))),
+    (0.12, dict(lh=SMAG, dr=(0, 4, 90), lel=(1, -0.2, -0.6))),                                  # roll: mag hangs down
     (0.20, dict(lh=('w', 120, 0, 300), ease=snap)),                                           # yank it
     (0.36, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.40, dict()),
@@ -696,14 +697,14 @@ reload_smg = keyed([
 ])
 
 # ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
-reload_launcher = keyed([
+reload_launcher = keyed([                                            # stand it on end, drop the rocket in the top
     (0.00, {}),
-    (0.16, dict(dg=(0.04, 0.06, -0.02), dr=(-10, -42, 0), lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.30, dict()),
-    (0.46, dict(lh=('w', 1050, 0, 0), lel=(1, -0.4, -0.4))),                                  # rocket at the muzzle
-    (0.56, dict(lh=('w', 990, 0, 0), dg=(0.04, 0.05, -0.02), ease=snap)),                    # shove it home
-    (0.62, dict(lh=('w', 1050, 0, 0), dg=(0.04, 0.06, -0.02))),
-    (0.82, dict(lh=None, dg=(0, 0, 0), dr=(0, 0, 0))),
+    (0.18, dict(dg=(0.01, -0.01, -0.155), dr=(-145, 90, 0), lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.34, dict()),
+    (0.50, dict(lh=('w', 1060, 0, 0), lel=(1, 0.2, 0.6))),                                    # rocket over the muzzle
+    (0.60, dict(lh=('w', 1000, 0, 0), dg=(0.01, -0.01, -0.165), ease=snap)),                 # drop it home
+    (0.66, dict(lh=('w', 1060, 0, 0), dg=(0.01, -0.01, -0.155))),
+    (0.84, dict(lh=None, dg=(0, 0, 0), dr=(0, 0, 0))),
     (1.00, {}),
 ])
 
@@ -712,9 +713,9 @@ fire_board = keyed([(0.0, {}), (0.30, dict(dg=(0.03, -0.10, -0.04), dr=(0, -30, 
                     (0.45, dict()), (1.0, dict(dg=(0, 0, 0), dr=(0, 0, 0)))])
 reload_board = keyed([
     (0.00, {}),
-    (0.14, dict(lh=('w', 20, 150, 150), lel=(1, -0.3, -0.6))),                                # top-left corner
-    (0.40, dict(lh=('w', 60, 160, 0), dr=(0, 6, 0))),                                         # lift the page over
-    (0.62, dict(lh=('w', 20, 120, -150), dr=(0, 0, 0))),
+    (0.16, dict(lh=('w', 24, 150, -150), lel=(1, -0.3, -0.6))),                               # top-left corner
+    (0.40, dict(lh=('w', 70, 175, -40), dr=(0, 6, 0))),                                       # curl the page up and over
+    (0.60, dict(lh=('w', 24, 120, -150), dr=(0, 0, 0))),                                      # smooth it down
     (0.80, dict(lh=None)),
     (1.00, {}),
 ])
@@ -729,15 +730,15 @@ WDEF = {
     'MachinePistol': dict(hold='pistol', fire=(18, kick(18, 0.012, 0.006, 6, 1.0, decay=1.6, shots=(0, 3, 6)), False),
                           reload=(60, reload_mpistol)),
     'SawedOff':  dict(hold='dual', dual=True, fire=(30, fire_dual, False), reload=(66, reload_dual)),
-    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -77, 0)), fire=(40, fire_bolt, False), reload=(90, reload_bolt)),
-    'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(160, -63, 0)),
+    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -77, 0), hold_pt=(-84, -54, -40)), fire=(40, fire_bolt, False), reload=(90, reload_bolt)),
+    'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(160, -63, 0), hold_pt=(-20, -36, -38)),
                        fire=(32, fire_lever, False), reload=(84, reload_lever)),
     'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(240, -57, 0)),
                       fire=(12, shake(12, 0.004, 1.5, 4), True), reload=(64, reload_smg)),
     'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.09, -0.27, 0.635)), support=(700, -87, 0)),
                            fire=(30, kick(30, 0.05, 0.02, 8, 0.0, decay=5.0), False), reload=(76, reload_launcher)),
     'Minigun':   dict(hold='heavy', over=dict(support=(228, -166, 0)), fire=(12, shake(12, 0.006, 1.2, 6), True), reload=None),
-    'Blueprint': dict(hold='board', over=dict(hold_pt=(10, 0, -128)), fire=(24, fire_board, False), reload=(44, reload_board)),
+    'Blueprint': dict(hold='board', over=dict(hold_pt=(10, 0, 128)), fire=(24, fire_board, False), reload=(44, reload_board)),
 }
 
 
