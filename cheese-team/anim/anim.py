@@ -348,13 +348,16 @@ def _bvh(objs, exclude_groups=(), only_groups=None):
         ev.to_mesh_clear()
     if not polys:
         return None
-    t = BVHTree.FromPolygons(verts, polys)
+    t = _T()
+    t.tree = BVHTree.FromPolygons(verts, polys)
     t.cents = [sum((verts[i] for i in p), Vector()) / len(p) for p in polys]
     return t
 
 
 class _T:
-    pass
+    """BVHTree can't carry attributes: wrap it with the triangle centroids"""
+    def overlap(self, other):
+        return self.tree.overlap(other.tree)
 
 
 def _ov(a, b, skip=None):
@@ -391,7 +394,10 @@ def check(rig, act, step=1):
         arms = _bvh([rig.body], only_groups=('upperarm_l', 'lowerarm_l', 'upperarm_r', 'lowerarm_r'))
         legs_l = _bvh([rig.body], only_groups=('thigh_l', 'calf_l', 'foot_l'))
         legs_r = _bvh([rig.body], only_groups=('thigh_r', 'calf_r', 'foot_r'))
-        c1 = len(wb.overlap(body)) if (wb and body) else 0
+        mw = rig.arm.matrix_world
+        k = rig.s
+        skip = [(mw @ rig.arm.pose.bones[b].tail, 0.034 * k) for b in ('lowerarm_l', 'lowerarm_r')]
+        c1 = _ov(wb, body, skip)
         c2 = len(wb.overlap(acc)) if (wb and acc) else 0
         c3 = len(arms.overlap(wedge)) if (arms and wedge) else 0
         if base3 is None:
