@@ -55,6 +55,7 @@ MATS.update({
     'TF_Emblem_C': ('tf_emblem', 1.0, '#c8601c', 0.6, 0), 'TF_Emblem_B': ('tf_emblem', 1.0, '#33669f', 0.6, 0),
     'TF_Bulb': (None, 1, '#fff2c8', 0.3, 0),
 })
+MATS.update({'TF_FloorWarm': ('tf_concrete', 5.0, '#a87a5c', 0.75, 0), 'TF_Plaster': ('tf_concrete', 6.0, '#ddd5c4', 0.9, 0)})
 MATS.update({'TF_Glow_C': (None, 1, '#ff7a1e', 0.3, 0), 'TF_Glow_B': (None, 1, '#3d8bff', 0.3, 0)})
 # clean TF2 look: the rusty / team-tinted Poly Haven metals now read as plain dark painted steel
 for _k in ('Steel', 'SteelO', 'SteelG', 'SteelPlate', 'SteelT_C', 'SteelT_B'):

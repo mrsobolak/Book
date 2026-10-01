@@ -68,6 +68,14 @@ def neigh(n):
                 if h2 <= h + STEP + 1e-6 and h2 >= h - 30:
                     # can't step DOWN through a floor: only allow a drop if no node at our height exists there
                     yield (ix + dx, iz + dz, h2), CELL * math.hypot(dx, dz) + abs(h2 - h) * 0.2
+    # walking off a ledge: the landing cell can be up to 3 cells out (the body-clearance margin round the ledge)
+    for dx in range(-3, 4):
+        for dz in range(-3, 4):
+            if max(abs(dx), abs(dz)) < 2:
+                continue
+            for h2 in nodes.get((ix + dx, iz + dz), ()):
+                if h - 30 <= h2 < h - STEP:
+                    yield (ix + dx, iz + dz, h2), CELL * math.hypot(dx, dz) + abs(h2 - h) * 0.2
 
 
 def dijkstra(src, targets=None):

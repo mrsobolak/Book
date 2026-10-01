@@ -24,10 +24,11 @@ def base(K, T):
     K.slab('TF_Floor', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
     K.slab('Conc', 0, -24, 12, -6, -0.3, 0.0, holes=[(1.33, -10, 7.0, -8)])     # south stair hall
     K.slab('Hangar', 10, -6, 24, 20, -0.3, 0.0)                                 # loading yard
-    K.slab('TF_Floor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.8, 30.0, -12.2)])   # flag room (hatch opening = full tunnel width)
+    K.slab('TF_Grate', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.8, 30.0, -12.2), (14.2, -21.8, 24.0, -8.2)])   # flag room walkway ring
+    K.slab('TF_FloorWarm', 14.2, -21.8, 24.0, -8.2, -0.9, -0.6)                          # sunken flag floor
     K.slab('AntiSlip', 30, -24, 36, -6, -0.3, 0.0)                              # packing corridor
     K.slab('TF_Floor', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
-    K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, col=False)                   # roof
+    K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, holes=[(16.0, -18.0, 22.0, -12.0)], col=False)                   # roof
     # ---------------- outer shell ----------------
     K.wall2('z', -24, 20, 0, WT, 0, 10)
     K.wall2('x', 0, 36, 20, WT, 0, 10)
@@ -77,13 +78,17 @@ def base(K, T):
     K.slab('TF_Floor', 12, -16, 36, -12, -4.3, -4.0)
     K.wall2('z', -16, -6, 0, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
     K.wall2('x', 0, 12, -6, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
-    K.wall2('x', 0, 36, -16, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    for (a0, a1, top) in ((0, 14.2, -0.3), (14.2, 24.0, -0.9), (24.0, 36, -0.3)):     # lower under the sunken flag-room floor
+        K.wall2('x', a0, a1, -16, WT, -4.0, top, lower='TF_Tile', upper='TF_Conc', band=1.3)
     K.wall2('z', -12, -6, 12, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
-    K.wall2('x', 12, 36, -12, WT, -4.0, -0.3, lower='TF_Tile', upper='TF_Conc', band=1.3)
+    for (a0, a1, top) in ((12, 14.2, -0.3), (14.2, 24.0, -0.9), (24.0, 36, -0.3)):
+        K.wall2('x', a0, a1, -12, WT, -4.0, top, lower='TF_Tile', upper='TF_Conc', band=1.3)
     K.box('TF_Grate', 12.4, -4.02, -13.6, 35.8, -3.98, -12.6)
     # tunnel ceilings (under the slabs above) -- with the stair openings left open
     K.slab('TF_Ceiling', 0, -16, 12, -6, -0.33, -0.3, holes=[(1.33, -10, 7.0, -8)], col=False)
-    K.slab('TF_Ceiling', 12, -16, 36, -12, -0.33, -0.3, holes=[(24.33, -15.8, 30.0, -12.2)], col=False)
+    K.slab('TF_Ceiling', 12, -16, 14.2, -12, -0.33, -0.3, col=False)
+    K.slab('TF_Ceiling', 14.2, -16, 24.0, -12, -0.93, -0.9, col=False)
+    K.slab('TF_Ceiling', 24.0, -16, 36, -12, -0.33, -0.3, holes=[(24.33, -15.8, 30.0, -12.2)], col=False)
     K.box('TF_Hazard', 0.2, -4.0, -15.8, 11.8, -3.99, -15.6)                           # floor edge stripes
     K.box('TF_Hazard', 12.0, -4.0, -15.8, 35.8, -3.99, -15.6)
     for (d, z) in ((4, -11), (16, -14), (22, -14), (33, -14)):
@@ -94,7 +99,8 @@ def base(K, T):
     P.stairs(30.0, -14.7, PI, 2.0, -4.0, 0.0, kind='steel')                       # clear of the tunnel wall (face at -15.8)
     P.rail(24.33, -12.1, 29.8, -12.1, 0.0); P.rail(29.9, -15.8, 29.9, -12.2, 0.0); P.rail(24.33, -15.95, 29.8, -15.95, 0.0)
     # ---------------- Loading Yard (hub) ----------------
-    K.wall2('x', 10, 30, -6, WT, 0, 10, holes=[(14, 18, 0, 3.2)])
+    K.wall2('x', 10, 30, -6, WT, 0, 10, holes=[(14, 18, 0, 3.2), (21.5, 27.5, 1.2, 3.0)])
+    P.window('x', 21.5, 27.5, -6, WT, 1.2, 3.0, trim='TF_Steel', pane=1.5)
     P.opening('x', 14, 18, -6, WT, 0, 3.2, mat=tm('SteelT'))
     K.wall2('z', -6, 15.2, 24, WT, 0, 10, holes=[(-4, 4, 0, 4.5), (8, 11, 0, 3.0), (11.6, 14.6, 1.0, 2.4)])
     P.opening('z', -4, 4, 24, WT, 0, 4.5, mat=tm('SteelT'), w=0.18)
@@ -112,60 +118,75 @@ def base(K, T):
     K.prop('pallet_stack', 14.0, 0, 13.6, 0.1, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
     K.light(17, 9.3, 4, '#ffe9c8', 1.6, 18)
     K.area('Loading Yard', 10, -6, 24, 15, 0, team=T)
-    # ---------------- FLAG ROOM (d 12-30, z -24..-6): plain TF2 block walls with pilasters, open floor, capture pad + beacon ----------------
-    K.wall2('z', -24, -6, 12, WT, 0, 8)
-    K.wall2('z', -24, -4, 30, WT, 0, 8, holes=[(-18, -14, 0, 3.2)])
+    # ---------------- FLAG ROOM (d 12-30, z -24..-6), Turbine-style: sunken warm floor ringed by a grated walkway with
+    # railings and corner steps, team-colour lower walls under cream plaster, skylight with team-colour reveals + trusses,
+    # flag pad in a hazard-marked corner of the sunken floor, window from the yard ----------------
+    TP = tm('TF_Paint')
+    K.wall2('z', -24, -6, 12, WT, 0, 8, lower=TP, upper='TF_Plaster', band=1.6)
+    K.wall2('z', -24, -4, 30, WT, 0, 8, holes=[(-18, -14, 0, 3.2)], lower=TP, upper='TF_Plaster', band=1.6)
     P.opening('z', -18, -14, 30, WT, 0, 3.2, mat='TF_Steel')
-    K.slab('TF_Ceiling', 12, -24, 30, -6, 8.0, 8.3, holes=[(16.5, -18, 22.5, -12)], col=False)
-    for z in (-21.5, -8.5):
-        P.hbeam(12, 30, z, 8.0, d=0.4, w=0.2)
-    # pilasters give the walls rhythm (concrete, steel foot)
-    for (a0, b0, a1, b1) in ((15.7, -23.8, 16.3, -23.5), (22.7, -23.8, 23.3, -23.5),          # back wall
-                             (12.2, -20.3, 12.5, -19.7), (12.2, -10.3, 12.5, -9.7),            # west wall
-                             (29.5, -22.3, 29.8, -21.7), (29.5, -10.3, 29.8, -9.7)):           # east wall
-        K.box('TF_Conc', a0, 0, b0, a1, 8.0, b1)
-        K.box('TF_Steel', a0 - 0.03, 0, b0 - 0.03 if b0 > -23.8 else b0, a1 + 0.03, 0.25, b1 + 0.03)
-    fx, fy, fz = 19.5, 0.0, -15.0          # clear of the hatch stair (d 24.3..30)
-    # floor: white tile apron with a steel edge
-    K.box('TF_Tile', fx - 4.5, 0.0, fz - 4.5, fx + 4.5, 0.012, fz + 4.5, bevel=False)
-    for (a0, b0, a1, b1) in ((fx - 4.58, fz - 4.58, fx + 4.58, fz - 4.5), (fx - 4.58, fz + 4.5, fx + 4.58, fz + 4.58),
-                             (fx - 4.58, fz - 4.5, fx - 4.5, fz + 4.5), (fx + 4.5, fz - 4.5, fx + 4.58, fz + 4.5)):
-        K.box('TF_Steel', a0, 0.0, b0, a1, 0.02, b1, bevel=False)
-    # capture pad: hazard ring, concrete step with a steel lip and bolts, glowing team channel, tile top, flag socket
-    K.cyl('TF_Hazard', fx, 0.0, fz, 3.45, 0.016, seg=64)
-    K.cyl('TF_Conc', fx, 0.0, fz, 3.1, 0.12, seg=64, col=True)
-    K.cyl('TF_Steel', fx, 0.09, fz, 3.13, 0.04, seg=64)
-    for k in range(12):
-        a = k * PI / 6
-        K.cyl('TF_Steel', fx + 2.95 * math.cos(a), 0.12, fz + 2.95 * math.sin(a), 0.05, 0.025, seg=6)
-    K.cyl(tm('TF_Glow'), fx, 0.12, fz, 2.82, 0.1, seg=64)
-    K.cyl('TF_Tile', fx, 0.12, fz, 2.65, 0.12, seg=64, col=True)
-    K.cyl('TF_Steel', fx, 0.24, fz, 0.75, 0.04, seg=32)
-    K.cyl(tm('TF_Glow'), fx, 0.28, fz, 0.55, 0.012, seg=32)
-    K.cyl('TF_Steel', fx, 0.28, fz, 0.12, 0.25, seg=12)                                     # flag socket
-    # capture beacon: a conical steel lamp hung from a beam across the skylight, team-colour glow ring underneath
-    K.box('Glass', fx - 3, 8.05, fz - 3, fx + 3, 8.1, fz + 3)
-    for (a0, b0, a1, b1) in ((16.5, -18.0, 22.5, -17.8), (16.5, -12.2, 22.5, -12.0), (16.5, -17.8, 16.7, -12.2), (22.3, -17.8, 22.5, -12.2)):
-        K.box('TF_Steel', a0, 7.85, b0, a1, 8.0, b1)                                       # skylight frame
-    K.box('TF_Steel', 16.7, 7.6, fz - 0.15, 22.3, 7.85, fz + 0.15)                         # hanger beam
-    K.cyl('TF_Steel', fx, 6.4, fz, 0.06, 1.2, seg=10)                                      # drop rod
-    K.cyl('TF_Steel', fx, 6.1, fz, 0.35, 0.3, seg=24)                                      # hub
-    K.cyl('TF_Steel', fx, 5.55, fz, 2.3, 0.55, seg=64, r2=0.45)                            # cone hood
-    K.cyl(tm('TF_Paint'), fx, 5.43, fz, 2.33, 0.12, seg=64)                                # thin team rim
-    K.cyl(tm('TF_Glow'), fx, 5.41, fz, 2.25, 0.02, seg=64)                                 # glow ring...
-    K.cyl('TF_Steel', fx, 5.39, fz, 1.65, 0.02, seg=48)                                    # ...around a steel reflector
-    K.cyl(tm('TF_Glow'), fx, 5.37, fz, 0.3, 0.02, seg=24)
-    K.light(fx, 5.0, fz, '#ffb070' if T == 'C' else '#8ab8ff', 2.4, 12)
-    K.light(fx, 7.2, fz, '#fff4e0', 1.0, 12)
-    # ceiling fluorescents
-    for (d, z) in ((14.5, -20.5), (14.5, -9.5), (27.0, -9.5), (27.0, -21.5)):
-        K.lamp_prop(d, 8.0, z, color='#fff2dc', intensity=1.3, dist=13)
-    # low cover walls for the defenders, one by each ground door (concrete, steel cap and corner guards)
-    for (a0, b0, a1, b1) in ((13.4, -9.8, 16.6, -9.4), (25.0, -20.6, 28.2, -20.2)):
-        K.box('TF_Conc', a0, 0, b0, a1, 1.2, b1, col=True)
-        K.box('TF_Steel', a0 - 0.03, 1.2, b0 - 0.03, a1 + 0.03, 1.28, b1 + 0.03)
-        for a in (a0 - 0.04, a1 - 0.08):
-            K.box('TF_Steel', a, 0, b0 - 0.04, a + 0.12, 1.2, b1 + 0.04)
+    # the two shared walls get the same finish as overlay panels on their flag-room face
+    def overlay(axis, s0, s1, c, f, cuts):
+        """cream plaster + team dado + trim on one face of an existing wall (axis 'x': wall along d at z=c)"""
+        c0 = c + f * WT / 2; c1 = c0 + f * 0.04          # thick enough to bury the wall's own trim strip
+        for (y0, y1, mat) in ((0.0, 1.6, TP), (1.6, 8.0, 'TF_Plaster')):
+            a = s0
+            for (h0, h1, hy0, hy1) in sorted(cuts) + [(s1, s1, 0, 0)]:
+                if h0 > a: K.box(mat, a, y0, min(c0, c1), h0, y1, max(c0, c1))
+                if h1 > h0:
+                    for (yy0, yy1) in ((y0, max(y0, min(y1, hy0))), (max(y0, min(y1, hy1)), y1)):
+                        if yy1 > yy0 + 0.01: K.box(mat, h0, yy0, min(c0, c1), h1, yy1, max(c0, c1))
+                a = max(a, h1)
+        cc0 = c0 + f * 0.04; cc1 = cc0 + f * 0.025
+        a = s0
+        for (h0, h1, hy0, hy1) in sorted(cuts) + [(s1, s1, 0, 0)]:
+            if hy0 > 1.65 or hy1 < 1.55:
+                continue
+            if h0 > a: K.box('TF_Steel', a, 1.55, min(cc0, cc1), h0, 1.65, max(cc0, cc1))
+            a = max(a, h1)
+        if s1 > a: K.box('TF_Steel', a, 1.55, min(cc0, cc1), s1, 1.65, max(cc0, cc1))
+    overlay('x', 12.2, 29.8, -24, 1, [])
+    overlay('x', 12.2, 29.8, -6, -1, [(13.85, 18.15, 0.0, 3.35), (21.4, 27.6, 1.1, 3.1)])
+    # dark cove where walls meet the ceiling
+    for (a0, b0, a1, b1) in ((12.2, -23.8, 29.8, -23.7), (12.2, -6.3, 29.8, -6.2), (12.2, -23.8, 12.3, -6.2), (29.7, -23.8, 29.8, -6.2)):
+        K.box('TF_Steel', a0, 7.6, b0, a1, 8.0, b1)
+    # ceiling + skylight: team-colour reveal up to the roof, three trusses across, glass in the roof
+    K.slab('TF_Ceiling', 12, -24, 30, -6, 8.0, 8.3, holes=[(16.0, -18.0, 22.0, -12.0)], col=False)
+    for (a0, b0, a1, b1) in ((16.0, -18.0, 22.0, -17.8), (16.0, -12.2, 22.0, -12.0), (16.0, -17.8, 16.2, -12.2), (21.8, -17.8, 22.0, -12.2)):
+        K.box(TP, a0, 8.0, b0, a1, 10.0, b1)
+    K.box('Glass', 16.0, 10.15, -18.0, 22.0, 10.2, -12.0)
+    for d in (17.5, 19.0, 20.5):
+        P.hbeam(-17.8, -12.2, d, 9.6, d=0.45, w=0.2, mat='TF_Steel', axis='z')
+    # walkway edge round the sunken floor: steel face, hazard nosing, railings with gaps for the four corner steps
+    for (a0, b0, a1, b1) in ((14.2, -21.8, 24.0, -21.65), (14.2, -8.35, 24.0, -8.2), (14.2, -21.65, 14.35, -8.35), (23.85, -21.65, 24.0, -8.35)):
+        K.box('TF_Steel', a0, -0.6, b0, a1, 0.0, b1)
+    for (a0, b0, a1, b1) in ((14.2, -21.95, 24.0, -21.8), (14.2, -8.2, 24.0, -8.05), (14.05, -21.95, 14.2, -8.05), (24.0, -21.95, 24.15, -8.05)):
+        K.box('TF_Hazard', a0, 0.0, b0, a1, 0.015, b1, bevel=False)
+    P.stairs(16.0, -9.01, -PI / 2, 2.0, -0.6, 0.0, kind='steel', rails=False)         # NW: down from the north walkway
+    P.stairs(22.0, -9.01, -PI / 2, 2.0, -0.6, 0.0, kind='steel', rails=False)         # NE
+    P.stairs(23.19, -20.0, 0.0, 2.0, -0.6, 0.0, kind='steel', rails=False)            # SE: down from the east landing
+    P.stairs(15.01, -12.0, PI, 2.0, -0.6, 0.0, kind='steel', rails=False)             # SW: down from the west walkway
+    for (x0, z0, x1, z1) in ((14.2, -21.9, 24.0, -21.9),                                  # south edge
+                             (14.2, -8.1, 15.0, -8.1), (17.0, -8.1, 21.0, -8.1), (23.0, -8.1, 24.0, -8.1),   # north edge
+                             (14.1, -21.8, 14.1, -13.0), (14.1, -11.0, 14.1, -8.2),        # west edge
+                             (24.1, -21.8, 24.1, -21.0), (24.1, -19.0, 24.1, -16.0)):      # east edge (hatch side open to the landing)
+        P.rail(x0, z0, x1, z1, 0.0, mat='TF_Steel')
+    # flag pad in the south-west corner of the sunken floor, inside a hazard-striped square
+    fx, fy, fz = 17.6, -0.6, -18.4
+    for (a0, b0, a1, b1) in ((fx - 2.4, fz - 2.4, fx + 2.4, fz - 2.15), (fx - 2.4, fz + 2.15, fx + 2.4, fz + 2.4),
+                             (fx - 2.4, fz - 2.15, fx - 2.15, fz + 2.15), (fx + 2.15, fz - 2.15, fx + 2.4, fz + 2.15)):
+        K.box('TF_Hazard', a0, fy, b0, a1, fy + 0.015, b1, bevel=False)
+    K.box('TF_Conc', fx - 2.15, fy, fz - 2.15, fx + 2.15, fy + 0.01, fz + 2.15, bevel=False)
+    K.cyl('TF_Steel', fx, fy, fz, 1.45, 0.07, seg=48, col=True)
+    K.cyl('TF_Steel', fx, fy + 0.07, fz, 1.3, 0.03, seg=48, r2=1.2)
+    K.cyl(tm('TF_Glow'), fx, fy + 0.07, fz, 1.12, 0.035, seg=48)
+    K.cyl('TF_Steel', fx, fy + 0.105, fz, 0.9, 0.012, seg=48)
+    K.cyl(tm('TF_Glow'), fx, fy + 0.105, fz, 0.32, 0.03, seg=24)
+    # light: warm daylight through the skylight, team light on the pad, fluorescents over the walkway
+    K.light(19, 9.0, -15, '#fff1d6', 3.0, 20)
+    K.light(fx, 2.5, fz, '#ff9a4a' if T == 'C' else '#6aa6ff', 1.6, 7)
+    for (d, z) in ((13.2, -22.9), (13.2, -7.1), (28.9, -7.1), (28.9, -22.9)):
+        K.lamp_prop(d, 8.0, z, color='#fff2dc', intensity=1.1, dist=12)
     K.area('Flag Room', 12, -24, 30, -6, 0, team=T, kind='flag')
     K.label('FLAG', fx, 2.0, fz, team=T, kind='flag')
     # ---------------- main corridor ----------------
