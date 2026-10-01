@@ -1332,6 +1332,13 @@ def snubnose():
     win = rounded([(-0.5, -30.5, 3.0), (35.5, -30.5, 3.0), (35.5, 6.5, 3.0), (-0.5, 6.5, 3.0)], n=8)
     fob = make('Sn_Frame', profile(fo, -12.8, 12.8, holes=[win]), dark, bevel=0.0017, seg=5, angle=30)
     cut(fob, cyl(W(34.0, 0, 0), W(50, 0, 0), 0.0084, n=40), 'barrelseat')
+    # rear frame: hammer housing + backstrap tang running down into the grip (joins grip, hammer and frame)
+    rf = rounded([(-6.0, 9.5, 2), (-12.0, 10.5, 4), (-22.0, 6.0, 6), (-28.0, -4.0, 5), (-27.0, -22.0, 3), (-24.0, -40.0, 0),
+                  (-6.0, -40.0, 0), (-6.0, -36.5, 0)], n=8)
+    rfo = make('Sn_RearFrame', profile(rf, -9.5, 9.5), dark, bevel=0.0016, seg=5, angle=30)
+    cut(rfo, box(W(-17.0, 6.0, 0), (0.0066, 0.020, 0.024)), 'hammerslot')
+    for sd in (1, -1):
+        wk.screw(W(-15.0, -8.0, sd * 9.5), Vector((sd, 0, 0)), r=0.0016, mat=dark_dk, name='Sn_Screw', slot_ang=0.5)
     # short 2" barrel with full-length underlug + ramp front sight
     bar = make('Sn_Barrel', lathe([(8.2, 38.0), (8.2, 88.0), (7.6, 90.0)], n=40), dark, bevel=0.0)
     cut(bar, cyl(W(70, 0, 0), W(95, 0, 0), 0.0046, n=32), 'bore')
@@ -1357,7 +1364,7 @@ def snubnose():
     gp = [Vector(W(u, v, 0)) for (u, v) in [(13, -35.5), (14.5, -43), (11.5, -52), (4, -58.0), (-4, -59), (-10, -55.5), (-12.5, -47), (-12.5, -39)]]
     make('Sn_TriggerGuard', tube(wk.spline(gp, 8), 0.0041, n=20, flat=0.42), dark)
     # rounded wooden grip
-    g = Grip((-16.0, -28.0), (-17.0, -64.0), (-34.0, -86.0),
+    g = Grip((-15.0, -30.0), (-16.0, -64.0), (-33.0, -88.0),
              depth=lambda t: (12.5 + 2.0 * math.sin(PI * min(1.0, t * 1.1)), 13.0 + 3.0 * t), width=lambda t: 14.5 + 1.8 * math.sin(PI * t * 0.9),
              e=2.3, butt=0.14)
     R = g.rings(0.0, 1.0, 0.0, 2 * PI, nt=44, nth=56)
