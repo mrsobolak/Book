@@ -63,7 +63,7 @@ def half(K, T):
     for (a, b) in ((-29.8, -9.1), (-6.9, -1.6), (1.6, 29.8)):
         P.rail(a, 18.85, b, 18.85, 6.0, panel=None, mat='TF_Steel')
     for x in (-24, -16, -3.5, 4.5, 16, 24):
-        P.ibeam(x, 19.1, 0, 5.45, w=0.28)
+        P.ibeam(x, 19.1, 0, 5.8, w=0.28)                                               # up to the deck
     for x in (-26, -20, -14, -8):
         K.light(x, 5.0, 21.3, '#fff2dc', 1.2, 12)                                     # light under the catwalk (no fixture)
     P.stairs(-8, 18.8 - 32 * 0.27, -PI / 2, 2.0, 0.0, 6.0, kind='steel')           # hall floor -> catwalk
@@ -72,7 +72,7 @@ def half(K, T):
     for s_ in (-1, 1):
         K.box(TP, s_ * 1.5 - 0.06, 5.45, 0, s_ * 1.5 + 0.06, 5.8, 18.8)
         P.rail(s_ * 1.55, 0, s_ * 1.55, 18.8, 6.0, panel=None, mat='TF_Steel')
-    P.ibeam(0, 10.0, 0, 5.45, w=0.3)
+    P.ibeam(0, 10.0, 0, 5.8, w=0.3)
     # brine pit: channel x -5..5, z -16..16 at y -4 (open to the hall for |z|<8)
     K.slab('TF_Floor', -5, -16, 0, 16, -4.3, -4.0)
     K.wall2('z', -16, 16, -5, WT, -4.0, -0.3, holes=[(-16, -12, -4.0, -1.0)], lower='TF_Tile', upper='TF_Conc', band=1.3)   # top stays under the floor slab
