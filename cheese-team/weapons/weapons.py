@@ -1066,14 +1066,15 @@ def smg():
             make('Smg_MagRib', rb, blk_dk, bevel=0.0004)
     make('Smg_MagBase', profile(rounded([(121, -13, 2), (159, -13, 2), (159, 13, 2), (121, 13, 2)]), R + 190, R + 197), blk, bevel=0.0010)
     # zip tie around housing + magazine
-    path = []
-    for i in range(48):                                   # a rectangle-ish loop round housing+mag around x
-        a = 2 * PI * i / 48
-        x = (R + 16) + 22.0 * math.cos(a); v = 15.5 * math.sin(a)
-        path.append(W(140.0, v, x))
-    make('Smg_ZipTie', tube(path, 0.0018, n=6, flat=0.4, closed=True, up=Vector((0, 1, 0))), zipm)
-    make('Smg_ZipHead', box(W(140, 15.5, R + 34) + Vector((0, 0, 0.002)), (0.0065, 0.0065, 0.0052)), zipm)
-    make('Smg_ZipTail', tube([W(140, 18, R + 34), W(140, 26, R + 37), W(141, 31, R + 42)], 0.0013, n=6, flat=0.4), zipm)
+    # zip tie cinched round the receiver tube + the magazine, head on top of the mag, cut tail sticking up
+    ZU = 160.0
+    loop = [(0, -R - 1.6), (R * 0.72, -R * 0.72 - 1.0), (R + 1.6, 0), (15.6, R + 4), (15.6, R + 26), (12.6, R + 30), (12.6, R + 44),
+            (0, R + 46.5), (-12.6, R + 44), (-12.6, R + 30), (-15.6, R + 26), (-15.6, R + 4), (-R - 1.6, 0), (-R * 0.72, -R * 0.72 - 1.0)]
+    pts = [W(ZU, v, x) for (v, x) in loop]
+    P = wk.spline(pts + pts[:3], 6)[: len(pts) * 6]
+    make('Smg_ZipTie', tube(P, 0.0019, n=8, flat=0.45, closed=True, up=Vector((0, 1, 0))), zipm)
+    make('Smg_ZipHead', box(W(ZU, 15.6 + 3.0, R + 15), (0.0060, 0.0080, 0.0060)), zipm, bevel=0.0008)
+    make('Smg_ZipTail', tube([W(ZU, 18.6, R + 18), W(ZU - 1, 26, R + 21), W(ZU - 2, 33, R + 26)], 0.0012, n=6, flat=0.45), zipm)
     # ---- trigger group + orange-painted pistol grip
     th = rounded([(70, -14, 0), (150, -14, 0), (148, -22, 3), (120, -26, 4), (112, -50, 8), (80, -52, 8), (72, -36, 4)], n=6)
     hole = rounded([(86, -28, 4), (114, -28, 4), (108, -46, 7), (90, -46, 6)], n=6)
