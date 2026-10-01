@@ -256,6 +256,7 @@ def mrshotgun(P, T):
         A.transform(st, A.frame_matrix(p, xx, yy, nrm))
         cap.append(A.make_obj('Shotgun_Stud%d' % k, A.transform(st, H), stud, 'spine_01'))
     print('shotgun cap settle', A.settle(P, cap, Vector(H.col[2][:3]), clear=0.002, check=cap[:2] + [cap[2]]))
+    print('shotgun cap sink', A.sink(P, cap, Vector(H.col[2][:3]), check=cap[:3] + [o for o in cap if o.name.startswith('Shotgun_Bill')]))
     obs += cap
     # hair: smooth, chunky cartoon clumps (matches the toon body; no stringy strands)
     hair = A.mat_plain('M_ShotgunHair', '#5e3b21', rough=0.55, col2='#432914', nscale=55, bump=0.04, bscale=180)
@@ -263,11 +264,11 @@ def mrshotgun(P, T):
     for (eye, sgn) in ((EYE_R, -1), (EYE_L, 1)):
         specs = []
         for j, (t0, L, r, up) in enumerate(((0.00, 0.082, 0.0200, 0.34), (0.16, 0.080, 0.0215, 0.46), (0.34, 0.072, 0.0195, 0.56), (0.52, 0.058, 0.0160, 0.66))):
-            x0 = eye.x - sgn * 0.058 + sgn * 0.105 * t0
-            z0 = eye.z + 0.050 + 0.042 * t0
+            x0 = eye.x - sgn * 0.062 + sgn * 0.110 * t0
+            z0 = eye.z + 0.030 + 0.075 * t0
             root, _ = face_point(P, x0, z0, 0.005)
-            d = Vector((sgn * 1.0, -0.12, up)).normalized()
-            specs.append((root, d, L, r, Vector((0, 0, -0.35)), 0.55))
+            d = Vector((sgn * 1.0, -0.12, up * 0.9)).normalized()
+            specs.append((root, d, L, r, Vector((0, 0, -0.10)), 0.55))
         obs.append(clumps(P, 'Shotgun_Brow%s' % ('L' if sgn > 0 else 'R'), hair, specs, follow_face=0.005))
     # big bushy mutton chops: layered clumps from the temple down the cheek, the lower ones curling in to the mouth
     for sgn in (-1, 1):
@@ -279,6 +280,13 @@ def mrshotgun(P, T):
                # second (front) layer for volume
                (0.190, 0.790, 0.0, 0.070, 0.018), (0.186, 0.712, -0.15, 0.075, 0.023), (0.165, 0.680, -0.45, 0.070, 0.024),
                (0.140, 0.668, -0.85, 0.062, 0.021)]
+        base = []
+        for i in range(12):
+            t = i / 11
+            p, _ = face_point(P, sgn * (0.184 - 0.060 * t ** 2.2), 0.835 - 0.190 * t, 0.002)
+            base.append(p)
+        bm = A.tube(base, lambda t: 0.014 + 0.020 * t ** 0.8, n=14, flat=0.55, up=Vector((0, -1, 0)))
+        obs.append(A.make_obj('Shotgun_ChopBase%s' % ('L' if sgn > 0 else 'R'), bm, hair, 'spine_01', subsurf=1))
         for k, (x0, z0, dx, L, r) in enumerate(lay):
             front = k >= 8
             root, _ = face_point(P, sgn * x0, z0, -0.004 + (0.009 if front else 0.0))
@@ -291,7 +299,7 @@ def mrshotgun(P, T):
     prim = A.mat_metal('M_ShellPrimer', '#c9c2b6', rough=0.3)
     for k, ((hx, hz), ax) in enumerate((((-0.140, 0.646), Vector((0.10, -1, 0.25))), ((0.039, 0.649), Vector((-0.05, -1, 0.30))),
                                          ((0.123, 0.602), Vector((-0.15, -1, 0.35))))):
-        obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, Vector((hx, A.FRONT_Y, hz)), ax.normalized(), hull, brass, prim, depth=0.22)
+        obs += shotgun_shell(P, 'Shotgun_Shell%d' % k, Vector((hx, A.FRONT_Y, hz)), ax.normalized(), hull, brass, prim, depth=0.10)
     for k, (y, z, ax) in enumerate(((-0.098, 0.643, Vector((-1, -0.25, 0.25))), (0.066, 0.795, Vector((-1, 0.1, 0.35))))):
         loc, nor = P.hit((-1.0, y, z), (1, 0, 0))
         obs += shotgun_shell(P, 'Shotgun_ShellS%d' % k, Vector((loc.x if loc is not None else -0.19, y, z)), ax.normalized(), hull, brass, prim, depth=0.2)

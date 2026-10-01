@@ -465,3 +465,37 @@ def settle(P, objs, normal, clear=0.004, check=None):
                 v.co = v.co + normal * need
             me.update()
     return need
+
+
+def inside_count(P, objs, clear=0.0):
+    """how many vertices of objs are inside the body (or closer than `clear` to its surface, on the inside side)"""
+    c = 0
+    for ob in objs:
+        mw = ob.matrix_world
+        for v in ob.data.vertices:
+            w = mw @ v.co
+            loc, nor, idx, d = P.bvh.find_nearest(w)
+            if loc is not None and (w - loc).dot(nor) < clear:
+                c += 1
+    return c
+
+
+def sink(P, objs, normal, check, clear=0.0015, step=0.002, limit=0.08):
+    """after settle(): lower the hat along -normal as far as possible while no `check` vertex enters the body,
+    so the rim wraps down over the rounded edges instead of hovering on the highest point. Returns the drop."""
+    n = Vector(normal).normalized()
+    def move(dz):
+        for ob in objs:
+            me = ob.data
+            for v in me.vertices:
+                v.co = v.co - n * dz
+            me.update()
+    base = inside_count(P, check, clear)
+    drop = 0.0
+    while drop < limit:
+        move(step)
+        if inside_count(P, check, clear) > base:
+            move(-step)
+            break
+        drop += step
+    return drop
