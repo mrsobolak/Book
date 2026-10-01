@@ -282,6 +282,19 @@ HOLDS = {
     # one-handed pistol: right hand out front-right, left hand relaxed at the side
     'pistol': dict(twist=0, grip=Vector((-0.25, -0.36, 0.62)), rot=dict(yaw=3, pitch=0, roll=0),
                    lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
+    # two pistols, mirrored
+    'dual': dict(twist=0, grip=Vector((-0.25, -0.36, 0.60)), rot=dict(yaw=3, pitch=0, roll=0),
+                 grip2=Vector((0.25, -0.36, 0.60)), rot2=dict(yaw=-3, pitch=0, roll=0),
+                 relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((1, 0.3, -0.7))),
+    # two-handed long guns: the stick arms can't meet in line in front of the wedge, so the body blades to the right
+    # (left shoulder forward) and the gun lies across it while still pointing straight ahead (hold2 reach solver)
+    'rifle': dict(twist=-65, grip=Vector((-0.09, -0.27, 0.635)), rot=dict(yaw=65, pitch=0, roll=0),
+                  relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, -0.2, -0.6))),
+    'heavy': dict(twist=-55, grip=Vector((-0.12, -0.24, 0.635)), rot=dict(yaw=55, pitch=0, roll=0),
+                  relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, -0.2, -0.6))),
+    # clipboard: held by its right edge, face tilted up toward the eyes (and the over-the-shoulder camera)
+    'board': dict(twist=0, grip=Vector((-0.20, -0.30, 0.54)), rot=dict(yaw=180, pitch=35, roll=0),
+                  lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
 }
 
 # ------------------------------------------------------------------ gait
@@ -589,12 +602,143 @@ reload_semiauto = keyed([
 ])
 
 
+def shake(n, amp=0.004, ang=1.5, cycles=4, guns=(1,)):
+    """seamless looping fire tremble (autos / minigun)"""
+    def ex(rig, t):
+        w = 2 * PI * cycles * t; out = {}
+        for gi in guns:
+            sfx = '' if gi == 1 else '2'
+            out['dgun' + sfx] = Vector((amp * 0.4 * math.sin(w * 1.7), amp * (0.6 + 0.4 * math.sin(w)), amp * 0.5 * math.sin(w + 1.1)))
+            out['drot' + sfx] = {'pitch': ang * (0.5 + 0.5 * math.sin(w + 0.4)), 'yaw': ang * 0.3 * math.sin(w * 1.3)}
+        return out
+    return ex
+
+
+BELT_R = Vector((-0.30, -0.07, 0.40))
+REL_T = (-1, 0.4, -0.6)                                              # right elbow for the twisted holds
+
+# ---- dual sawed-offs: boom, then a one-handed gravity rack (snap both guns down-forward)
+fire_dual = combo(kick(30, 0.034, 0.016, 24, 2.0, decay=3.0, guns=(1, 2)),
+                  kick(30, -0.022, -0.02, -14, 0.0, decay=2.4, shots=(11,), guns=(1, 2), stagger=3))
+reload_dual = keyed([
+    (0.00, {}),
+    (0.14, dict(dg=(-0.02, 0.10, 0.10), dr=(0, 70, 0), dg2=(0.02, 0.10, 0.10), dr2=(0, 70, 0))),   # both up by the hat
+    (0.22, dict(dg=(-0.02, 0.08, 0.04), dr=(0, 30, 0), ease=snap)),                                 # rack right
+    (0.30, dict(dg=(-0.02, 0.10, 0.10), dr=(0, 70, 0), dg2=(0.02, 0.08, 0.04), dr2=(0, 30, 0), ease=snap)),  # rack left
+    (0.38, dict(dg2=(0.02, 0.10, 0.10), dr2=(0, 70, 0))),
+    (0.70, dict(dg=(0.0, 0.0, 0.02), dr=(0, 10, 360), dg2=(0.0, 0.0, 0.02), dr2=(0, 10, -360))),   # barrel-roll twirl
+    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 360), dg2=(0, 0, 0), dr2=(0, 0, -360))),
+])
+
+# ---- machine pistol: 3-round burst; long mag swapped with the gun on its side (mag points left)
+reload_mpistol = keyed([
+    (0.00, {}),
+    (0.12, dict(dg=(0.15, 0.12, -0.10), dr=(0, 0, -90), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),
+    (0.16, dict(dg=(0.15, 0.12, -0.088), ease=snap)),
+    (0.30, dict(dg=(0.15, 0.12, -0.10))),
+    (0.48, dict(lh=('w', 40, -330, 0), lel=LEL)),                                              # new mag under the long well
+    (0.56, dict(lh=('w', 40, -306, 0), dg=(0.14, 0.12, -0.10), ease=snap)),
+    (0.64, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.72, dict(dr=(0, 30, 0), rel=(-1, 0.3, -0.7), ease=snap)),                               # flick up: bolt home
+    (0.86, dict(dg=(0.02, 0.0, 0.0), dr=(0, 0, 0), lh='rest', lel=(0.4, 1, -0.1))),
+    (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+])
+
+# ---- bolt rifle: boom, then work the bolt with the right hand
+BOLT = ('w', -64, 12, -96)                                                                   # beside the bolt knob
+def _bolt(t0, t1):                                                                           # open-back-forward-close
+    d = (t1 - t0) / 6
+    return [(t0 + d, dict(rh=BOLT, rel=(-1, 0.3, -0.4))), (t0 + 2 * d, dict(rh=('w', -64, 44, -96))),
+            (t0 + 3 * d, dict(rh=('w', -132, 44, -96))), (t0 + 4 * d, dict(rh=('w', -64, 44, -96))),
+            (t0 + 5 * d, dict(rh=BOLT)), (t1, dict(rh='grip', rel=REL_T))]
+fire_bolt = combo(kick(40, 0.03, 0.012, 9, 1.0, decay=3.0), keyed([(0.0, {}), (0.26, {})] + _bolt(0.26, 0.92) + [(1.0, {})]))
+reload_bolt = keyed([(0.0, {})] + _bolt(0.04, 0.30)[:3] + [
+    (0.38, dict(rh=BELT_R, rel=(-1, 0.5, -0.2))),                                             # rounds from the belt
+    (0.42, dict()),
+    (0.54, dict(rh=('w', -24, 76, -10), rel=(-1, 0.2, 0.3))),                                 # over the open action
+    (0.59, dict(rh=('w', -24, 58, -10), dg=(0, 0, -0.005))),
+    (0.64, dict(rh=('w', -24, 76, -10), dg=(0, 0, 0))),
+    (0.69, dict(rh=('w', -24, 58, -10), dg=(0, 0, -0.005))),
+    (0.74, dict(rh=('w', -24, 76, -10), dg=(0, 0, 0))),
+    (0.80, dict(rh=('w', -132, 44, -96), rel=(-1, 0.3, -0.4))),
+    (0.86, dict(rh=('w', -64, 44, -96))), (0.90, dict(rh=BOLT)), (0.97, dict(rh='grip', rel=REL_T)), (1.0, {})])
+
+# ---- lever rifle: boom, lever down-up; reload thumbs rounds into the right-side gate
+LEVER_DN = ('w', 6, -118, 0)
+fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8),
+                   keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0))), (0.62, dict(rh='grip', dr=(0, 0, 0))), (1.0, {})]))
+GATE = ('w', 14, -28, -62)
+reload_lever = keyed([
+    (0.00, {}),
+    (0.10, dict(dr=(0, 0, -25))),                                                             # roll the gate up a touch
+    (0.22, dict(rh=BELT_R, rel=(-1, 0.5, -0.2))),
+    (0.26, dict()),
+    (0.38, dict(rh=GATE, rel=(-1, 0.2, -0.4))),
+    (0.43, dict(rh=('w', 14, -28, -46), dg=(0, 0, -0.004))), (0.48, dict(rh=GATE, dg=(0, 0, 0))),
+    (0.53, dict(rh=('w', 14, -28, -46), dg=(0, 0, -0.004))), (0.58, dict(rh=GATE, dg=(0, 0, 0))),
+    (0.63, dict(rh=('w', 14, -28, -46), dg=(0, 0, -0.004))), (0.68, dict(rh=GATE, dg=(0, 0, 0))),
+    (0.76, dict(rh='grip', dr=(0, 0, 0), rel=REL_T)),
+    (0.84, dict(rh=LEVER_DN)), (0.92, dict(rh='grip')), (1.00, {}),
+])
+
+# ---- SMG: side mag (sticks out the left), left hand swaps it
+SMAG = ('w', 120, 0, 250)
+reload_smg = keyed([
+    (0.00, {}),
+    (0.12, dict(lh=SMAG, dr=(0, 6, 15), lel=(1, -0.2, -0.3))),
+    (0.20, dict(lh=('w', 120, 0, 300), ease=snap)),                                           # yank it
+    (0.36, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.40, dict()),
+    (0.54, dict(lh=('w', 120, 0, 300), lel=(1, -0.2, -0.3))),
+    (0.62, dict(lh=SMAG, dg=(0, 0, 0.004), ease=snap)),                                       # seat
+    (0.70, dict(dg=(0, 0, 0))),
+    (0.84, dict(lh=None, dr=(0, 0, 0))),
+    (1.00, {}),
+])
+
+# ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
+reload_launcher = keyed([
+    (0.00, {}),
+    (0.16, dict(dg=(0.04, 0.06, -0.02), dr=(-10, -42, 0), lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.30, dict()),
+    (0.46, dict(lh=('w', 1050, 0, 0), lel=(1, -0.4, -0.4))),                                  # rocket at the muzzle
+    (0.56, dict(lh=('w', 990, 0, 0), dg=(0.04, 0.05, -0.02), ease=snap)),                    # shove it home
+    (0.62, dict(lh=('w', 1050, 0, 0), dg=(0.04, 0.06, -0.02))),
+    (0.82, dict(lh=None, dg=(0, 0, 0), dr=(0, 0, 0))),
+    (1.00, {}),
+])
+
+# ---- blueprint: present it (fire), flip the page (reload)
+fire_board = keyed([(0.0, {}), (0.30, dict(dg=(0.03, -0.10, -0.04), dr=(0, -30, 0), ease=snap)),
+                    (0.45, dict()), (1.0, dict(dg=(0, 0, 0), dr=(0, 0, 0)))])
+reload_board = keyed([
+    (0.00, {}),
+    (0.14, dict(lh=('w', 20, 150, 150), lel=(1, -0.3, -0.6))),                                # top-left corner
+    (0.40, dict(lh=('w', 60, 160, 0), dr=(0, 6, 0))),                                         # lift the page over
+    (0.62, dict(lh=('w', 20, 120, -150), dr=(0, 0, 0))),
+    (0.80, dict(lh=None)),
+    (1.00, {}),
+])
+
+
 # per weapon: hold (+ overrides), fire = (frames, modifier, loop), reload = (frames, modifier) or None
 WDEF = {
     'Revolver':  dict(hold='pistol', fire=(18, kick(18, 0.022, 0.012, 16), False), reload=(78, reload_revolver)),
     'Derringer': dict(hold='pistol', fire=(16, kick(16, 0.026, 0.014, 24, decay=2.6), False), reload=(64, reload_derringer)),
     'SnubNose':  dict(hold='pistol', fire=(16, kick(16, 0.024, 0.014, 20, decay=2.8), False), reload=(70, reload_snubnose)),
     'SemiAuto':  dict(hold='pistol', fire=(10, kick(10, 0.016, 0.008, 10, decay=1.8), False), reload=(58, reload_semiauto)),
+    'MachinePistol': dict(hold='pistol', fire=(18, kick(18, 0.012, 0.006, 6, 1.0, decay=1.6, shots=(0, 3, 6)), False),
+                          reload=(60, reload_mpistol)),
+    'SawedOff':  dict(hold='dual', dual=True, fire=(30, fire_dual, False), reload=(66, reload_dual)),
+    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -77, 0)), fire=(40, fire_bolt, False), reload=(90, reload_bolt)),
+    'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(160, -63, 0)),
+                       fire=(32, fire_lever, False), reload=(84, reload_lever)),
+    'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(240, -57, 0)),
+                      fire=(12, shake(12, 0.004, 1.5, 4), True), reload=(64, reload_smg)),
+    'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.09, -0.27, 0.635)), support=(700, -87, 0)),
+                           fire=(30, kick(30, 0.05, 0.02, 8, 0.0, decay=5.0), False), reload=(76, reload_launcher)),
+    'Minigun':   dict(hold='heavy', over=dict(support=(228, -166, 0)), fire=(12, shake(12, 0.006, 1.2, 6), True), reload=None),
+    'Blueprint': dict(hold='board', over=dict(hold_pt=(10, 0, -128)), fire=(24, fire_board, False), reload=(44, reload_board)),
 }
 
 
