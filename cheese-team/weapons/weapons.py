@@ -842,11 +842,11 @@ def webbing(name, col):
 def boltrifle():
     blued = wk.steel('M_BrBlued', base='#15171b', bare='#a9acb1', rough=0.28, wear=1.2, scratch=0.9, edge_gain=10.0)
     blued_dk = wk.steel('M_BrBluedDk', base='#0e0f12', bare='#999ca1', rough=0.33, wear=0.8, scratch=0.5, edge_gain=10.0)
-    walnut = wk.wood('M_BrWalnut', light='#6a3a1c', dark='#241008', rough=0.36, ring=26.0, axis='Y', grain=0.55, wear=0.8)
+    walnut = wk.wood('M_BrWalnut', light='#4f2a13', dark='#1d0c05', rough=0.34, ring=18.0, axis='Y', grain=0.4, wear=0.8)
     rub = wk.rubber('M_BrButtPad', '#1d1a19', rough=0.8)
     camo = wk.image_mat('M_BrCamoTape', 'camo_tape.png', rough=0.85, bump=0.15)
     glass = mat_glass('M_BrGlass')
-    blaze = webbing('M_BrSling', '#f0560c')
+    blaze = webbing('M_BrSling', '#ff4a00')
     BV = 0.0
     # ---- stock: butt -> wrist (pistol grip) -> action area -> forend
     st = [(-380, 18, -112, 20), (-370, 22, -118, 21), (-300, 15, -96, 19.5), (-220, 6, -72, 17.5), (-160, 0, -55, 15.5),
@@ -911,8 +911,8 @@ def boltrifle():
         make('Br_CamoTape%d' % k, bm, camo, solid=0.0004)
     # ---- blaze-orange sling hanging under the rifle
     a0 = W(-300, -103, 0); a1 = W(360, -33, 0)
-    sp = [a0, W(-200, -210, 4), W(30, -270, 10), W(250, -170, 6), a1]
-    sling('Br_Sling', sp, 0.032, blaze, twist=0.4)
+    sp = [a0, W(-200, -175, 4), W(30, -215, 10), W(250, -140, 6), a1]
+    sling('Br_Sling', sp, 0.026, blaze, twist=0.4)
     PIVOT['BoltRifle'] = (-84.0, -60.0)
     return 'BoltRifle'
 
