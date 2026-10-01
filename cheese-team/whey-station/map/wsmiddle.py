@@ -51,7 +51,7 @@ def half(K, T):
         K.box('TF_Conc', x - 0.35, 6.0, 23.4, x + 0.35, 16, 23.8)                    # pilasters
     # end wall (west; rotated -> east), full width z -24..24 (v1 stopped at +-20 and left a slot to the outside)
     K.wall2('z', -24, 24, -30, WT, 0, 16,
-           holes=[(4, 10, 0, 4.5), (18.8, 23.5, 6, 9), (-23.5, -18.8, 6, 9), (-18, -14, 0, 3.2)])
+           holes=[(4, 10, 0, 4.5), (18.8, 23.5, 5.8, 9), (-23.5, -18.8, 5.8, 9), (-18, -14, 0, 3.2)])
     P.opening('z', 4, 10, -30, WT, 0, 4.5, mat=P.tm('SteelT'), w=0.18)
     P.opening('z', -18, -14, -30, WT, 0, 3.2, mat='Steel')
     P.opening('z', 18.8, 23.5, -30, WT, 6, 9, mat='Steel')
@@ -78,14 +78,19 @@ def half(K, T):
     K.wall('Precast', 'z', -16, 16, -5, WT, -4.0, 0.0, holes=[(-16, -12, -4.0, -1.0)])
     K.wall('Precast', 'x', -5, 5, 16, WT, -4.0, -0.3)
     K.box('Grate', -4.6, -4.02, -15.6, -0.2, -3.98, 15.6)
-    P.stairs(-4, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')
+    P.stairs(-3.75, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')            # clear of the pit wall
     P.rail(-5.05, -8, -5.05, 8, 0.0)
     P.rail(-3.0, 8.05, 5.0, 8.05, 0.0)
     K.box('TF_Hazard', -5.2, 0.0, -8.2, -4.95, 0.08, 8.2)
     K.box('TF_Hazard', -5.0, 0.0, 7.9, 5.0, 0.08, 8.2)
     # cover: vats and a pump skid
     vat(K, -18, 10.5); vat(K, -18, -10.5); vat(K, -10, -13.5, 2.4)
-    pump_skid(K, -13, 0)
+    # cover in the middle of each half: library barrels + crates (replaces the old home-made pump skid)
+    for (x, z) in ((-13.0, -0.6), (-12.3, 0.2), (-13.4, 0.5)):
+        K.prop('barrel', x, 0, z, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
+    K.prop('crate', -14.8, 0, -1.2, 0.2, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    K.prop('crate', -14.8, 1.2, -1.2, 0.6, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
+    K.prop('crate', -14.9, 0, 1.6, 0.9, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
     K.light(-18, 14.5, 0, '#ffe7c4', 2.4, 34); K.light(-8, 4.5, 21, '#ffd9a8', 1.2, 14); K.light(0, -1.2, 0, '#bfe3ff', 1.0, 12)
 
     # ---------------- Cheddar-side hallways (x -40..-30), Turbine-style: nothing lines up with the base doors ----------------

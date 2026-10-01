@@ -27,11 +27,10 @@ def rack(K, P, d0, d1, z0, z1, rng, wheels=True):
     K.col(d0, 0, z0, d1, 3.2, z1)
 
 
-def crates(K, d, z, n=2):
+def crates(K, d, z, n=2, ry=0.0):
+    """stack of library crates (Sketchfab 'Stylized Wooden Crate', 1.2 m cube), each sitting exactly on the one below"""
     for i in range(n):
-        K.box('Planks', d - 0.6, i * 1.2, z - 0.6, d + 0.6, i * 1.2 + 1.15, z + 0.6)
-        K.box('Steel', d - 0.62, i * 1.2 + 0.5, z - 0.62, d + 0.62, i * 1.2 + 0.6, z + 0.62)
-    K.col(d - 0.62, 0, z - 0.62, d + 0.62, n * 1.2, z + 0.62)
+        K.prop('crate', d, i * 1.2, z, ry + 0.25 * i, col=(-0.6, 0, -0.6, 0.6, 1.2, 0.6))
 
 
 def base(K, T):
@@ -41,7 +40,7 @@ def base(K, T):
     K.slab('TF_Floor', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
     K.slab('Conc', 0, -24, 12, -6, -0.3, 0.0, holes=[(1.33, -10, 7.0, -8)])     # south stair hall
     K.slab('Hangar', 10, -6, 24, 20, -0.3, 0.0)                                 # loading yard
-    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -16.1, 30.0, -13.9)])   # flag room
+    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.85, 30.0, -13.65)])   # flag room
     K.slab('AntiSlip', 30, -24, 36, -6, -0.3, 0.0)                              # packing corridor
     K.slab('TF_Floor', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
     K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, col=False)                   # roof
@@ -49,7 +48,7 @@ def base(K, T):
     K.wall2('z', -24, 20, 0, WT, 0, 10)
     K.wall2('x', 0, 36, 20, WT, 0, 10)
     K.wall2('x', 0, 36, -24, WT, 0, 10)
-    K.wall2('z', -24, 20, 36, WT, 0, 10, holes=[(-4, 4, 0, 4.5), (-14, -9, 0, 3.2), (15.2, 19.8, 6, 9)])
+    K.wall2('z', -24, 20, 36, WT, 0, 10, holes=[(-4, 4, 0, 4.5), (-14, -9, 0, 3.2), (15.2, 19.8, 5.8, 9)])
     P.opening('z', -4, 4, 36, WT, 0, 4.5, mat=tm('SteelT'), w=0.18)
     P.opening('z', -14, -9, 36, WT, 0, 3.2, mat='Steel')
     P.opening('z', 15.2, 19.8, 36, WT, 6, 9, mat='Steel')
@@ -72,7 +71,7 @@ def base(K, T):
     # ---------------- north stair hall -> Conveyor Gallery (HIGH route) ----------------
     K.wall2('z', 6, 15.2, 10, WT, 0, 10, holes=[(8, 11, 0, 3.0)])
     P.opening('z', 8, 11, 10, WT, 0, 3.0, mat='Steel')
-    K.wall2('x', 0, 10, 15.2, WT, 0, 6.0)
+    K.wall2('x', 0, 10, 15.2, WT, 0, 5.8)                                       # stops under the gallery floor (stair top passes over)
     P.stairs(1.5, 7.4, -PI / 2, 2.0, 0.0, 6.0, kind='steel', going=0.25)    # v1 started 0.16 m from the wall: unreachable from below
     P.rail(2.65, 15.2, 9.8, 15.2, 6.0)
     K.light(5, 9.3, 10, '#ffe6c0', 1.0, 12)
@@ -106,8 +105,8 @@ def base(K, T):
         K.light(d, -0.8, -13.5 if d > 12 else -11, '#9fd0ff', 0.8, 9)
     K.area('Brine Tunnel', 0, -16, 36, -6, -4, team=T, kind='tunnel')
     # hatch stair from the tunnel up into the flag room
-    P.stairs(30.0, -15, PI, 2.0, -4.0, 0.0, kind='steel')
-    P.rail(24.33, -13.85, 29.8, -13.85, 0.0); P.rail(24.33, -16.15, 29.8, -16.15, 0.0)
+    P.stairs(30.0, -14.75, PI, 2.0, -4.0, 0.0, kind='steel')                       # clear of the tunnel wall (face at -15.8)
+    P.rail(24.33, -13.55, 29.8, -13.55, 0.0); P.rail(24.33, -15.95, 29.8, -15.95, 0.0)
     # ---------------- Loading Yard (hub) ----------------
     K.wall2('x', 10, 30, -6, WT, 0, 10, holes=[(14, 18, 0, 3.2)])
     P.opening('x', 14, 18, -6, WT, 0, 3.2, mat=tm('SteelT'))
@@ -123,7 +122,9 @@ def base(K, T):
     for (d, z) in ((17, 4.5), (17, -2.5)):
         P.ibeam(d, z, 0, 9.55, w=0.3)
     crates(K, 13.2, 3.4, 2); crates(K, 14.6, 3.4, 1); crates(K, 20.5, 10.5, 2); crates(K, 21.0, -3.6, 1)
-    K.box(tm('Clad'), 11.0, 0, 12.6, 15.0, 2.4, 14.6, col=True)                   # whey tote stack
+    K.prop('pallet_stack', 12.0, 0, 13.6, 0.0, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
+    K.prop('pallet_stack', 14.0, 0, 13.6, 0.1, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
+    K.prop('barrel', 11.2, 0, 11.6, 0, col=(-0.3, 0, -0.3, 0.3, 0.9, 0.3))
     K.light(17, 9.3, 4, '#ffe9c8', 1.6, 18)
     K.area('Loading Yard', 10, -6, 24, 15, 0, team=T)
     # ---------------- Aging Cellar = FLAG ROOM ----------------
@@ -167,7 +168,8 @@ def base(K, T):
     K.light(33, 4.6, -14, '#ffe0b0', 1.0, 10)
     K.area('Packing Line', 30, -24, 36, -4, 0, team=T)
     # ---------------- office (second stair to the gallery) ----------------
-    K.wall2('x', 24, 36, 15.2, WT, 0, 10, holes=[(33.5, 35.5, 6.0, 9.0)])
+    K.wall2('x', 24, 36, 15.2, WT, 0, 10, holes=[(33.5, 35.5, 5.8, 9.0)])
+    K.box('Plate', 33.5, 5.8, 14.95, 35.5, 6.0, 15.45, col=True, bevel=False)         # floor through the doorway
     P.opening('x', 33.5, 35.5, 15.2, WT, 6.0, 9.0, mat='Steel')
     P.stairs(34.5, 15.0 - RUN6, -PI / 2, 2.0, 0.0, 6.0, kind='steel')
     K.box('SteelPlate', 25.0, 0, 12.8, 29.5, 1.05, 14.6, col=True)                 # control desk
