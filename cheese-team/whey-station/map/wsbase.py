@@ -142,7 +142,7 @@ def base(K, T):
     # the dais: three round steps, steel lips, team glow inlay, flat flag pad on top
     for (r, y0, h, mat) in ((3.2, 0.0, 0.2, 'TF_Conc'), (2.6, 0.2, 0.2, 'TF_Conc'), (2.0, 0.4, 0.2, 'TF_Tile')):
         K.cyl(mat, fx, y0, fz, r, h, seg=64, col=True)
-        K.cyl('TF_Steel', fx, y0 + h - 0.04, fz, r + 0.03, 0.04, seg=64)
+        K.cyl('TF_Steel', fx, y0 + h - 0.05, fz, r + 0.03, 0.044, seg=64)             # lip sits just under the step top (no z-fight)
     K.cyl(tm('TF_Glow'), fx, 0.6, fz, 1.7, 0.012, seg=64)
     K.cyl('TF_Tile', fx, 0.6, fz, 1.55, 0.016, seg=64)
     K.cyl('TF_Steel', fx, 0.6, fz, 1.0, 0.05, seg=48)

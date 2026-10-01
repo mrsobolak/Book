@@ -13,7 +13,7 @@ for o in bpy.data.objects:
         if abs(n[ax]) < 0.999 or p.area < 0.02: continue
         vs = [mw @ o.data.vertices[i].co for i in p.vertices]
         c = round(vs[0][ax], 3)
-        if ax == 2: continue
+        if ax == 2 and n[2] < 0: continue      # undersides are rarely seen; tops are
         u, v = [i for i in range(3) if i != ax]
         r = (min(x[u] for x in vs), min(x[v] for x in vs), max(x[u] for x in vs), max(x[v] for x in vs))
         faces[(ax, c)].append((r, o.name, n[ax] > 0, p.index))
