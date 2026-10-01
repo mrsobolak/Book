@@ -7,12 +7,13 @@ from mathutils import Matrix
 
 ANIM = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseAnim\export"
 WP = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseWeapons_Blender\export"
+AMMO = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseWeapons_Blender\export_ammo"
 WS = 0.7
 CLASS_WEAPONS = {'Outlaw': ('Revolver', 'Derringer'), 'MrShotgun': ('SawedOff', 'MachinePistol'),
                  'RocketGuy': ('RocketLauncher', 'SemiAuto'), 'Sniper': ('BoltRifle', 'LeverRifle'),
                  'Mechanic': ('SMG', 'Blueprint'), 'Greg': ('Minigun', 'SnubNose')}
 DUAL = {'SawedOff'}
-PARTS = {'Minigun': (('Barrels', 'wp_02'),)}            # extra spinning parts on spare socket bones
+PARTS = {'Minigun': (('Barrels', 'wp_02'),), 'RocketLauncher': (('ammo:Rocket', 'wp_03'),)}            # extra spinning parts on spare socket bones
 
 
 def export(cls, dst, tex=1024, fmt='WEBP'):
@@ -26,7 +27,11 @@ def export(cls, dst, tex=1024, fmt='WEBP'):
         jobs += [(w + '_' + part, b) for part, b in PARTS.get(w, ())]
         for fn, bone in jobs:
             before = set(bpy.data.objects)
-            bpy.ops.import_scene.gltf(filepath=os.path.join(WP, w, fn + '.glb'))
+            if '_ammo:' in fn:                                      # a round from the ammo set (the loaded rocket)
+                a = fn.split('_ammo:')[1]; path = os.path.join(AMMO, a, a + '.glb')
+            else:
+                path = os.path.join(WP, w, fn + '.glb')
+            bpy.ops.import_scene.gltf(filepath=path)
             new = [o for o in bpy.data.objects if o not in before]
             loc, rot, _ = (arm.matrix_world @ arm.data.bones[bone].matrix_local).decompose()
             H = Matrix.LocRotScale(loc, rot, (WS * s,) * 3)

@@ -11,6 +11,7 @@ from mathutils.bvhtree import BVHTree
 
 CH = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseClasses_Blender\export"
 WP = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseWeapons_Blender\export"
+AMMO = r"C:\Users\mrsobo\Documents\LonelyRoad\CheeseWeapons_Blender\export_ammo"
 FPS = 30
 WS = 0.7                      # weapon scale relative to real-world size (cheese-sized guns)
 PI = math.pi
@@ -121,7 +122,10 @@ class Rig:
         """import a weapon GLB (or one of its parts, e.g. part='Barrels') onto a socket bone; origin = the grip"""
         before = set(bpy.data.objects)
         fn = wname + ('_' + part if part else '')
-        bpy.ops.import_scene.gltf(filepath=os.path.join(WP, wname, fn + '.glb'))
+        root = WP
+        if part and part.startswith('ammo:'):                       # a round from the ammo set (e.g. the loaded rocket)
+            fn = wname = part[5:]; root = AMMO
+        bpy.ops.import_scene.gltf(filepath=os.path.join(root, wname, fn + '.glb'))
         new = [o for o in bpy.data.objects if o not in before]
         hold = bpy.data.objects.new('Socket_%s_%s' % (fn, bone), None)
         bpy.context.scene.collection.objects.link(hold)
@@ -134,7 +138,7 @@ class Rig:
         c = hold.constraints.new('CHILD_OF'); c.target = self.arm; c.subtarget = bone
         c.use_scale_x = c.use_scale_y = c.use_scale_z = False
         c.inverse_matrix = Matrix.Identity(4)
-        piv = json.load(open(os.path.join(WP, wname, wname + '_pivot.json')))['pivot_mm']
+        piv = json.load(open(os.path.join(root, wname, wname + '_pivot.json')))['pivot_mm']
         self.weapons[key or bone] = {'name': wname, 'objs': [o for o in new if o.type == 'MESH'], 'pivot': piv, 'hold': hold}
         return hold
 
@@ -542,10 +546,30 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     ldef = 'grip2' if two else (('w',) + tuple(H['support']) if H.get('support') else 'rest')
     rh = hand_pos(rig, rspec, ctx, ctx['weapon'][2], 'grip')
     lh = hand_pos(rig, lspec, ctx, lrest, ldef)
+    if 'wp_03' in rig.weapons:                                      # the launcher's rocket: loaded / in the hand / spent
+        place_rocket(rig, ctx, lh, e.get('rocket') if extra else None)
     wt = weapon_tree(rig)
     arm_ik(rig, 'r', rh, relbow, 'hand_r', wt)
     arm_ik(rig, 'l', lh, lelbow, 'hand_l', wt)
     return ctx
+
+
+ROCKET_SEAT = 510.0          # launcher u (mm) of the rocket's base when loaded: warhead sticks out of the muzzle
+ROCKET_GRIP = 690.0          # rocket u (mm) the hand holds (the nose cap)
+ROCKET_SPENT = -360.0        # fired: pushed back deep inside the tube (out of sight; the game spawns the projectile)
+
+
+def place_rocket(rig, ctx, lh, spec):
+    """spec: None / ('tube', du) seated at ROCKET_SEAT + du along the tube, or ('hand', k): held by the nose in the left
+    hand, k=0 carried tail-forward, k=1 lined up with the tube (ready to slide in)"""
+    org, Rw, _ = ctx['weapon']
+    state, k = spec if spec else ('tube', 0.0)
+    if state == 'tube':
+        Rr = Rw; o = org + Rw @ rig.wlocal('weapon', ROCKET_SEAT + k, 0.0, 0.0)
+    else:
+        Rr = R(yaw=180).to_quaternion().slerp(Rw.to_quaternion(), max(0.0, min(1.0, k))).to_matrix()
+        o = lh - Rr @ rig.wlocal('wp_03', ROCKET_GRIP, 0.0, 0.0)
+    rig.place_weapon('wp_03', o, Rr)
 
 
 def hand_pos(rig, spec, ctx, rest, default='rest'):
@@ -574,7 +598,7 @@ def keyed(keys):
     """key-pose timeline -> extra(rig, t). keys: [(t, dict(dg=(x,y,z), dr=(yaw,pitch,roll), lh=spec, rh=spec,
     lel=pole, rel=pole, ease=fn))]; missing fields carry over from the previous key. Hand specs blend in place on the gun."""
     full = []; cur = dict(dg=(0, 0, 0), dr=(0, 0, 0), dg2=(0, 0, 0), dr2=(0, 0, 0), tw=0.0, lb=0.0, lh=None, rh='grip',
-                          lel=None, rel=None)
+                          lel=None, rel=None, rk=None)
     for t, k in keys:
         cur = dict(cur, **{a: b for a, b in k.items() if a != 'ease'}); cur['ease'] = k.get('ease', ease)
         full.append((t, cur))
@@ -593,6 +617,9 @@ def keyed(keys):
                'rhand': ('mix', a['rh'], b['rh'], k)}
         if a['lh'] is not None or b['lh'] is not None:
             out['lhand'] = ('mix', a['lh'], b['lh'], k)
+        if b['rk'] is not None:
+            ra, rb = a['rk'] or b['rk'], b['rk']
+            out['rocket'] = (rb[0], lerp(ra[1], rb[1], k)) if ra[0] == rb[0] else rb
         for n in ('lel', 'rel'):
             if a[n] is not None or b[n] is not None:                     # None = the hold's own pole (resolved later)
                 out['lelbow' if n == 'lel' else 'relbow'] = ('pole', a[n], b[n], k)
@@ -645,6 +672,8 @@ def combo(*fns):
                     for a, b in v.items():
                         d[a] = d.get(a, 0.0) + b
                     out[k] = d
+                elif k == 'rocket':
+                    out[k] = v
                 elif k in ('dtwist', 'dlean', 'spin'):
                     out[k] = out.get(k, 0.0) + v
                 else:
@@ -836,18 +865,22 @@ def spin_fire(n, per_frame=25.0):
     return ex
 
 # ---- rocket launcher: shoulder-fired; reload = bring it down across the belly (muzzle left), rocket in, back up
-fire_launcher = kick(30, 0.045, 0.012, 7, 0.0, decay=5.0, body=6.0)
+fire_launcher = combo(kick(30, 0.045, 0.012, 7, 0.0, decay=5.0, body=6.0),
+                      keyed([(0.0, dict(rk=('tube', 0.0))), (0.02, dict(rk=('tube', ROCKET_SPENT), ease=snap)), (1.0, {})]))
 _BELLY = dict(dg=(0.24, 0.0, -0.27), dr=(90, -2, 0))                 # grip (-0.10, -0.30, 0.43), tube across the front
+SPENT = ('tube', ROCKET_SPENT)
 reload_launcher = keyed([
-    (0.00, {}),
+    (0.00, dict(rk=SPENT)),
     (0.06, dict(lh='rest', lel=(0.4, 1, -0.1))),
     (0.22, dict(_BELLY)),
-    (0.34, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.38, dict()),
-    (0.50, dict(lh=('w', 1070, -10, 0), lel=(1, -0.3, -0.6))),                                # rocket at the muzzle
-    (0.58, dict(lh=('w', 1006, -10, 0), dg=(0.25, 0.0, -0.27), ease=snap)),                   # shove it home
-    (0.64, dict(lh=('w', 1070, -10, 0), dg=(0.24, 0.0, -0.27))),
-    (0.74, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.34, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),                                            # hand at the belt pouch
+    (0.35, dict(rk=('hand', 0.0))),                                                           # rocket out, held by the nose
+    (0.44, dict(lh=Vector((0.40, -0.40, 0.48)), lel=(1, -0.3, -0.6), rk=('hand', 0.3))),     # tail swings round
+    (0.52, dict(lh=('w', ROCKET_SEAT + ROCKET_GRIP + 60, 0, 0), rk=('hand', 1.0))),          # lined up, tail in the tube
+    (0.60, dict(lh=('w', ROCKET_SEAT + ROCKET_GRIP, 0, 0), dg=(0.25, 0.0, -0.27), ease=snap)),  # shove it home
+    (0.61, dict(rk=('tube', 0.0))),
+    (0.66, dict(lh=('w', ROCKET_SEAT + ROCKET_GRIP + 50, -20, 0), dg=(0.24, 0.0, -0.27))),
+    (0.76, dict(lh='rest', lel=(0.4, 1, -0.1))),
     (0.90, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
     (1.00, dict(lh=None, lel=None)),
 ])
@@ -882,7 +915,7 @@ WDEF = {
     'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.10, -0.425, 0.52)), rot=dict(yaw=0, pitch=-5, roll=0),
                                               support=(240, -40, 0)),
                       fire=(12, shake(12, 0.003, 1.2, 4), True), reload=(64, reload_smg)),
-    'RocketLauncher': dict(hold='shoulder', over=dict(support=(520, -66, 0)),
+    'RocketLauncher': dict(hold='shoulder', over=dict(support=(520, -66, 0)), parts=(('ammo:Rocket', 'wp_03'),),
                            fire=(30, fire_launcher, False), reload=(84, reload_launcher)),
     'Minigun':   dict(hold='heavy', over=dict(support=(100, 196, 0)), parts=(('Barrels', 'wp_02'),),
                       fire=(12, spin_fire(12), True), reload=None),
