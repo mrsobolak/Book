@@ -44,16 +44,15 @@ def half(K, T):
         P.hbeam(-24, 24, x, 15.9, d=0.6, w=0.3, axis='z')
     # long wall (north; rotated -> south), full length so both passes overlap cleanly
     WIN = (-26, -18, -10, -2, 6, 14, 22)
-    K.wall('Brick', 'x', -29.8, 29.8, 24, WT, 0, 16, holes=[(x0, x0 + 4, 11.5, 14.0) for x0 in WIN])
+    K.wall2('x', -29.8, 29.8, 24, WT, 0, 16, holes=[(x0, x0 + 4, 11.5, 14.0) for x0 in WIN])
     for x0 in WIN:
         P.window('x', x0, x0 + 4, 24, WT, 11.5, 14.0, pane=1.0)
     for x in (-27.5, -20, -12, -4, 4, 12, 20, 27.5):
-        K.box('Brick', x - 0.35, 6.0, 23.4, x + 0.35, 16, 23.8)                    # pilasters
+        K.box('TF_Conc', x - 0.35, 6.0, 23.4, x + 0.35, 16, 23.8)                    # pilasters
     # end wall (west; rotated -> east), full width z -24..24 (v1 stopped at +-20 and left a slot to the outside)
-    K.wall('Brick', 'z', -24, 24, -30, WT, 0, 16,
+    K.wall2('z', -24, 24, -30, WT, 0, 16,
            holes=[(4, 10, 0, 4.5), (18.8, 23.8, 6, 9), (-23.8, -18.8, 6, 9), (-18, -14, 0, 3.2)])
     P.opening('z', 4, 10, -30, WT, 0, 4.5, mat=P.tm('SteelT'), w=0.18)
-    K.box(P.tm('TF_Emblem'), -29.8, 5.0, 4.5, -29.76, 9.5, 9.5)                        # team emblem over the main door
     P.opening('z', -18, -14, -30, WT, 0, 3.2, mat='Steel')
     P.opening('z', 18.8, 23.8, -30, WT, 6, 9, mat='Steel')
     P.opening('z', -23.8, -18.8, -30, WT, 6, 9, mat='Steel')
@@ -91,21 +90,21 @@ def half(K, T):
 
     # ---------------- Cheddar-side hallways (x -40..-30), Turbine-style: nothing lines up with the base doors ----------------
     K.slab('Conc', -40, -24, -30, 24, 10.0, 10.3, col=False)                        # roof over the hallways
-    K.wall('Brick', 'x', -40, -30, -24, WT, 0, 10.0)                                 # outer walls
-    K.wall('Brick', 'x', -40, -30, 24, WT, 0, 10.0)
-    K.wall('Brick', 'z', 20, 24, -40, WT, 0, 10.0)                                   # closes the gap beside the base
+    K.wall2('x', -40, -30, -24, WT, 0, 10.0)                                 # outer walls
+    K.wall2('x', -40, -30, 24, WT, 0, 10.0)
+    K.wall2('z', 20, 24, -40, WT, 0, 10.0)                                   # closes the gap beside the base
     # MAIN: L-hallway. Base door (z -4..4) -> north leg -> hall door (z 4..10)
     K.slab('TF_Floor', -40, -4, -30, 10, -0.3, 0.0)
     K.slab('TF_Ceiling', -40, -4, -30, 10, 5.0, 5.3, col=False)
     K.wall2('x', -40, -30, -4, WT, 0, 10.0, holes=[(-39.5, -37, 0, 3.0)], lower='TF_Tile', band=1.4)
     P.opening('x', -39.5, -37, -4, WT, 0, 3.0, mat='Steel')
     K.wall('TileW', 'z', -4, 4, -34, WT, 0, 5.0)                                     # the corner that blocks the sightline
-    K.box('Brick', -34, 0, -4, -30, 10, 4, col=True)                                  # solid block behind it
+    K.box('TF_Conc', -34, 0, -4, -30, 10, 4, col=True)                                  # solid block behind it
     K.wall2('x', -40, -30, 10, WT, 0, 10.0, lower='TF_Tile', band=1.4)
     K.light(-37, 4.6, 0, '#ffe0b0', 1.0, 10); K.light(-33, 4.6, 7, '#ffe0b0', 1.0, 10)
     K.area('Main Hallway', -40, -4, -30, 10, 0, team=T)
     # HIGH: gallery room (y 6) from the base conveyor gallery (z 15.2..19.8) to the hall catwalk (z 18.8..23.8)
-    K.wall('Brick', 'x', -40, -30, 14, WT, 0, 10.0)
+    K.wall2('x', -40, -30, 14, WT, 0, 10.0)
     K.box('TF_Grate', -40, 5.8, 14.2, -30, 6.0, 23.8, col=True, bevel=False)
     K.box('SteelG', -38.5, 6.0, 14.6, -32, 6.85, 15.8, col=True)                      # conveyor = low cover
     for x in range(-38, -32, 2):

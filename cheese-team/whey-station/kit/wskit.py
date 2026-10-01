@@ -55,6 +55,10 @@ MATS.update({
     'TF_Emblem_C': ('tf_emblem', 1.0, '#c8601c', 0.6, 0), 'TF_Emblem_B': ('tf_emblem', 1.0, '#33669f', 0.6, 0),
     'TF_Bulb': (None, 1, '#fff2c8', 0.3, 0),
 })
+MATS.update({'TF_Glow_C': (None, 1, '#ff7a1e', 0.3, 0), 'TF_Glow_B': (None, 1, '#3d8bff', 0.3, 0)})
+# clean TF2 look: the rusty / team-tinted Poly Haven metals now read as plain dark painted steel
+for _k in ('Steel', 'SteelO', 'SteelG', 'SteelPlate', 'SteelT_C', 'SteelT_B'):
+    MATS[_k] = MATS['TF_Steel']
 SIGN_PREFIX = ('TF_Emblem', 'TF_Arrow')      # these get 0..1 UVs per face (one picture per sign face)
 FLOORS = [0.0]          # walking levels used for floor-grime; the map module sets this
 
@@ -427,10 +431,10 @@ def make_material(name, texdir):
     bsdf.inputs['Roughness'].default_value = rough
     bsdf.inputs['Metallic'].default_value = metal
     lin = hex_lin(col)
-    if key == 'TF_Bulb':
+    if key == 'TF_Bulb' or key.startswith('TF_Glow'):
         bsdf.inputs['Base Color'].default_value = (*lin, 1)
         bsdf.inputs['Emission Color'].default_value = (*lin, 1)
-        bsdf.inputs['Emission Strength'].default_value = 6.0
+        bsdf.inputs['Emission Strength'].default_value = 6.0 if key == 'TF_Bulb' else 3.0
         return m
     if key == 'Glass':
         bsdf.inputs['Base Color'].default_value = (*lin, 1)
