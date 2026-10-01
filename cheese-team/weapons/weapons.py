@@ -1466,21 +1466,27 @@ def buckshot():
 
 
 def rocket():
-    """RPG-style rocket for the launcher (tube ID 89 mm): finned tail boom, sustainer motor, fat olive warhead + fuze spike"""
-    olive = wk.paint('M_RkOlive', '#4b5530', under='#7c7f82', rough=0.55, wear=1.2, scuff=1.0)
-    black = wk.paint('M_RkBlack', '#1a1b1c', under='#6d6f72', rough=0.6, wear=1.0, scuff=0.8)
-    steel = wk.steel('M_RkSteel', base='#2a2c2f', bare='#a9acb1', rough=0.4, wear=1.0, scratch=0.8)
-    band = wk.paint('M_RkBand', '#b38a1c', under='#555555', rough=0.5, wear=0.8, scuff=0.6)
-    make('Rk_Boom', lathe([(0.0, 0.0), (9.0, 0.0), (11.0, 4.0), (11.0, 150.0), (18.0, 160.0)], n=32, cap0=False, cap1=False), steel)
-    make('Rk_Motor', lathe([(18.0, 160.0), (20.0, 170.0), (20.0, 400.0), (24.0, 420.0)], n=40, cap0=False, cap1=False), black)
-    make('Rk_Head', lathe([(24.0, 420.0), (41.0, 440.0), (42.0, 452.0), (42.0, 560.0), (39.0, 600.0), (31.0, 640.0), (20.0, 676.0),
-                           (9.0, 700.0), (6.0, 704.0)], n=56, cap0=False, cap1=False), olive)
-    make('Rk_Band', lathe([(42.3, 470.0), (42.6, 472.0), (42.6, 488.0), (42.3, 490.0)], n=56, cap0=False, cap1=False), band, bevel=0.0)
-    make('Rk_Fuze', lathe([(6.0, 704.0), (5.0, 760.0), (3.5, 770.0), (0.0, 774.0)], n=20, cap0=False, cap1=False), steel)
-    for k in range(4):                                               # folded-out stabiliser fins
-        fin = profile(rounded([(14.0, 9.0, 1), (70.0, 9.0, 1), (40.0, 46.0, 2), (14.0, 46.0, 2)], n=3), -0.9, 0.9)
-        bmesh.ops.rotate(fin, verts=fin.verts[:], cent=Vector((0, 0, 0)), matrix=Matrix.Rotation(PI / 2 * k + PI / 4, 3, 'Y'))
-        make('Rk_Fin%d' % k, fin, steel, bevel=0.0004)
+    """TF2 'stock' style rocket (concept sheet): blunt nose cap, fat cone warhead, dark collar, long grey motor body with a
+    dark band, flared nozzle at the back. Body fits the launcher tube (ID 89 mm); origin at the nozzle, nose along +u."""
+    grey = wk.paint('M_RkGrey', '#53575b', under='#9a9da1', rough=0.55, wear=1.1, scuff=1.0, col_var=0.08)
+    head = wk.paint('M_RkHead', '#3f4245', under='#8e9195', rough=0.5, wear=1.2, scuff=1.0, col_var=0.08)
+    dark = wk.paint('M_RkDark', '#1d1e20', under='#6b6e72', rough=0.6, wear=0.9, scuff=0.8)
+    tip = wk.steel('M_RkTip', base='#26282b', bare='#8d9095', rough=0.45, wear=1.0, scratch=0.6)
+    noz = wk.steel('M_RkNozzle', base='#1b1c1e', bare='#6a6c70', rough=0.5, wear=1.0, scratch=0.5)
+    # flared nozzle bell + neck
+    make('Rk_Nozzle', lathe([(0.0, 10.0), (28.0, 6.0), (39.0, 0.0), (42.5, 2.0), (43.0, 12.0), (40.0, 22.0), (32.0, 34.0),
+                             (30.5, 52.0), (31.0, 60.0)], n=56, cap0=False, cap1=False), noz, bevel=0.0)
+    # motor body
+    make('Rk_Body', lathe([(31.0, 60.0), (35.5, 68.0), (36.0, 74.0), (36.0, 470.0)], n=56, cap0=False, cap1=False), grey)
+    make('Rk_BandRear', lathe([(36.0, 74.0), (37.2, 76.0), (37.2, 100.0), (36.0, 102.0)], n=56, cap0=False, cap1=False), dark)
+    make('Rk_BandMid', lathe([(36.0, 300.0), (37.5, 303.0), (37.5, 352.0), (36.0, 355.0)], n=56, cap0=False, cap1=False), dark)
+    # collar where the warhead meets the motor
+    make('Rk_Collar', lathe([(36.0, 470.0), (38.5, 472.0), (38.5, 492.0), (37.0, 496.0)], n=56, cap0=False, cap1=False), dark)
+    # warhead: short swell to the widest point, groove, long cone to the nose
+    make('Rk_Head', lathe([(37.0, 496.0), (40.0, 512.0), (43.5, 540.0), (44.0, 556.0), (44.0, 572.0)], n=56, cap0=False, cap1=False), head)
+    make('Rk_Groove', lathe([(44.0, 572.0), (41.5, 574.0), (41.5, 580.0), (44.0, 582.0)], n=56, cap0=False, cap1=False), dark)
+    make('Rk_Cone', lathe([(44.0, 582.0), (43.0, 600.0), (33.0, 640.0), (22.0, 676.0), (17.0, 690.0)], n=56, cap0=False, cap1=False), head)
+    make('Rk_Tip', lathe([(17.0, 690.0), (15.0, 692.0), (15.0, 708.0), (12.0, 714.0), (0.0, 716.0)], n=40, cap0=False, cap1=False), tip)
     PIVOT['Rocket'] = (0.0, 0.0)
     return 'Rocket'
 
