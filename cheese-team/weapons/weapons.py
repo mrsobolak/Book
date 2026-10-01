@@ -1019,7 +1019,7 @@ def grease_mat(name, base_mat_fn):
 def smg():
     blk = grease_mat('g', wk.steel('M_SmgBody', base='#161719', bare='#9fa2a7', rough=0.5, wear=1.2, scratch=1.4, edge_gain=8.0, tint_var=0.08))
     blk_dk = wk.steel('M_SmgDark', base='#0f1011', bare='#8d9095', rough=0.45, wear=0.8, scratch=0.8, edge_gain=8.0)
-    orange = wk.paint('M_SmgOrange', '#e2620e', under='#1a1a1a', under_metal=0.0, rough=0.55, wear=1.6, scuff=1.3, col_var=0.12)
+    orange = grease_mat('g2', wk.paint('M_SmgOrange', '#d4510a', under='#1a1a1a', under_metal=0.0, rough=0.55, wear=1.6, scuff=1.3, col_var=0.12))
     zipm = wk.plastic('M_SmgZipTie', '#121212', rough=0.4)
     # ---- tubular receiver with cocking slot, rear cap, front nut
     R = 19.0
@@ -1030,12 +1030,23 @@ def smg():
     make('Smg_CockKnob', sphere(W(40, 0, -R - 16), 0.0062, seg=24, rings=12, scale=(1, 1, 0.8)), blk_dk)
     make('Smg_RearCap', lathe([(0, -52.0), (R - 2, -52.0), (R + 1.5, -49.0), (R + 1.5, -38.0), (R, -36.0)], n=64), blk_dk, bevel=0.0005)
     # ---- ribbed barrel shroud with cooling holes, short barrel
-    sh = make('Smg_Shroud', lathe([(R - 1.0, 228.0), (R - 1.0, 330.0), (R - 4.0, 336.0)], n=64), blk)
-    for k in range(6):
-        for j in range(8):
-            a = 2 * PI * j / 8 + (k % 2) * PI / 8
-            uu = 245.0 + k * 14.0
-            cut(sh, cyl(W(uu, R * math.sin(a) * 1.4, R * math.cos(a) * 1.4), W(uu, 0, 0), 0.0036, n=16), 'h%d%d' % (k, j))
+    # perforated shroud: a thin shell with rows of round-ish cooling holes cut from the quads, then solidified
+    prof = [(R - 1.0, 228.0 + 2.0 * i) for i in range(52)] + [(R - 4.0, 334.0)]
+    shb = lathe(prof, n=64, cap0=False, cap1=False)
+    dele = []
+    for f in shb.faces:
+        c = f.calc_center_median()
+        uu = -c.y / MM; a = math.atan2(c.z / MM, c.x / MM)
+        for k in range(6):
+            u0 = 245.0 + k * 14.0
+            if abs(uu - u0) < 4.0:
+                for j in range(8):
+                    a0 = 2 * PI * j / 8 + (k % 2) * PI / 8
+                    da = (a - a0 + PI) % (2 * PI) - PI
+                    if (abs(uu - u0) / 4.0) ** 2 + (da * R / 4.0) ** 2 < 1.0:
+                        dele.append(f)
+    bmesh.ops.delete(shb, geom=list(set(dele)), context='FACES')
+    make('Smg_Shroud', shb, blk, solid=0.0018)
     for k in range(5):                                     # raised rib rings
         uu = 238.0 + k * 22.0
         make('Smg_Rib', lathe([(R - 0.5, uu), (R + 1.2, uu + 0.5), (R + 1.2, uu + 3.5), (R - 0.5, uu + 4.0)], n=64, cap0=False, cap1=False), blk)
@@ -1049,7 +1060,10 @@ def smg():
     mg = profile(rounded([(124, -11, 2), (156, -11, 2), (156, 11, 2), (124, 11, 2)]), R + 22, R + 190)
     mag = make('Smg_Magazine', mg, blk_dk, bevel=0.0012)
     for k in range(6):
-        cut(mag, box(W(140, 11.0, R + 50 + k * 22), (0.012, 0.0020, 0.006)), 'rib%d' % k)
+        for sv in (1, -1):
+            rb = profile(rounded([(128, sv * 11.0 - 0.8, 0), (152, sv * 11.0 - 0.8, 0), (152, sv * 11.0 + 0.8, 0), (128, sv * 11.0 + 0.8, 0)]),
+                         R + 46 + k * 24, R + 50 + k * 24)
+            make('Smg_MagRib', rb, blk_dk, bevel=0.0004)
     make('Smg_MagBase', profile(rounded([(121, -13, 2), (159, -13, 2), (159, 13, 2), (121, 13, 2)]), R + 190, R + 197), blk, bevel=0.0010)
     # zip tie around housing + magazine
     path = []
