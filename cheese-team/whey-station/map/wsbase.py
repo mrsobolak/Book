@@ -1,6 +1,6 @@
 # Whey Station -- one team base, base-local coords (d = x, 0 = back wall, 36 = front toward the middle; z -24..20).
 #  Spawn d0-10 z-6..6 | North stair hall d0-10 z6..15 (up to the Conveyor Gallery, y 6) | South stair hall d0-10 z-14..-6
-#  (down to the brine sump, y -4) | Loading Yard d10-24 z-6..15 (hub) | Aging Cellar = FLAG ROOM d12-30 z-24..-6
+#  (down to the brine sump, y -4) | Loading Yard d10-24 z-6..15 (hub) | FLAG ROOM d12-30 z-24..-6
 #  | Main corridor d24-36 z-4..4 | Packing corridor d30-36 z-24..-4 | Office d24-36 z4..15 (second stair to the gallery)
 #  | Conveyor Gallery d0-36 z15.4..20 at y 6 | Brine sump + tunnel y -4 (z-16..-12) with a hatch stair into the flag room.
 import math
@@ -9,22 +9,6 @@ PI = math.pi
 WT = 0.4
 RUN6 = 32 * 0.27        # stair run for a 6 m climb
 RUN4 = 21 * 0.27        # stair run for a 4 m climb
-
-
-def rack(K, P, d0, d1, z0, z1, rng, wheels=True):
-    """cheese aging rack: steel posts, 4 plank shelves, wheels of cheese"""
-    for d in (d0 + 0.05, d1 - 0.05):
-        for z in (z0 + 0.05, z1 - 0.05):
-            K.box('Steel', d - 0.04, 0, z - 0.04, d + 0.04, 3.2, z + 0.04)
-    for y in (0.35, 1.15, 1.95, 2.75):
-        K.box('Planks', d0, y, z0, d1, y + 0.05, z1)
-        if wheels:
-            d = d0 + 0.35
-            while d < d1 - 0.3:
-                if rng.random() < 0.8:
-                    K.cyl('Plaster' if rng.random() < 0.6 else 'Rust', d, y + 0.05, (z0 + z1) / 2, 0.27, 0.17, seg=12)
-                d += 0.62
-    K.col(d0, 0, z0, d1, 3.2, z1)
 
 
 def crates(K, d, z, n=2, ry=0.0):
@@ -40,7 +24,7 @@ def base(K, T):
     K.slab('TF_Floor', 0, -6, 10, 20, -0.3, 0.0)                                   # spawn + north stair hall
     K.slab('Conc', 0, -24, 12, -6, -0.3, 0.0, holes=[(1.33, -10, 7.0, -8)])     # south stair hall
     K.slab('Hangar', 10, -6, 24, 20, -0.3, 0.0)                                 # loading yard
-    K.slab('TileFloor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.8, 30.0, -12.2)])   # flag room (hatch opening = full tunnel width)
+    K.slab('TF_Floor', 12, -24, 30, -6, -0.3, 0.0, holes=[(24.33, -15.8, 30.0, -12.2)])   # flag room (hatch opening = full tunnel width)
     K.slab('AntiSlip', 30, -24, 36, -6, -0.3, 0.0)                              # packing corridor
     K.slab('TF_Floor', 24, -6, 36, 20, -0.3, 0.0)                                  # main corridor + office
     K.slab('CorrWorn', 0, -24, 36, 20, 10.0, 10.3, col=False)                   # roof
@@ -128,30 +112,44 @@ def base(K, T):
     K.prop('pallet_stack', 14.0, 0, 13.6, 0.1, col=(-0.7, 0, -0.47, 0.7, 0.8, 0.47))
     K.light(17, 9.3, 4, '#ffe9c8', 1.6, 18)
     K.area('Loading Yard', 10, -6, 24, 15, 0, team=T)
-    # ---------------- Aging Cellar = FLAG ROOM ----------------
-    K.wall2('z', -24, -6, 12, WT, 0, 8)
-    K.wall2('z', -24, -4, 30, WT, 0, 8, holes=[(-18, -14, 0, 3.2)])
-    P.opening('z', -18, -14, 30, WT, 0, 3.2, mat='Steel')
+    # ---------------- FLAG ROOM (d 12-30, z -24..-6): team-painted walls, open floor, capture pad under a team canopy ----------------
+    TP = tm('TF_Paint')
+    K.wall2('z', -24, -6, 12, WT, 0, 8, lower=TP)
+    K.wall2('z', -24, -4, 30, WT, 0, 8, holes=[(-18, -14, 0, 3.2)], lower=TP)
+    P.opening('z', -18, -14, 30, WT, 0, 3.2, mat='TF_Steel')
     K.slab('TF_Ceiling', 12, -24, 30, -6, 8.0, 8.3, holes=[(16.5, -18, 22.5, -12)], col=False)
     for z in (-21.5, -8.5):
         P.hbeam(12, 30, z, 8.0, d=0.4, w=0.2)
-    # flag capture pad: stepped round platform with a team-coloured light ring, hazard border, skylight + team spot
+    # team colour band right round the room (above the door heads)
+    K.box(TP, 12.2, 4.2, -23.8, 12.25, 4.8, -6.2)
+    K.box(TP, 29.75, 4.2, -23.8, 29.8, 4.8, -6.2)
+    K.box(TP, 12.2, 4.2, -23.8, 29.8, 4.8, -23.75)
+    K.box(TP, 12.2, 4.2, -6.25, 29.8, 4.8, -6.2)
     fx, fy, fz = 19.5, 0.0, -15.0          # clear of the hatch stair (d 24.3..30)
-    K.cyl('TF_Hazard', fx, 0.0, fz, 3.45, 0.012, seg=48)
+    K.box('TF_Tile', fx - 4.5, 0.0, fz - 4.5, fx + 4.5, 0.012, fz + 4.5, bevel=False)   # white tile apron
+    # capture pad: concrete step, glowing team ring, tile top, centre marker
+    K.cyl('TF_Hazard', fx, 0.0, fz, 3.45, 0.02, seg=48)
     K.cyl('TF_Conc', fx, 0.0, fz, 3.0, 0.15, seg=48, col=True)
     K.cyl(tm('TF_Glow'), fx, 0.15, fz, 2.78, 0.14, seg=48)
     K.cyl('TF_Tile', fx, 0.15, fz, 2.6, 0.15, seg=48, col=True)
     K.cyl('TF_Conc', fx, 0.3, fz, 0.55, 0.12, seg=24, col=True)
     K.cyl(tm('TF_Glow'), fx, 0.42, fz, 0.38, 0.02, seg=24)
+    # canopy frame over the pad: four steel posts and a team-painted header you can see from both doors
+    c = 3.6
+    for (a, b) in ((-c, -c), (-c, c), (c, -c), (c, c)):
+        K.box('TF_Steel', fx + a - 0.15, 0, fz + b - 0.15, fx + a + 0.15, 4.0, fz + b + 0.15, col=True)
+    for s_ in (-1, 1):
+        K.box(TP, fx - c - 0.15, 4.0, fz + s_ * c - 0.2, fx + c + 0.15, 4.45, fz + s_ * c + 0.2)
+        K.box(TP, fx + s_ * c - 0.2, 4.0, fz - c + 0.2, fx + s_ * c + 0.2, 4.45, fz + c - 0.2)
     K.box('Glass', fx - 3, 8.05, fz - 3, fx + 3, 8.1, fz + 3)
     K.light(fx, 7.5, fz, '#ffb070' if T == 'C' else '#8ab8ff', 2.6, 14)
-    K.light(fx, 5.0, fz, '#fff4e0', 1.2, 10)
-    rng = K.rng
-    rack(K, P, 13.0, 19.0, -23.6, -22.5, rng); rack(K, P, 22.0, 28.5, -23.6, -22.5, rng)
-    rack(K, P, 12.4, 13.5, -20.5, -8.5, rng)
-    P.ibeam(27, -21, 0, 7.6, w=0.3)
-    K.light(15, 7.4, -9, '#cfe6ff', 1.0, 12)
-    K.area('Aging Cellar', 12, -24, 30, -6, 0, team=T, kind='flag')
+    K.light(fx, 3.7, fz, '#fff4e0', 1.2, 10)
+    # low cover walls for the defenders, one by each ground door
+    for (a0, b0, a1, b1) in ((13.4, -9.8, 16.6, -9.4), (25.0, -20.6, 28.2, -20.2)):
+        K.box('TF_Conc', a0, 0, b0, a1, 1.2, b1, col=True)
+        K.box(TP, a0 - 0.03, 1.2, b0 - 0.03, a1 + 0.03, 1.3, b1 + 0.03)
+    K.light(15, 7.4, -9, '#fff0d8', 1.0, 12); K.light(26, 7.4, -21, '#fff0d8', 1.0, 12)
+    K.area('Flag Room', 12, -24, 30, -6, 0, team=T, kind='flag')
     K.label('FLAG', fx, 2.0, fz, team=T, kind='flag')
     # ---------------- main corridor ----------------
     K.wall2('x', 24, 36, 4, WT, 0, 10, holes=[(26, 29, 0, 3.0)], lower='TF_Tile', band=1.4)
