@@ -178,9 +178,33 @@ def _seg_hits_box(p0, p1, lo, hi):
     return True
 
 
-def arm_ik(rig, side, target, pole, b3):
+def weapon_tree(rig):
+    """BVH of the held weapon(s) in char space for the current pose"""
+    bpy.context.view_layer.update()
+    C = (rig.arm.matrix_world @ Matrix.Scale(100.0, 4)).inverted()
+    verts = []; polys = []
+    for w in rig.weapons.values():
+        for o in w['objs']:
+            M = C @ o.matrix_world; base = len(verts)
+            verts += [M @ v.co for v in o.data.vertices]
+            polys += [tuple(base + i for i in p.vertices) for p in o.data.polygons]
+    return BVHTree.FromPolygons(verts, polys) if polys else None
+
+
+def _seg_hits_tree(tree, p0, p1, r):
+    d = p1 - p0; L = d.length
+    if L < 1e-6:
+        return False
+    n = d / L; a = n.orthogonal().normalized(); b = n.cross(a)
+    for o in (Vector(), a * r, -a * r, b * r, -b * r):
+        if tree.ray_cast(p0 + o, n, L)[0] is not None or tree.ray_cast(p1 + o, -n, L)[0] is not None:
+            return True
+    return False
+
+
+def arm_ik(rig, side, target, pole, b3, wtree=None):
     """two-bone arm IK whose elbow swings around the shoulder->hand axis (nearest to `pole` first) until both
-    sticks clear the wedge. target is char space."""
+    sticks clear the wedge (and the held weapon, if a char-space BVH is given). target is char space."""
     up, lo = 'upperarm_' + side, 'lowerarm_' + side
     sp = rig.pb['spine_01']
     to_rest = rig.arm.data.bones['spine_01'].matrix_local @ sp.matrix.inverted()   # posed arm space -> rest arm space
@@ -191,14 +215,19 @@ def arm_ik(rig, side, target, pole, b3):
     a = (L1 * L1 - L2 * L2 + d * d) / (2 * d); h = math.sqrt(max(0.0, L1 * L1 - a * a))
     p0 = to_rest.to_3x3() @ Vector(pole)
     p0 = (p0 - u * p0.dot(u)); p0 = p0.normalized() if p0.length > 1e-6 else u.orthogonal().normalized()
-    best = None; least = (9, p0)
-    for k in range(0, 25):
+    back = to_rest.inverted()
+    best = None; least = (99, p0)
+    for k in range(0, 49):
         ang = math.radians(((k + 1) // 2) * 7.5 * (1 if k % 2 else -1))
         pv = Matrix.Rotation(ang, 3, u) @ p0
         E = S + u * a + pv * h; W = S + u * d
         Sa = S + (E - S).normalized() * 0.05             # the stick roots into the wedge side at the shoulder
         nh = sum(_seg_hits_box(q0, q1, lo_ - Vector((ARM_R,) * 3), hi_ + Vector((ARM_R,) * 3))
                  for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
+        if nh == 0 and wtree is not None:
+            Ep = back @ E; Wp = back @ W; Sp = back @ Sa
+            Wc = Wp - (Wp - Ep).normalized() * 0.036          # the stick ends inside the hand ball, which holds the gun
+            nh = 10 * (_seg_hits_tree(wtree, Sp, Ep, ARM_R) + _seg_hits_tree(wtree, Ep, Wc, ARM_R))
         if nh == 0:
             best = pv; break
         if nh < least[0]:
@@ -322,8 +351,9 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
         lspec = ('w',) + tuple(H['support'])
     rh = hand_pos(rig, rspec, grip, Rm, grip)
     lh = hand_pos(rig, lspec, grip, Rm, lrest)
-    arm_ik(rig, 'r', rh, relbow, 'hand_r')
-    arm_ik(rig, 'l', lh, lelbow, 'hand_l')
+    wt = weapon_tree(rig)
+    arm_ik(rig, 'r', rh, relbow, 'hand_r', wt)
+    arm_ik(rig, 'l', lh, lelbow, 'hand_l', wt)
     return grip, Rm
 
 
