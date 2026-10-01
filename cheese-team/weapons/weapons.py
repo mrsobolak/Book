@@ -145,31 +145,20 @@ def revolver():
 
     # ---- frame, built like the real thing from rounded parts (no flat slab)
     cax = -14.0
-    # recoil shield: round flange behind the cylinder
-    rs = [(p[0], p[1]) for p in arc(-4.0, cax, 22.5, 0, 360, 48)]
-    rs = [(max(-8.2, min(0.0, u)), v) for (u, v) in [(u, v) for (u, v) in rs]]
-    shield = rounded([(-8.2, 10.5, 4), (0.0, 12.0, 2), (0.0, -37.5, 2), (-8.2, -40.0, 4)])
-    make('Rev_RecoilShield', profile(shield, -15.6, 15.6), blued, bevel=0.0024, seg=5, angle=30)
-    # topstrap: narrow, rounded, with the rear-sight groove
-    ts = rounded([(-3.0, 8.0, 0), (43.5, 8.0, 0), (43.5, 13.0, 2), (-3.0, 13.4, 2)])
-    top = make('Rev_Topstrap', profile(ts, -8.2, 8.2), blued, bevel=0.0026, seg=5, angle=30)
-    cut(top, box(W(-1.5, 13.6, 0), (0.0022, 0.009, 0.0034)), 'rearsight')
-    # bottom strap under the cylinder, sweeping up into the front ring
-    bs = rounded([(-2.0, -36.0, 0), (41.4, -36.0, 0), (41.4, -21.0, 0), (48.5, -21.0, 0), (48.5, -30.0, 5), (42.0, -40.5, 9),
-                  (20.0, -42.2, 14), (-2.0, -42.5, 0)], n=8)
-    make('Rev_BottomStrap', profile(bs, -11.5, 11.5), blued, bevel=0.0026, seg=5, angle=30)
-    # front ring round the barrel shank + base-pin housing
-    fr = rounded([(41.6, 12.5, 3), (48.5, 12.5, 3), (48.5, -21.0, 4), (41.6, -21.0, 2)])
-    ring = make('Rev_FrontRing', profile(fr, -10.6, 10.6), blued, bevel=0.0024, seg=5, angle=30)
-    cut(ring, cyl(W(40.0, 0, 0), W(60, 0, 0), 0.0096, n=48), 'barrelseat')
+    fo = rounded([(-8.2, 11.0, 3), (-3.0, 13.2, 2), (43.0, 13.2, 3), (48.5, 11.5, 3), (48.5, -20.0, 4), (44.0, -37.5, 8),
+                  (28.0, -41.6, 14), (6.0, -42.3, 6), (-8.2, -42.5, 0)], n=8)
+    win = rounded([(-0.6, -35.8, 3.0), (41.6, -35.8, 3.0), (41.6, 8.3, 3.0), (-0.6, 8.3, 3.0)], n=8)
+    fob = make('Rev_Frame', profile(fo, -14.6, 14.6, holes=[win]), blued, bevel=0.0019, seg=5, angle=30)
+    cut(fob, box(W(-1.5, 13.6, 0), (0.0022, 0.009, 0.0034)), 'rearsight')
+    cut(fob, cyl(W(40.0, 0, 0), W(60, 0, 0), 0.0096, n=48), 'barrelseat')
     # hammer housing / top of the grip frame, narrower than the shield
     hh = rounded([(-7.0, 9.5, 2), (-14, 10.5, 7), (-27, 3.0, 8), (-33, -8.0, 6), (-29, -26.0, 0), (-20, -42.5, 0), (-7.0, -42.5, 0)], n=8)
     house = make('Rev_HammerHousing', profile(hh, -10.6, 10.6), blued, bevel=0.0024, seg=5, angle=30)
     cut(house, box(W(-17, 4, 0), (0.0072, 0.024, 0.030)), 'hammerslot')
     lg = rounded([(-6.5, -22, 2), (-0.8, -22, 1), (-0.8, -6, 1), (-6.5, -6, 2)])
-    make('Rev_LoadingGate', profile(lg, -16.4, -15.2), blued_dk, bevel=0.0005)
-    for (u, v, x) in ((45.0, -15.5, 10.6), (45.0, -15.5, -10.6), (-20.0, -27.0, 10.6), (-20.0, -27.0, -10.6),
-                      (24.0, -40.0, 11.5), (24.0, -40.0, -11.5), (-4.0, -32.0, 15.6), (-4.0, -32.0, -15.6)):
+    make('Rev_LoadingGate', profile(lg, -15.4, -14.3), blued_dk, bevel=0.0005)
+    for (u, v, x) in ((45.0, -15.5, 14.6), (45.0, -15.5, -14.6), (-20.0, -27.0, 10.6), (-20.0, -27.0, -10.6),
+                      (24.0, -39.5, 14.6), (24.0, -39.5, -14.6), (-4.0, -39.0, 14.6), (-4.0, -39.0, -14.6)):
         wk.screw(W(u, v, x), Vector((1 if x > 0 else -1, 0, 0)), r=0.0019, mat=blued_dk, name='Rev_Screw', slot_ang=0.3 + u * 0.05)
 
     # ---- barrel: long octagon-style hex, muzzle crown, bore, front sight blade
