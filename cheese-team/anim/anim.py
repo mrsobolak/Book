@@ -117,11 +117,13 @@ class Rig:
             p.keyframe_insert('rotation_quaternion', frame=frame)
 
     # ---------------------------------------------------------- weapons
-    def attach(self, wname, bone='weapon', key=None):
+    def attach(self, wname, bone='weapon', key=None, part=None):
+        """import a weapon GLB (or one of its parts, e.g. part='Barrels') onto a socket bone; origin = the grip"""
         before = set(bpy.data.objects)
-        bpy.ops.import_scene.gltf(filepath=os.path.join(WP, wname, wname + '.glb'))
+        fn = wname + ('_' + part if part else '')
+        bpy.ops.import_scene.gltf(filepath=os.path.join(WP, wname, fn + '.glb'))
         new = [o for o in bpy.data.objects if o not in before]
-        hold = bpy.data.objects.new('Socket_%s_%s' % (wname, bone), None)
+        hold = bpy.data.objects.new('Socket_%s_%s' % (fn, bone), None)
         bpy.context.scene.collection.objects.link(hold)
         for o in new:
             if o.parent is None:
@@ -157,6 +159,7 @@ WEDGE_BOXES = [(Vector((x0, y0, z0)), Vector((x1, 0.153, z1))) for (z0, z1, x0, 
     (0.875, 0.925, -0.185, 0.196, -0.144),
     (0.925, 1.000, -0.181, 0.095, -0.112))]                   # measured slabs (rest), eye bulge included
 IK_MISSES = []
+REACH_MISSES = []                                  # frames where a hand target was out of the arm's reach (hand would float)
 ARM_R = 0.0105                                    # stick radius + a hair of air
 
 
@@ -288,6 +291,8 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
     to_rest = rig.arm.data.bones['spine_01'].matrix_local @ sp.matrix.inverted()   # posed arm space -> rest arm space
     S = rig.C(to_rest @ rig.head(up)); T = rig.C(to_rest @ rig.A(target))
     L1 = rig.bone_len(up) / 100.0; L2 = rig.bone_len(lo) / 100.0
+    if (T - S).length > L1 + L2 - 1e-3:
+        REACH_MISSES.append((side, round((T - S).length - (L1 + L2), 3)))
     d = max(abs(L1 - L2) + 1e-3, min(L1 + L2 - 1e-3, (T - S).length))
     u = (T - S).normalized()
     a = (L1 * L1 - L2 * L2 + d * d) / (2 * d); h = math.sqrt(max(0.0, L1 * L1 - a * a))
@@ -296,9 +301,13 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
     back = to_rest.inverted()
     pel_rest = rig.arm.data.bones['pelvis'].matrix_local @ rig.pb['pelvis'].matrix.inverted()
     best = None; least = (99, p0)
-    for k in range(0, 49):
-        ang = math.radians(((k + 1) // 2) * 7.5 * (1 if k % 2 else -1))
-        pv = Matrix.Rotation(ang, 3, u) @ p0
+    cands = [Matrix.Rotation(math.radians(((k + 1) // 2) * 7.5 * (1 if k % 2 else -1)), 3, u) @ p0 for k in range(49)]
+    last = getattr(rig, '_last_pole', {}).get(side)                # hysteresis: keep last frame's elbow while it's clean
+    if last is not None:                                          # and not far from the wanted pole (no twitching)
+        lp = last - u * last.dot(u)
+        if lp.length > 1e-4 and lp.normalized().dot(p0) > 0.35:
+            cands.insert(0, lp.normalized())
+    for pv in cands:
         E = S + u * a + pv * h; W = S + u * d
         Sa = S + (E - S).normalized() * 0.05             # the stick roots into the wedge side at the shoulder
         wtr = wedge_tree_rest(rig)
@@ -384,12 +393,16 @@ HOLDS = {
     'dual': dict(twist=0, grip=Vector((-0.25, -0.36, 0.60)), rot=dict(yaw=3, pitch=0, roll=0),
                  grip2=Vector((0.25, -0.36, 0.60)), rot2=dict(yaw=-3, pitch=0, roll=0),
                  relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((1, 0.3, -0.7))),
-    # two-handed long guns: the stick arms can't meet in line in front of the wedge, so the body blades to the right
-    # (left shoulder forward) and the gun lies across it while still pointing straight ahead (hold2 reach solver)
-    'rifle': dict(twist=-65, grip=Vector((-0.09, -0.27, 0.635)), rot=dict(yaw=65, pitch=0, roll=0),
-                  relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, -0.2, -0.6))),
-    'heavy': dict(twist=-55, sway=0.5, grip=Vector((-0.12, -0.24, 0.635)), rot=dict(yaw=55, pitch=0, roll=0),
-                  relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, 0.0, -0.8))),
+    # long guns: body faces forward (arms 2.2x, shoulders at the wedge's front corners); gun low and in front, the
+    # support arm reaches across under the face (hold3 reach solver)
+    'rifle': dict(twist=0, grip=Vector((-0.125, -0.375, 0.50)), rot=dict(yaw=0, pitch=-8, roll=0),
+                  relbow=Vector((-1, 0.2, -0.6)), lelbow=Vector((1, -0.2, -0.8))),
+    # minigun at the hip: right hand on the rear grip, left hand on the top carry bar
+    'heavy': dict(twist=0, sway=0.5, grip=Vector((-0.05, -0.20, 0.36)), rot=dict(yaw=0, pitch=0, roll=0),
+                  relbow=Vector((-1, 0.3, -0.5)), lelbow=Vector((1, -0.3, 0.2))),
+    # launcher on the right shoulder, beside the head
+    'shoulder': dict(twist=0, sway=0.6, grip=Vector((-0.34, -0.30, 0.70)), rot=dict(yaw=0, pitch=2, roll=0),
+                     relbow=Vector((-1, 0.3, -0.8)), lelbow=Vector((0.6, -0.4, -1))),
     # clipboard: held by its right edge, face tilted up toward the eyes (and the over-the-shoulder camera)
     'board': dict(twist=0, grip=Vector((-0.12, -0.30, 0.54)), rot=dict(yaw=180, pitch=35, roll=0),
                   lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
@@ -398,10 +411,10 @@ HOLDS = {
 # ------------------------------------------------------------------ gait
 GAIT = {
     'Idle':    dict(dir=Vector((0, 0, 0)), stride=0.0, frames=60),
-    'WalkF':   dict(dir=Vector((0, -1, 0)), stride=0.10, frames=24),
-    'WalkB':   dict(dir=Vector((0, 1, 0)), stride=0.08, frames=26),
-    'StrafeL': dict(dir=Vector((1, 0, 0)), stride=0.05, frames=22),
-    'StrafeR': dict(dir=Vector((-1, 0, 0)), stride=0.05, frames=22),
+    'WalkF':   dict(dir=Vector((0, -1, 0)), stride=0.10, frames=12),
+    'WalkB':   dict(dir=Vector((0, 1, 0)), stride=0.08, frames=13),
+    'StrafeL': dict(dir=Vector((1, 0, 0)), stride=0.05, frames=11),
+    'StrafeR': dict(dir=Vector((-1, 0, 0)), stride=0.05, frames=11),
 }
 HIP_DROP = 0.035
 LIFT = 0.045
@@ -479,7 +492,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
         lhand += Vector((0, 0.045, 0)) * sw * (1 if g['dir'].y <= 0 else 0.6) * (0.4 if g['dir'].x else 1)
         lhand.z += 0.012 * abs(sw)
     lelbow = H['lelbow']; relbow = H['relbow']
-    lspec = rspec = None; twist = H.get('twist', 0.0); dgun = dgun2 = None
+    lspec = rspec = None; twist = H.get('twist', 0.0); dgun = dgun2 = None; lback = 0.0; spin = 0.0
     if extra:
         e = extra(rig, t)
         grip += e.get('dgrip', Vector())
@@ -489,7 +502,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
             grip2 += e.get('dgrip2', Vector())
             for k, v in e.get('drot2', {}).items():
                 rot2[k] += v
-        twist += e.get('dtwist', 0.0)
+        twist += e.get('dtwist', 0.0); lback = e.get('dlean', 0.0); spin = e.get('spin', 0.0)
         dgun = e.get('dgun'); dgun2 = e.get('dgun2')
         lspec = e.get('lhand'); rspec = e.get('rhand')
         def _pole(v, dflt):
@@ -500,7 +513,7 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
             return v
         lelbow = _pole(e.get('lelbow', lelbow), H['lelbow']); relbow = _pole(e.get('relbow', relbow), H['relbow'])
     # ---- body: stance twist + lean about the spine head; body-space targets ride it
-    Bm = lean @ Matrix.Rotation(math.radians(twist), 4, 'Z')
+    Bm = lean @ Matrix.Rotation(math.radians(twist), 4, 'Z') @ Matrix.Rotation(math.radians(-lback), 4, 'X')
     sp = Matrix.Translation(hd) @ Bm @ Matrix.Translation(-hd) @ rig.pb['spine_01'].matrix
     rig.set_matrix('spine_01', sp)
     piv = rig.C(hd); B3 = Bm.to_3x3()
@@ -516,6 +529,10 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
     if dgun is not None:
         grip = grip + R(**rot) @ dgun                                   # recoil along the gun's own axes
     put('weapon', grip, rot)
+    if 'wp_02' in rig.weapons:                                      # spinning part (minigun barrels) about the bore axis
+        org, Rw, _ = ctx['weapon']
+        P0 = rig.wlocal('weapon', 0.0, 0.0, 0.0); Rs = Matrix.Rotation(math.radians(spin), 3, 'Y')
+        rig.place_weapon('wp_02', org + Rw @ (P0 - Rs @ P0), Rw @ Rs)
     if two:
         if dgun2 is not None:
             grip2 = grip2 + R(**rot2) @ dgun2
@@ -556,7 +573,7 @@ def hand_pos(rig, spec, ctx, rest, default='rest'):
 def keyed(keys):
     """key-pose timeline -> extra(rig, t). keys: [(t, dict(dg=(x,y,z), dr=(yaw,pitch,roll), lh=spec, rh=spec,
     lel=pole, rel=pole, ease=fn))]; missing fields carry over from the previous key. Hand specs blend in place on the gun."""
-    full = []; cur = dict(dg=(0, 0, 0), dr=(0, 0, 0), dg2=(0, 0, 0), dr2=(0, 0, 0), tw=0.0, lh=None, rh='grip',
+    full = []; cur = dict(dg=(0, 0, 0), dr=(0, 0, 0), dg2=(0, 0, 0), dr2=(0, 0, 0), tw=0.0, lb=0.0, lh=None, rh='grip',
                           lel=None, rel=None)
     for t, k in keys:
         cur = dict(cur, **{a: b for a, b in k.items() if a != 'ease'}); cur['ease'] = k.get('ease', ease)
@@ -572,7 +589,8 @@ def keyed(keys):
                'drot': {n: lerp(a['dr'][j], b['dr'][j], k) for j, n in enumerate(('yaw', 'pitch', 'roll'))},
                'dgrip2': Vector(a['dg2']).lerp(Vector(b['dg2']), k),
                'drot2': {n: lerp(a['dr2'][j], b['dr2'][j], k) for j, n in enumerate(('yaw', 'pitch', 'roll'))},
-               'dtwist': lerp(a['tw'], b['tw'], k), 'rhand': ('mix', a['rh'], b['rh'], k)}
+               'dtwist': lerp(a['tw'], b['tw'], k), 'dlean': lerp(a['lb'], b['lb'], k),
+               'rhand': ('mix', a['rh'], b['rh'], k)}
         if a['lh'] is not None or b['lh'] is not None:
             out['lhand'] = ('mix', a['lh'], b['lh'], k)
         for n in ('lel', 'rel'):
@@ -598,15 +616,18 @@ def _pulse(f, shots, decay):
     return min(1.0, k)
 
 
-def kick(n, back=0.022, up=0.012, pitch=16.0, yaw=-2.0, decay=3.2, shots=(0,), guns=(1,), stagger=0):
-    """recoil: snaps back along the barrel and muzzle-up, settles exponentially. guns=(1,2) kicks both (stagger frames)."""
+def kick(n, back=0.022, up=0.012, pitch=16.0, yaw=-2.0, decay=3.2, shots=(0,), guns=(1,), stagger=0, body=0.0, turn=0.0):
+    """recoil: snaps back along the barrel and muzzle-up, settles exponentially. guns=(1,2) kicks both (stagger frames).
+    body: the whole wedge rocks back (deg), turn: and twists toward the gun that fired (deg)."""
     def ex(rig, t):
-        f = t * n; out = {}
+        f = t * n; out = {'dlean': 0.0, 'dtwist': 0.0}
         for gi in guns:
             k = _pulse(f - (stagger if gi == 2 else 0), shots, decay)
             sfx = '' if gi == 1 else '2'
             out['dgun' + sfx] = Vector((0, back * k, up * k))
             out['drot' + sfx] = {'pitch': pitch * k, 'yaw': yaw * k * (1 if gi == 1 else -1)}
+            out['dlean'] += body * k
+            out['dtwist'] += turn * k * (-1 if gi == 1 else 1)
         return out
     return ex
 
@@ -624,7 +645,7 @@ def combo(*fns):
                     for a, b in v.items():
                         d[a] = d.get(a, 0.0) + b
                     out[k] = d
-                elif k == 'dtwist':
+                elif k in ('dtwist', 'dlean', 'spin'):
                     out[k] = out.get(k, 0.0) + v
                 else:
                     out[k] = v
@@ -717,13 +738,12 @@ def shake(n, amp=0.004, ang=1.5, cycles=4, guns=(1,)):
     return ex
 
 
-BELT_R = Vector((-0.30, -0.07, 0.40))
-BELT_RB = Vector((-0.24, 0.10, 0.44))                                # back-right hip (the bladed stance puts the shoulder back)
-REL_T = (-1, 0.4, -0.6)                                              # right elbow for the twisted holds
+BELT_R = Vector((-0.25, -0.10, 0.44))                                # right hip pouch (below the wedge)
+BELT_RB = BELT_R
+REL_T = None                                                         # (None = the hold's own elbow pole)
 
-# ---- dual sawed-offs: boom, then a one-handed gravity rack (snap both guns down-forward)
-fire_dual = combo(kick(30, 0.034, 0.016, 24, 2.0, decay=3.0, guns=(1, 2)),
-                  kick(30, -0.022, -0.02, -14, 0.0, decay=2.4, shots=(11,), guns=(1, 2), stagger=3))
+# ---- dual sawed-offs: right-left double blast, each rocks the body back and toward that gun, muzzles climb hard
+fire_dual = kick(30, 0.045, 0.020, 34, 3.0, decay=3.4, guns=(1, 2), stagger=5, body=5.0, turn=4.0)
 reload_dual = keyed([
     (0.00, {}),
     (0.14, dict(dg=(-0.02, 0.10, 0.10), dr=(0, 70, 0), dg2=(0.02, 0.10, 0.10), dr2=(0, 70, 0))),   # both up by the hat
@@ -734,8 +754,8 @@ reload_dual = keyed([
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 360), dg2=(0, 0, 0), dr2=(0, 0, -360))),
 ])
 
-# ---- machine pistol: 3-round burst; long mag swapped with the gun on its side (mag points left)
-reload_mpistol = keyed([                                             # long mag seated off the hip pouch, rack up front
+# ---- machine pistol: 3-round burst; long mag seated off the hip pouch, rack up front
+reload_mpistol = keyed([
     (0.00, {}),
     (0.08, dict(dg=(0.0, 0.02, 0.02), dr=(0, 20, -30), ease=snap)),                           # release: mag drops
     (0.26, dict(dg=(-0.05, 0.27, 0.015), dr=(0, 90, 0), rel=(-1, 0.4, 0.2))),                 # muzzle up over the pouch
@@ -749,16 +769,16 @@ reload_mpistol = keyed([                                             # long mag 
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
 
-# ---- bolt rifle: boom, then work the bolt with the right hand
-BOLT = ('w', -64, 12, -96)                                                                   # beside the bolt knob
+# ---- bolt rifle: boom (body rocks), then the right hand works the bolt (knob on the gun's right side)
+BOLT = ('w', -64, 12, -96)
 def _bolt(t0, t1):                                                                           # open-back-forward-close
     d = (t1 - t0) / 6
     return [(t0 + d, dict(rh=BOLT, rel=(-1, 0.3, -0.4))), (t0 + 2 * d, dict(rh=('w', -64, 44, -96))),
             (t0 + 3 * d, dict(rh=('w', -132, 44, -96))), (t0 + 4 * d, dict(rh=('w', -64, 44, -96))),
             (t0 + 5 * d, dict(rh=BOLT)), (t1, dict(rh='grip', rel=REL_T))]
-fire_bolt = combo(kick(40, 0.03, 0.012, 9, 1.0, decay=3.0), keyed([(0.0, {}), (0.26, {})] + _bolt(0.26, 0.92) + [(1.0, {})]))
+fire_bolt = combo(kick(40, 0.03, 0.012, 9, 1.0, decay=3.0, body=3.0), keyed([(0.0, {}), (0.26, {})] + _bolt(0.26, 0.92) + [(1.0, {})]))
 reload_bolt = keyed([(0.0, {})] + _bolt(0.04, 0.30)[:3] + [
-    (0.38, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),                                            # rounds from the belt
+    (0.38, dict(rh=BELT_R, rel=(-1, 0.4, -0.3))),                                             # rounds from the hip pouch
     (0.42, dict()),
     (0.48, dict(rh=('w', -60, 120, -110), rel=(-1, 0.3, 0.2))),                              # up and outside the stock
     (0.54, dict(rh=('w', -24, 76, -10), rel=(-1, 0.2, 0.3))),                                 # over the open action
@@ -771,14 +791,14 @@ reload_bolt = keyed([(0.0, {})] + _bolt(0.04, 0.30)[:3] + [
 
 # ---- lever rifle: boom, lever down-up; reload thumbs rounds into the right-side gate
 LEVER_DN = ('w', 6, -100, -30)
-fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8),
-                   keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.3, 0.0))), (0.62, dict(rh='grip', dr=(0, 0, 0))),
-                           (0.80, dict(rel=REL_T)), (1.0, {})]))
+fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8, body=2.5),
+                   keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.3, 0.0))),
+                          (0.62, dict(rh='grip', dr=(0, 0, 0))), (0.80, dict(rel=REL_T)), (1.0, {})]))
 GATE = ('w', 14, -16, -62)
 reload_lever = keyed([
     (0.00, {}),
     (0.10, dict(dr=(0, 0, 40))),                                                              # roll the gate up
-    (0.22, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
+    (0.22, dict(rh=BELT_R, rel=(-1, 0.4, -0.3))),
     (0.26, dict()),
     (0.38, dict(rh=GATE, rel=(-1, 0.3, 0.0))),
     (0.43, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.48, dict(rh=GATE, dg=(0, 0, 0))),
@@ -788,35 +808,43 @@ reload_lever = keyed([
     (0.84, dict(rh=LEVER_DN, rel=(-1, 0.3, 0.0))), (0.92, dict(rh='grip')), (0.97, dict(rel=REL_T)), (1.00, {}),
 ])
 
-# ---- SMG: side mag (sticks out the left), left hand swaps it
-_SQ = dict(dg=(-0.06, 0.01, -0.135), dr=(-25, 0, 0), tw=65)   # squared up, gun low front-right, muzzle 40 deg left (stock clears the hip), side mag to the left hand
-reload_smg = keyed([                                                 # let go of the fore-end, square up, swap, blade back in
+# ---- SMG: side mag sticks out the left; roll the gun so it hangs down, left hand swaps it from the belt
+reload_smg = keyed([
     (0.00, {}),
-    (0.08, dict(lh='rest', lel=(0.4, 1, -0.1))),
-    (0.22, dict(_SQ, lh=('w', 120, 0, 253), lel=(1, -0.2, -0.6))),
-    (0.28, dict(lh=('w', 120, 0, 320), ease=snap)),                                           # yank it out
-    (0.42, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.46, dict()),
-    (0.60, dict(lh=('w', 120, 0, 320), lel=(1, -0.2, -0.6))),
-    (0.68, dict(lh=('w', 120, 0, 253), dg=(-0.064, 0.007, -0.135), ease=snap)),              # seat
-    (0.74, dict(dg=(-0.06, 0.01, -0.135), lh='rest', lel=(0.4, 1, -0.1))),
-    (0.90, dict(dg=(0, 0, 0), dr=(0, 0, 0), tw=0, lh=None, lel=None)),
+    (0.14, dict(dr=(0, 4, 90), lh=('w', 120, 0, 266), lel=(1, -0.2, -0.6))),
+    (0.22, dict(lh=('w', 120, 0, 320), ease=snap)),                                           # yank it down
+    (0.38, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.42, dict()),
+    (0.56, dict(lh=('w', 120, 0, 320), lel=(1, -0.2, -0.6))),
+    (0.64, dict(lh=('w', 120, 0, 266), dg=(0, 0, 0.006), ease=snap)),                          # seat
+    (0.70, dict(dg=(0, 0, 0))),
+    (0.86, dict(lh=None, lel=None, dr=(0, 0, 0))),
     (1.00, {}),
 ])
 
-# ---- rocket launcher: big shove; reload tips the muzzle down to the left hand
-_VERT = dict(dg=(0.15, -0.107, -0.11), dr=(-55, 90, 0), tw=55)  # body square, tube upright in front: axis ~(0, -0.30)
-_BACK = (-0.164, 0.115, 0.0)                                         # slid 0.20 m back along the tube (body frame)
-reload_launcher = keyed([                                            # RPG-style: slide it back, shove a rocket in the front
+# ---- minigun: barrels spin while firing (6 barrels: 300 deg per 12-frame loop = a seamless 25 deg/frame), light buzz
+def spin_fire(n, per_frame=25.0):
+    buzz = shake(n, 0.0015, 0.4, 6)
+    def ex(rig, t):
+        out = buzz(rig, t); out['spin'] = per_frame * n * t
+        return out
+    return ex
+
+# ---- rocket launcher: shoulder-fired; reload = bring it down across the belly (muzzle left), rocket in, back up
+fire_launcher = kick(30, 0.045, 0.012, 7, 0.0, decay=5.0, body=6.0)
+_BELLY = dict(dg=(0.24, 0.0, -0.27), dr=(90, -2, 0))                 # grip (-0.10, -0.30, 0.43), tube across the front
+reload_launcher = keyed([
     (0.00, {}),
-    (0.14, dict(dg=_BACK, lh=BELT_L, lel=(0.6, 0.5, -0.3))),
-    (0.30, dict()),
-    (0.46, dict(lh=('w', 1060, -60, 0), lel=(1, 0.0, -0.8))),                                 # rocket at the muzzle
-    (0.56, dict(lh=('w', 1000, -60, 0), dg=(-0.172, 0.120, 0.0), ease=snap)),                 # shove it home
-    (0.62, dict(lh=('w', 1060, -60, 0), dg=_BACK)),
-    (0.74, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),                                            # the opening, played backwards
-    (0.88, dict(lh=None, lel=None, dg=(0, 0, 0))),
-    (1.00, {}),
+    (0.06, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.22, dict(_BELLY)),
+    (0.34, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.38, dict()),
+    (0.50, dict(lh=('w', 1070, -10, 0), lel=(1, -0.3, -0.6))),                                # rocket at the muzzle
+    (0.58, dict(lh=('w', 1006, -10, 0), dg=(0.25, 0.0, -0.27), ease=snap)),                   # shove it home
+    (0.64, dict(lh=('w', 1070, -10, 0), dg=(0.24, 0.0, -0.27))),
+    (0.74, dict(lh='rest', lel=(0.4, 1, -0.1))),
+    (0.90, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
+    (1.00, dict(lh=None, lel=None)),
 ])
 
 # ---- blueprint: present it (fire), flip the page (reload)
@@ -841,14 +869,18 @@ WDEF = {
     'MachinePistol': dict(hold='pistol', fire=(18, kick(18, 0.012, 0.006, 6, 1.0, decay=1.6, shots=(0, 3, 6)), False),
                           reload=(60, reload_mpistol)),
     'SawedOff':  dict(hold='dual', dual=True, fire=(30, fire_dual, False), reload=(66, reload_dual)),
-    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -77, 0), hold_pt=(-84, -54, -40)), fire=(40, fire_bolt, False), reload=(90, reload_bolt)),
-    'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(160, -63, 0), hold_pt=(-20, -36, -38)),
+    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -27, 0)), aim=Vector((-0.07, -0.39, 0.67)),
+                      fire=(40, fire_bolt, False), reload=(90, reload_bolt)),
+    'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.125, -0.35, 0.50)), rot=dict(yaw=0, pitch=0, roll=0),
+                                               support=(160, -40, 0)), aim=Vector((-0.07, -0.37, 0.70)),
                        fire=(32, fire_lever, False), reload=(84, reload_lever)),
-    'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.06, -0.27, 0.635)), support=(240, -57, 0)),
-                      fire=(12, shake(12, 0.004, 1.5, 4), True), reload=(64, reload_smg)),
-    'RocketLauncher': dict(hold='heavy', over=dict(grip=Vector((-0.15, -0.27, 0.59)), support=(700, -87, 0)),
-                           fire=(30, kick(30, 0.022, 0.016, 6, 0.0, decay=5.0), False), reload=(76, reload_launcher)),
-    'Minigun':   dict(hold='heavy', over=dict(support=(228, -166, 0)), fire=(12, shake(12, 0.006, 1.2, 6), True), reload=None),
+    'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.10, -0.425, 0.52)), rot=dict(yaw=0, pitch=-5, roll=0),
+                                              support=(240, -40, 0)),
+                      fire=(12, shake(12, 0.003, 1.2, 4), True), reload=(64, reload_smg)),
+    'RocketLauncher': dict(hold='shoulder', over=dict(support=(520, -66, 0)),
+                           fire=(30, fire_launcher, False), reload=(84, reload_launcher)),
+    'Minigun':   dict(hold='heavy', over=dict(support=(100, 196, 0)), parts=(('Barrels', 'wp_02'),),
+                      fire=(12, spin_fire(12), True), reload=None),
     'Blueprint': dict(hold='board', over=dict(hold_pt=(10, 0, 128)), fire=(24, fire_board, False), reload=(44, reload_board)),
 }
 
@@ -883,26 +915,39 @@ def bake(rig, prefix, hold, gait_name, frames, extra=None, loop=None):
     return act
 
 
-def build(cls, wname, prefix=None, only=None):
-    """bake the third-person set for one class + weapon. only: subset of action names to (re)bake."""
-    rig = Rig(cls)
+def attach_set(rig, wname):
     d = WDEF[wname]
     rig.attach(wname, 'weapon')
     if d.get('dual'):
         rig.attach(wname, 'wp_01')
-    H = hold_of(wname)
+    for part, bone in d.get('parts', ()):
+        rig.attach(wname, bone, part=part)
+
+
+def bake_set(rig, wname, only=None, prefix=None):
+    d = WDEF[wname]; H = hold_of(wname)
     prefix = prefix or 'TP_%s' % wname
-    out = []
-    for gname, g in GAIT.items():
-        if not only or gname in only:
-            out.append(bake(rig, prefix, H, gname, g['frames']))
+    want = lambda a: not only or a in only
+    out = [bake(rig, prefix, H, g, GAIT[g]['frames']) for g in GAIT if want(g)]
     n, fn, lp = d['fire']
-    if not only or 'Fire' in only:
+    if want('Fire'):
         out.append(bake(rig, prefix, H, 'Fire', n, extra=fn, loop=lp))
-    if d.get('reload') and (not only or 'Reload' in only):
-        n, fn = d['reload']
-        out.append(bake(rig, prefix, H, 'Reload', n, extra=fn))
-    return rig, out
+    if d.get('reload') and want('Reload'):
+        out.append(bake(rig, prefix, H, 'Reload', d['reload'][0], extra=d['reload'][1]))
+    if d.get('aim') is not None:                                   # rifles: shouldered at the eye
+        Ha = dict(H, grip=d['aim'], rot=dict(yaw=0, pitch=0, roll=0), sway=0.3)
+        if want('Aim'):
+            out.append(bake(rig, prefix, Ha, 'Aim', 60))
+        if want('AimFire'):
+            out.append(bake(rig, prefix, Ha, 'AimFire', n, extra=fn, loop=False))
+    return out
+
+
+def build(cls, wname, prefix=None, only=None):
+    """bake the third-person set for one class + weapon. only: subset of action names to (re)bake."""
+    rig = Rig(cls)
+    attach_set(rig, wname)
+    return rig, bake_set(rig, wname, only, prefix)
 
 
 # ------------------------------------------------------------------ clipping check
@@ -1005,11 +1050,11 @@ LAST = {}
 
 
 def test(cls, wname, only=None, step=1):
-    del IK_MISSES[:]
+    del IK_MISSES[:]; del REACH_MISSES[:]
     rig, acts = build(cls, wname, only=only)
     res = {a.name: check(rig, a, step=step) for a in acts}
-    LAST.update(rig=rig, res=res, misses=list(IK_MISSES))
-    return {k: (len(v), v[:6]) for k, v in res.items()}, len(IK_MISSES)
+    LAST.update(rig=rig, res=res, misses=list(IK_MISSES), reach=list(REACH_MISSES))
+    return {k: (len(v), v[:6]) for k, v in res.items()}, len(IK_MISSES), len(REACH_MISSES), REACH_MISSES[:3]
 
 
 def probe(rig, act, frames):
@@ -1060,15 +1105,8 @@ def export_class(cls, step=2, logp=None):
     rig = Rig(cls)
     report = {}
     for wname in CLASS_WEAPONS[cls]:
-        d = WDEF[wname]
-        rig.attach(wname, 'weapon')
-        if d.get('dual'):
-            rig.attach(wname, 'wp_01')
-        H = hold_of(wname); prefix = 'TP_%s' % wname
-        acts = [bake(rig, prefix, H, g, GAIT[g]['frames']) for g in GAIT]
-        n, fn, lp = d['fire']; acts.append(bake(rig, prefix, H, 'Fire', n, extra=fn, loop=lp))
-        if d.get('reload'):
-            n, fn = d['reload']; acts.append(bake(rig, prefix, H, 'Reload', n, extra=fn))
+        attach_set(rig, wname)
+        acts = bake_set(rig, wname)
         for a in acts:
             report[a.name] = len(check(rig, a, step=step))
             if logp:

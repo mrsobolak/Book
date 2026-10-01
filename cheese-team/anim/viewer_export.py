@@ -12,6 +12,7 @@ CLASS_WEAPONS = {'Outlaw': ('Revolver', 'Derringer'), 'MrShotgun': ('SawedOff', 
                  'RocketGuy': ('RocketLauncher', 'SemiAuto'), 'Sniper': ('BoltRifle', 'LeverRifle'),
                  'Mechanic': ('SMG', 'Blueprint'), 'Greg': ('Minigun', 'SnubNose')}
 DUAL = {'SawedOff'}
+PARTS = {'Minigun': (('Barrels', 'wp_02'),)}            # extra spinning parts on spare socket bones
 
 
 def export(cls, dst, tex=1024, fmt='WEBP'):
@@ -21,9 +22,11 @@ def export(cls, dst, tex=1024, fmt='WEBP'):
     arm.data.pose_position = 'REST'
     bpy.context.view_layer.update()
     for w in CLASS_WEAPONS[cls]:
-        for bone in (('weapon', 'wp_01') if w in DUAL else ('weapon',)):
+        jobs = [(w, b) for b in (('weapon', 'wp_01') if w in DUAL else ('weapon',))]
+        jobs += [(w + '_' + part, b) for part, b in PARTS.get(w, ())]
+        for fn, bone in jobs:
             before = set(bpy.data.objects)
-            bpy.ops.import_scene.gltf(filepath=os.path.join(WP, w, w + '.glb'))
+            bpy.ops.import_scene.gltf(filepath=os.path.join(WP, w, fn + '.glb'))
             new = [o for o in bpy.data.objects if o not in before]
             loc, rot, _ = (arm.matrix_world @ arm.data.bones[bone].matrix_local).decompose()
             H = Matrix.LocRotScale(loc, rot, (WS * s,) * 3)

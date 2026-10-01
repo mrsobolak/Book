@@ -4,11 +4,11 @@ import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
 import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
 
 const FPS = 30;
-const ACTION_ORDER = ['Idle', 'WalkF', 'WalkB', 'StrafeL', 'StrafeR', 'Fire', 'Reload'];
-const ACTION_LABEL = { Idle:'Idle', WalkF:'Walk forward', WalkB:'Walk back', StrafeL:'Strafe left', StrafeR:'Strafe right', Fire:'Fire', Reload:'Reload' };
+const ACTION_ORDER = ['Idle', 'WalkF', 'WalkB', 'StrafeL', 'StrafeR', 'Fire', 'Reload', 'Aim', 'AimFire'];
+const ACTION_LABEL = { Idle:'Idle', WalkF:'Walk forward', WalkB:'Walk back', StrafeL:'Strafe left', StrafeR:'Strafe right', Fire:'Fire', Reload:'Reload', Aim:'Aim', AimFire:'Aim + fire' };
 const MOVE = { WalkF:[0, 0, 1], WalkB:[0, 0, -1], StrafeL:[1, 0, 0], StrafeR:[-1, 0, 0] };   // glTF: char faces +Z
 // body speed of the foot-planted gait: a foot slides 2*stride while planted (60% of the cycle)
-const GAIT = { WalkF:[0.10, 24], WalkB:[0.08, 26], StrafeL:[0.05, 22], StrafeR:[0.05, 22] };
+const GAIT = { WalkF:[0.10, 12], WalkB:[0.08, 13], StrafeL:[0.05, 11], StrafeR:[0.05, 11] };
 const SPEED = Object.fromEntries(Object.entries(GAIT).map(([k, [st, n]]) => [k, 2 * st / (0.6 * n / FPS)]));
 const HEIGHT = { Sniper:1.07, Greg:1.16 };
 const CLASS_NAME = { Outlaw:'Outlaw', MrShotgun:'Mr. Shotgun', RocketGuy:'Boom Boom', Sniper:'Mr. Faraway', Mechanic:'Mechanic', Greg:'Greg' };
@@ -188,7 +188,7 @@ addEventListener('keydown', e => {
   if (e.code === 'Space') { e.preventDefault(); togglePlay(); }
   else if (e.key === 'ArrowLeft') step(-1);
   else if (e.key === 'ArrowRight') step(1);
-  else if (/^[1-7]$/.test(e.key)) playAction(ACTION_ORDER[+e.key - 1]);
+  else if (/^[1-9]$/.test(e.key)) playAction(ACTION_ORDER[+e.key - 1]);
 });
 
 // cameras (character faces +Z in glTF)
