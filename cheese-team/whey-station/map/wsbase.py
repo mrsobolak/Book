@@ -78,10 +78,6 @@ def base(K, T):
     K.area('Stair Hall', 0, 6, 10, 15, 0, team=T)
     # ---------------- Conveyor Gallery (y 6) ----------------
     K.box('Plate', 0, 5.8, 15.4, 36, 6.0, 19.8, col=True, bevel=False)
-    K.box('SteelG', 3.0, 6.0, 18.4, 34.0, 6.85, 19.6, col=True)
-    d = 3.4
-    while d < 34:
-        K.cyl('Steel', d, 6.75, 18.45, 0.06, 1.1, axis='z', seg=6); d += 1.0
     for d in (8, 16, 24, 32):
         K.light(d, 9.4, 17.5, '#ffe0b0', 0.9, 10)
     K.area('Conveyor Gallery', 0, 15.4, 36, 20, 6, team=T)
@@ -131,11 +127,11 @@ def base(K, T):
     K.wall2('z', -24, -6, 12, WT, 0, 8)
     K.wall2('z', -24, -4, 30, WT, 0, 8, holes=[(-18, -14, 0, 3.2)])
     P.opening('z', -18, -14, 30, WT, 0, 3.2, mat='Steel')
-    K.slab('TF_Ceiling', 12, -24, 30, -6, 8.0, 8.3, holes=[(18, -18, 24, -12)], col=False)
+    K.slab('TF_Ceiling', 12, -24, 30, -6, 8.0, 8.3, holes=[(16.5, -18, 22.5, -12)], col=False)
     for z in (-21.5, -8.5):
         P.hbeam(12, 30, z, 8.0, d=0.4, w=0.2)
     # flag capture pad: stepped round platform with a team-coloured light ring, hazard border, skylight + team spot
-    fx, fy, fz = 21.0, 0.0, -15.0
+    fx, fy, fz = 19.5, 0.0, -15.0          # clear of the hatch stair (d 24.3..30)
     K.cyl('TF_Hazard', fx, 0.0, fz, 3.45, 0.012, seg=48)
     K.cyl('TF_Conc', fx, 0.0, fz, 3.0, 0.15, seg=48, col=True)
     K.cyl(tm('TF_Glow'), fx, 0.15, fz, 2.78, 0.14, seg=48)
@@ -161,10 +157,6 @@ def base(K, T):
     K.light(30, 4.6, 0, '#ffe0b0', 1.0, 10)
     # ---------------- packing corridor ----------------
     K.slab('Conc', 30, -24, 36, -4, 5.0, 5.3, col=False)
-    K.box('SteelG', 34.4, 0, -23.5, 35.6, 0.85, -15.5, col=True)
-    z = -23.2
-    while z < -15.6:
-        K.cyl('Steel', 34.4, 0.78, z, 0.05, 1.2, axis='x', seg=6); z += 0.5
     K.light(33, 4.6, -14, '#ffe0b0', 1.0, 10)
     K.area('Packing Line', 30, -24, 36, -4, 0, team=T)
     # ---------------- office (second stair to the gallery) ----------------
@@ -172,7 +164,5 @@ def base(K, T):
     K.box('Plate', 33.5, 5.8, 14.95, 35.5, 6.0, 15.45, col=True, bevel=False)         # floor through the doorway
     P.opening('x', 33.5, 35.5, 15.2, WT, 6.0, 9.0, mat='Steel')
     P.stairs(34.5, 14.95 - RUN6, -PI / 2, 2.0, 0.0, 6.0, kind='steel')
-    K.box('SteelPlate', 25.0, 0, 12.8, 29.5, 1.05, 14.6, col=True)                 # control desk
-    K.box('Glass', 25.2, 1.05, 14.3, 29.3, 1.6, 14.35)
     K.light(29, 9.3, 9, '#fff1d6', 1.0, 12)
     K.area('Control Office', 24, 4, 36, 15, 0, team=T)

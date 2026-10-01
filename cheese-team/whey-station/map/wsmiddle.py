@@ -10,13 +10,12 @@ WT = 0.4          # wall thickness
 
 
 def vat(K, x, z, r=3.0):
-    """curd vat: concrete plinth, stainless drum, cone lid, agitator motor, rim ring, rim rings"""
+    """curd vat: concrete plinth, stainless drum, cone lid, rim ring, rim rings"""
     K.box('Conc', x - r - 0.3, 0, z - r - 0.3, x + r + 0.3, 0.5, z + r + 0.3)
     K.cyl('Stainless', x, 0.5, z, r, 5.0, seg=28)
     K.cyl('Stainless', x, 5.5, z, r, 1.3, seg=28, r2=0.9)
     K.cyl('SteelG', x, 5.3, z, r + 0.08, 0.2, seg=28)
     K.cyl('TF_Hazard', x, 1.0, z, r + 0.06, 0.25, seg=28)
-    K.box('SteelPlate', x - 0.6, 6.8, z - 0.5, x + 0.6, 7.6, z + 0.5)
     # collision: octagon of three boxes
     a, b = r * 0.94 + 0.3, r * 0.39 + 0.3
     for (u, v) in ((a, b), (b, a), (r * 0.72 + 0.25, r * 0.72 + 0.25)):
@@ -69,9 +68,6 @@ def half(K, T):
     for s in (-1, 1):
         K.box('Steel', s * 1.25 - 0.12, 5.25, 0, s * 1.25 + 0.12, 5.8, 18.8)
         P.rail(s * 1.55, 0, s * 1.55, 18.8, 6.0, panel=P.tm('TF_Paint'))
-    K.box('SteelG', -0.55, 6.0, 0, 0.55, 6.35, 18.8, col=True)                        # conveyor belt bed (low cover)
-    for z in range(1, 18, 2):
-        K.cyl('Steel', -0.5, 6.25, z, 0.07, 1.0, axis='x', seg=8)
     P.ibeam(0, 10.0, 0, 5.25, w=0.3)
     # brine pit: channel x -5..5, z -16..16 at y -4 (open to the hall for |z|<8)
     K.slab('FloorDmg', -5, -16, 0, 16, -4.3, -4.0)
@@ -110,9 +106,6 @@ def half(K, T):
     # HIGH: gallery room (y 6) from the base conveyor gallery (z 15.2..19.8) to the hall catwalk (z 18.8..23.8)
     K.wall2('x', -40, -30, 14, WT, 0, 10.0)
     K.box('TF_Grate', -40, 5.8, 14.2, -30, 6.0, 23.8, col=True, bevel=False)
-    K.box('SteelG', -38.5, 6.0, 14.6, -32, 6.85, 15.8, col=True)                      # conveyor = low cover
-    for x in range(-38, -32, 2):
-        K.cyl('Steel', x, 6.75, 14.65, 0.06, 1.1, axis='z', seg=6)
     K.light(-35, 9.4, 19, '#ffe0b0', 1.0, 10)
     K.area('Gallery Junction', -40, 14, -30, 24, 6, team=T)
     # brine-tank room (ground + catwalk), z -24..-4: Cheddar's own room on the way back from the high route
