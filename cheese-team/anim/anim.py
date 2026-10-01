@@ -230,6 +230,28 @@ def acc_tree_rest(rig):
     return rig._acc_rest
 
 
+def wedge_tree_rest(rig):
+    """the wedge (spine / pelvis groups of the body) as a BVH in REST char space, built once per rig"""
+    if getattr(rig, '_wedge_rest', None) is not None:
+        return rig._wedge_rest
+    rig.arm.data.pose_position = 'REST'; bpy.context.view_layer.update()
+    C = (rig.arm.matrix_world @ Matrix.Scale(100.0, 4)).inverted()
+    dg = bpy.context.evaluated_depsgraph_get()
+    o = rig.body; gi = {g.index: g.name for g in o.vertex_groups}
+    ev = o.evaluated_get(dg); me = ev.to_mesh(); M = C @ o.matrix_world
+    keep = set()
+    for v in o.data.vertices:
+        ws = {gi.get(g.group): g.weight for g in v.groups}
+        if ws and max(ws, key=ws.get) in ('spine_01', 'aim', 'pelvis', 'root'):
+            keep.add(v.index)
+    verts = [M @ v.co for v in me.vertices]
+    polys = [tuple(p.vertices) for p in me.polygons if all(i in keep for i in p.vertices)]
+    ev.to_mesh_clear()
+    rig.arm.data.pose_position = 'POSE'; bpy.context.view_layer.update()
+    rig._wedge_rest = BVHTree.FromPolygons(verts, polys)
+    return rig._wedge_rest
+
+
 def arm_ik(rig, side, target, pole, b3, wtree=None):
     """two-bone arm IK whose elbow swings around the shoulder->hand axis (nearest to `pole` first) until both
     sticks clear the wedge (and the held weapon, if a char-space BVH is given). target is char space."""
@@ -250,8 +272,8 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
         pv = Matrix.Rotation(ang, 3, u) @ p0
         E = S + u * a + pv * h; W = S + u * d
         Sa = S + (E - S).normalized() * 0.05             # the stick roots into the wedge side at the shoulder
-        nh = sum(_seg_hits_box(q0, q1, lo_ - Vector((ARM_R,) * 3), hi_ + Vector((ARM_R,) * 3))
-                 for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
+        wtr = wedge_tree_rest(rig)
+        nh = _seg_hits_tree(wtr, Sa, E, ARM_R) + _seg_hits_tree(wtr, E, W, ARM_R)
         atree = acc_tree_rest(rig)
         if nh == 0 and atree is not None:
             nh = 5 * (_seg_hits_tree(atree, Sa, E, ARM_R) + _seg_hits_tree(atree, E, W, ARM_R))
@@ -393,7 +415,13 @@ def pose_frame(rig, hold, gait_name, t, extra=None):
         twist += e.get('dtwist', 0.0)
         dgun = e.get('dgun'); dgun2 = e.get('dgun2')
         lspec = e.get('lhand'); rspec = e.get('rhand')
-        lelbow = e.get('lelbow', lelbow); relbow = e.get('relbow', relbow)
+        def _pole(v, dflt):
+            if isinstance(v, tuple) and v and v[0] == 'pole':
+                pa = Vector(v[1] if v[1] is not None else dflt).normalized()
+                pb = Vector(v[2] if v[2] is not None else dflt).normalized()
+                return pa.lerp(pb, v[3])
+            return v
+        lelbow = _pole(e.get('lelbow', lelbow), H['lelbow']); relbow = _pole(e.get('relbow', relbow), H['relbow'])
     # ---- body: stance twist + lean about the spine head; body-space targets ride it
     Bm = lean @ Matrix.Rotation(math.radians(twist), 4, 'Z')
     sp = Matrix.Translation(hd) @ Bm @ Matrix.Translation(-hd) @ rig.pb['spine_01'].matrix
@@ -471,10 +499,8 @@ def keyed(keys):
         if a['lh'] is not None or b['lh'] is not None:
             out['lhand'] = ('mix', a['lh'], b['lh'], k)
         for n in ('lel', 'rel'):
-            pa, pb = a[n], b[n]
-            if pa is not None or pb is not None:
-                pa = Vector(pa if pa is not None else pb); pb = Vector(pb if pb is not None else pa)
-                out['lelbow' if n == 'lel' else 'relbow'] = pa.normalized().lerp(pb.normalized(), k)
+            if a[n] is not None or b[n] is not None:                     # None = the hold's own pole (resolved later)
+                out['lelbow' if n == 'lel' else 'relbow'] = ('pole', a[n], b[n], k)
         return out
     return ex
 
