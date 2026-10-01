@@ -293,7 +293,7 @@ HOLDS = {
     'heavy': dict(twist=-55, grip=Vector((-0.12, -0.24, 0.635)), rot=dict(yaw=55, pitch=0, roll=0),
                   relbow=Vector((-1, 0.4, -0.6)), lelbow=Vector((1, -0.2, -0.6))),
     # clipboard: held by its right edge, face tilted up toward the eyes (and the over-the-shoulder camera)
-    'board': dict(twist=0, grip=Vector((-0.20, -0.30, 0.54)), rot=dict(yaw=180, pitch=35, roll=0),
+    'board': dict(twist=0, grip=Vector((-0.12, -0.30, 0.54)), rot=dict(yaw=180, pitch=35, roll=0),
                   lhand=Vector((0.33, -0.05, 0.33)), relbow=Vector((-1, 0.3, -0.7)), lelbow=Vector((0.4, 1, -0.1))),
 }
 
@@ -634,7 +634,7 @@ reload_dual = keyed([
 # ---- machine pistol: 3-round burst; long mag swapped with the gun on its side (mag points left)
 reload_mpistol = keyed([
     (0.00, {}),
-    (0.12, dict(dg=(0.15, 0.12, -0.10), dr=(0, 0, -50), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),
+    (0.12, dict(dg=(0.15, 0.12, -0.10), dr=(0, 0, -75), lh=BELT_L, lel=(0.6, 0.5, -0.3), rel=(-0.4, 0.2, -1))),
     (0.16, dict(dg=(0.15, 0.12, -0.088), ease=snap)),
     (0.30, dict(dg=(0.15, 0.12, -0.10))),
     (0.48, dict(lh=('w', 40, -330, 0), lel=LEL)),                                              # new mag under the long well
@@ -669,32 +669,32 @@ LEVER_DN = ('w', 6, -100, 0)
 fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8),
                    keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.2, 0.6))), (0.62, dict(rh='grip', dr=(0, 0, 0))),
                            (0.80, dict(rel=REL_T)), (1.0, {})]))
-GATE = ('w', 14, -28, -62)
+GATE = ('w', 14, -16, -62)
 reload_lever = keyed([
     (0.00, {}),
-    (0.10, dict(dr=(0, 0, -25))),                                                             # roll the gate up a touch
+    (0.10, dict(dr=(0, 0, 40))),                                                              # roll the gate up
     (0.22, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
     (0.26, dict()),
-    (0.38, dict(rh=GATE, rel=(-1, 0.2, -0.4))),
-    (0.43, dict(rh=('w', 14, -28, -46), dg=(0, 0, -0.004))), (0.48, dict(rh=GATE, dg=(0, 0, 0))),
-    (0.53, dict(rh=('w', 14, -28, -46), dg=(0, 0, -0.004))), (0.58, dict(rh=GATE, dg=(0, 0, 0))),
-    (0.63, dict(rh=('w', 14, -28, -46), dg=(0, 0, -0.004))), (0.68, dict(rh=GATE, dg=(0, 0, 0))),
+    (0.38, dict(rh=GATE, rel=(-1, 0.2, 0.6))),
+    (0.43, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.48, dict(rh=GATE, dg=(0, 0, 0))),
+    (0.53, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.58, dict(rh=GATE, dg=(0, 0, 0))),
+    (0.63, dict(rh=('w', 14, -16, -46), dg=(0, 0, -0.004))), (0.68, dict(rh=GATE, dg=(0, 0, 0))),
     (0.76, dict(rh='grip', dr=(0, 0, 0), rel=REL_T)),
     (0.84, dict(rh=LEVER_DN, rel=(-1, 0.2, 0.6))), (0.92, dict(rh='grip')), (0.97, dict(rel=REL_T)), (1.00, {}),
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
-SMAG = ('w', 120, 0, 250)
-reload_smg = keyed([
+SMAG = ('w', 120, 0, 250)                                            # (gun rolled: the side mag stands up on top)
+reload_smg = keyed([                                                 # left hand keeps the fore-end, right hand swaps the mag
     (0.00, {}),
-    (0.12, dict(lh=SMAG, dr=(0, 4, 90), lel=(1, -0.2, -0.6))),                                  # roll: mag hangs down
-    (0.20, dict(lh=('w', 120, 0, 300), ease=snap)),                                           # yank it
-    (0.36, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
+    (0.12, dict(dr=(0, 4, -90), rh=('w', 120, 0, 250), rel=(-1, 0.2, 0.6))),
+    (0.20, dict(rh=('w', 120, 0, 310), ease=snap)),                                           # yank it up
+    (0.36, dict(rh=BELT_RB, rel=(-1, 0.5, -0.2))),
     (0.40, dict()),
-    (0.54, dict(lh=('w', 120, 0, 300), lel=(1, -0.2, -0.3))),
-    (0.62, dict(lh=SMAG, dg=(0, 0, 0.004), ease=snap)),                                       # seat
+    (0.54, dict(rh=('w', 120, 0, 310), rel=(-1, 0.2, 0.6))),
+    (0.62, dict(rh=('w', 120, 0, 250), dg=(0, 0, -0.004), ease=snap)),                       # seat
     (0.70, dict(dg=(0, 0, 0))),
-    (0.84, dict(lh=None, dr=(0, 0, 0))),
+    (0.84, dict(rh='grip', dr=(0, 0, 0), rel=REL_T)),
     (1.00, {}),
 ])
 
