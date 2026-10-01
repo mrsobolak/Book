@@ -226,7 +226,7 @@ def arm_ik(rig, side, target, pole, b3, wtree=None):
                  for (q0, q1) in ((Sa, E), (E, W)) for (lo_, hi_) in WEDGE_BOXES)
         if nh == 0 and wtree is not None:
             Ep, Wp, Sp = (rig.C(back @ rig.A(q)) for q in (E, W, Sa))
-            Wc = Wp - (Wp - Ep).normalized() * 0.036          # the stick ends inside the hand ball, which holds the gun
+            Wc = Wp - (Wp - Ep).normalized() * 0.027          # the stick ends inside the hand ball, which holds the gun
             nh = 10 * (_seg_hits_tree(wtree, Sp, Ep, ARM_R) + _seg_hits_tree(wtree, Ep, Wc, ARM_R))
         if nh == 0:
             best = pv; break
