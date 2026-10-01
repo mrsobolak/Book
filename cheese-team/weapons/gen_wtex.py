@@ -194,11 +194,11 @@ def blueprint():
     for y in (H - 260, H - 190, H - 120):
         d.line((W - 650, y, W - 50, y), fill=ln, width=2)
     d.line((W - 350, H - 190, W - 350, H - 50), fill=ln, width=2)
-    ctext(d, (W - 350, H - 295), 'SENTRY TURRET MK.II', C(46), ln)
-    ctext(d, (W - 350, H - 225), '+ HELPER BOT "SPARKY"', C(34), ln)
+    ctext(d, (W - 350, H - 295), 'CHEESE TURRET MK.II', C(46), ln)
+    ctext(d, (W - 350, H - 225), '+ HELPER BOT "GOUDA BOY"', C(34), ln)
     d.text((W - 640, H - 180), 'DRAWN: MECHANIC', font=M(26), fill=ln)
-    d.text((W - 340, H - 180), 'SCALE 1:5', font=M(26), fill=ln)
-    d.text((W - 640, H - 110), 'CHEESETEAM WORKS', font=M(26), fill=ln)
+    d.text((W - 340, H - 180), 'SCALE 1:BRIE', font=M(26), fill=ln)
+    d.text((W - 640, H - 110), 'MATERIAL: CHEESE', font=M(26), fill=ln)
     d.text((W - 340, H - 110), 'SHEET 1 OF 3', font=M(26), fill=ln)
 
     def dim(x0, y0, x1, y1, txt, off=30, vertical=False):
@@ -215,71 +215,90 @@ def blueprint():
                 d.polygon([(x, y0 + off), (x + (12 if x == x0 else -12), y0 + off - 7), (x + (12 if x == x0 else -12), y0 + off + 7)], fill=ln)
             ctext(d, ((x0 + x1) / 2, y0 + off - 18), txt, M(24), ln)
 
-    # ---- turret: side elevation (tripod, pivot, body, twin barrels, ammo box)
+    def wedge(x, y, w_, h_, holes=(), lw=5, flip=False):
+        """cheese wedge in side view: thick end left (or right if flip), sloping top, holes"""
+        if flip:
+            pts = [(x, y + h_), (x + w_, y + h_), (x + w_, y)]
+        else:
+            pts = [(x, y), (x, y + h_), (x + w_, y + h_)]
+        d.polygon(pts, outline=ln, width=lw)
+        for (hx, hy, r) in holes:
+            d.ellipse((x + hx - r, y + hy - r, x + hx + r, y + hy + r), outline=ln, width=max(2, lw - 2))
+
+    def block(x, y, w_, h_, holes=(), lw=5, r=10):
+        d.rounded_rectangle((x, y, x + w_, y + h_), radius=r, outline=ln, width=lw)
+        for (hx, hy, rr) in holes:
+            d.ellipse((x + hx - rr, y + hy - rr, x + hx + rr, y + hy + rr), outline=ln, width=max(2, lw - 2))
+
+    # ---- turret: side elevation -- a cheese wedge on a breadstick tripod, firing cheese sticks
     ox, oy = 140, 260
     d.text((ox, oy - 90), 'A  SIDE ELEVATION', font=C(40), fill=ln)
     base_y = oy + 620
-    for (x0, x1) in ((ox + 260, ox + 60), (ox + 260, ox + 470), (ox + 260, ox + 260)):
-        d.line((ox + 260, oy + 380, x1, base_y), fill=ln, width=5)
+    for x1 in (ox + 60, ox + 470, ox + 260):
+        d.line((ox + 260, oy + 380, x1, base_y), fill=ln, width=7)          # breadstick legs
+        for k in range(1, 6):                                                # breadstick scoring
+            t = k / 6
+            xa = ox + 260 + (x1 - ox - 260) * t; ya = oy + 380 + (base_y - oy - 380) * t
+            d.line((xa - 6, ya - 3, xa + 6, ya + 3), fill=ln, width=2)
     for x in (ox + 60, ox + 470):
-        d.ellipse((x - 22, base_y - 8, x + 22, base_y + 8), outline=ln, width=3)
-    d.rectangle((ox + 230, oy + 300, ox + 290, oy + 390), outline=ln, width=4)                    # pivot post
-    d.ellipse((ox + 225, oy + 280, ox + 295, oy + 320), outline=ln, width=4)
-    d.rounded_rectangle((ox + 120, oy + 140, ox + 420, oy + 290), radius=30, outline=ln, width=5)  # body
-    d.rectangle((ox + 150, oy + 170, ox + 250, oy + 260), outline=ln, width=3)                    # access panel
-    for k in range(4):
-        d.ellipse((ox + 158 + k * 26, oy + 176, ox + 166 + k * 26, oy + 184), outline=ln, width=2)
-    for yb in (oy + 185, oy + 235):                                                              # twin barrels
-        d.rectangle((ox + 420, yb - 10, ox + 720, yb + 10), outline=ln, width=4)
-        d.rectangle((ox + 700, yb - 16, ox + 740, yb + 16), outline=ln, width=4)
-    d.rectangle((ox + 30, oy + 170, ox + 120, oy + 270), outline=ln, width=4)                     # ammo box
-    d.line((ox + 30, oy + 195, ox + 120, oy + 195), fill=ln, width=2)
-    d.arc((ox + 100, oy + 80, ox + 240, oy + 180), 200, 330, fill=ln, width=3)                   # feed chute
-    d.ellipse((ox + 330, oy + 100, ox + 390, oy + 140), outline=ln, width=3)                      # sensor eye
-    d.line((ox + 360, oy + 100, ox + 360, oy + 60), fill=ln, width=3)
-    dim(ox + 30, oy + 640, ox + 740, oy + 640, '1180', off=60)
-    dim(ox + 760, oy + 140, ox + 760, base_y, '940', off=30, vertical=True)
-    # ---- turret: top view (small)
+        d.ellipse((x - 26, base_y - 14, x + 26, base_y + 10), outline=ln, width=3)   # cracker feet
+        for k in (-1, 0, 1):
+            d.ellipse((x + k * 10 - 2, base_y - 4, x + k * 10 + 2, base_y), fill=ln)
+    block(ox + 225, oy + 290, 70, 100, holes=((20, 30, 8), (48, 70, 10)), lw=4, r=6)         # cheese-cube pivot
+    wedge(ox + 110, oy + 120, 320, 175, holes=((70, 130, 22), (150, 150, 14), (210, 160, 10), (60, 75, 12)))   # body
+    for yb in (oy + 215, oy + 262):                                                     # cheese-stick barrels
+        xs = ox + 110 + 320 * (yb - oy - 120) / 175 - 4                                 # start at the wedge's slope
+        d.rounded_rectangle((xs, yb - 12, ox + 740, yb + 12), radius=12, outline=ln, width=4)
+        for k in range(7):
+            d.ellipse((ox + 470 + k * 38, yb - 4, ox + 476 + k * 38, yb + 2), outline=ln, width=2)
+    block(ox + 20, oy + 190, 90, 90, holes=((25, 30, 10), (60, 60, 14)), lw=4)          # ammo: cheese cube box
+    d.text((ox + 24, oy + 290), 'CUBES', font=M(22), fill=ln)
+    d.arc((ox + 90, oy + 120, ox + 230, oy + 220), 200, 330, fill=ln, width=3)
+    d.ellipse((ox + 300, oy + 60, ox + 380, oy + 120), outline=ln, width=3)              # sensor: an olive
+    d.ellipse((ox + 330, oy + 80, ox + 350, oy + 100), outline=ln, width=3)
+    d.line((ox + 340, oy + 120, ox + 340, oy + 150), fill=ln, width=3)
+    dim(ox + 20, oy + 640, ox + 740, oy + 640, '1 WHEEL', off=60)
+    dim(ox + 760, oy + 120, ox + 760, base_y, '3 WEDGES', off=30, vertical=True)
+    # ---- plan: a cheese wheel seen from above, one wedge missing
     tx, ty = 1060, 470
     d.text((tx - 80, ty - 330), 'B  PLAN', font=C(40), fill=ln)
-    d.ellipse((tx - 110, ty - 110, tx + 110, ty + 110), outline=ln, width=4)
-    d.rounded_rectangle((tx - 80, ty - 60, tx + 80, ty + 60), radius=20, outline=ln, width=4)
-    for xb in (-30, 30):
-        d.rectangle((tx + xb - 9, ty - 230, tx + xb + 9, ty - 60), outline=ln, width=3)
-    for k in range(3):
-        a = math.radians(90 + k * 120)
-        d.line((tx, ty, tx + math.cos(a) * 200, ty + math.sin(a) * 200), fill=ln, width=3)
-    d.arc((tx - 170, ty - 170, tx + 170, ty + 170), 200, 340, fill=ln, width=2)
-    d.text((tx + 60, ty - 200), 'TRAVERSE 140', font=M(24), fill=ln)
-    # ---- helper robot
+    d.ellipse((tx - 150, ty - 150, tx + 150, ty + 150), outline=ln, width=5)
+    d.ellipse((tx - 120, ty - 120, tx + 120, ty + 120), outline=ln, width=2)            # rind
+    d.pieslice((tx - 150, ty - 150, tx + 150, ty + 150), -70, -20, fill=bg, outline=ln, width=5)
+    for (hx, hy, r) in ((-60, -30, 18), (40, 50, 22), (-30, 70, 12), (70, -10, 10), (-80, 40, 9), (10, -80, 14)):
+        d.ellipse((tx + hx - r, ty + hy - r, tx + hx + r, ty + hy + r), outline=ln, width=3)
+    d.text((tx + 40, ty - 205), 'MISSING: 1/8', font=M(24), fill=ln)
+    d.text((tx + 40, ty - 178), '(I ATE IT)', font=M(24), fill=ln)
+    # ---- helper bot: a stack of cheese
     rx, ry = 160, 1150
     d.text((rx, ry - 70), 'C  HELPER BOT', font=C(40), fill=ln)
-    d.rounded_rectangle((rx + 120, ry + 140, rx + 360, ry + 380), radius=24, outline=ln, width=5)   # body
-    d.ellipse((rx + 160, ry, rx + 320, ry + 150), outline=ln, width=5)                               # head
-    for ex in (rx + 205, rx + 275):
-        d.ellipse((ex - 18, ry + 55, ex + 18, ry + 91), outline=ln, width=4)
-    d.line((rx + 240, ry, rx + 240, ry - 50), fill=ln, width=3); d.ellipse((rx + 230, ry - 66, rx + 250, ry - 46), outline=ln, width=3)
-    for sx, x0 in ((-1, rx + 120), (1, rx + 360)):                                                 # arms + claw
-        d.line((x0, ry + 190, x0 + sx * 90, ry + 260), fill=ln, width=5)
-        d.line((x0 + sx * 90, ry + 260, x0 + sx * 110, ry + 330), fill=ln, width=5)
-        d.arc((x0 + sx * 110 - 26, ry + 320, x0 + sx * 110 + 26, ry + 372), 200 if sx < 0 else 300, 60 if sx < 0 else 160, fill=ln, width=4)
-    d.rounded_rectangle((rx + 90, ry + 400, rx + 390, ry + 470), radius=34, outline=ln, width=5)   # tread
-    for k in range(6):
-        d.ellipse((rx + 112 + k * 46, ry + 413, rx + 154 + k * 46, ry + 455), outline=ln, width=3)
-    d.rectangle((rx + 170, ry + 190, rx + 310, ry + 300), outline=ln, width=3)                       # chest panel
-    d.text((rx + 182, ry + 228), 'WRENCH-O', font=M(22), fill=ln)
-    dim(rx + 90, ry + 480, rx + 390, ry + 480, '460', off=50)
+    block(rx + 120, ry + 140, 240, 240, holes=((50, 60, 20), (170, 90, 26), (90, 170, 16), (190, 200, 12)), r=20)   # body: cheese block
+    wedge(rx + 150, ry + 10, 180, 120, holes=((60, 85, 12),), flip=False)                 # head: wedge
+    for ex in (rx + 205, rx + 260):
+        d.ellipse((ex - 14, ry + 75, ex + 14, ry + 103), outline=ln, width=4)            # googly eyes
+        d.ellipse((ex - 4, ry + 87, ex + 4, ry + 95), fill=ln)
+    d.line((rx + 165, ry + 10, rx + 165, ry - 18), fill=ln, width=3)
+    d.ellipse((rx + 155, ry - 38, rx + 175, ry - 18), outline=ln, width=3)
+    for sx, x0 in ((-1, rx + 120), (1, rx + 360)):                                         # string-cheese arms
+        d.line((x0, ry + 190, x0 + sx * 90, ry + 260), fill=ln, width=7)
+        d.line((x0 + sx * 90, ry + 260, x0 + sx * 110, ry + 330), fill=ln, width=7)
+        d.polygon([(x0 + sx * 110, ry + 330), (x0 + sx * 140, ry + 370), (x0 + sx * 90, ry + 375)], outline=ln, width=3)
+    for k in range(6):                                                                     # treads: cheese wheels
+        cx_ = rx + 130 + k * 46
+        d.ellipse((cx_ - 21, ry + 400, cx_ + 21, ry + 442), outline=ln, width=3)
+        d.ellipse((cx_ - 6, ry + 415, cx_ + 6, ry + 427), outline=ln, width=2)
+    d.rounded_rectangle((rx + 95, ry + 392, rx + 385, ry + 450), radius=29, outline=ln, width=4)
+    dim(rx + 95, ry + 470, rx + 385, ry + 470, '1.5 BRIES', off=50)
     # notes
     nx, ny = 760, 1120
-    notes = ['NOTES:', '1. ALL BOLTS M10 UNLESS NOTED', '2. GREASE PIVOT WEEKLY (!!)', '3. BARRELS: SPARE SHOTGUN TUBE',
-             '4. BOT REPAIRS TURRET <3s', '5. DO NOT FEED THE BOT', '   ...CHEESE']
+    notes = ['NOTES:', '1. ALL BOLTS: CHEDDAR', '2. GREASE PIVOT W/ BUTTER (!!)', '3. BARRELS: STRING CHEESE',
+             '4. AMMO: CUBES, DICED 1cm', '5. DO NOT LEAVE IN SUN', '6. HOLES ARE STRUCTURAL', '   (DO NOT FILL)']
     for k, t in enumerate(notes):
         d.text((nx, ny + k * 46), t, font=MB(28) if k == 0 else M(28), fill=ln)
-    d.line((nx, ny + 360, nx + 500, ny + 360), fill=ln, width=2)
-    d.text((nx, ny + 380), 'REV C  -- CHECKED BY: ?', font=M(26), fill=ln)
-    # hand-written-ish arrow + circle
-    d.ellipse((ox + 300, oy + 60, ox + 420, oy + 150), outline=(255, 250, 230), width=3)
-    d.text((ox + 430, oy + 30), 'SENSOR - FIX!', font=C(30), fill=(255, 250, 230))
+    d.line((nx, ny + 390, nx + 500, ny + 390), fill=ln, width=2)
+    d.text((nx, ny + 410), 'REV C  -- CHECKED BY: TIM', font=M(26), fill=ln)
+    d.ellipse((ox + 290, oy + 45, ox + 395, oy + 135), outline=(255, 250, 230), width=3)
+    d.text((ox + 410, oy + 20), 'IT IS AN OLIVE', font=C(30), fill=(255, 250, 230))
     a = np.asarray(im).astype(float)
     rng = np.random.RandomState(7)
     yy, xx = np.mgrid[0:H, 0:W].astype(float)
