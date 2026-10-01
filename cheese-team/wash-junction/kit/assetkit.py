@@ -41,7 +41,7 @@ def _arg(k, d=None):
 
 
 DRAFT = "--draft" in ARGV
-NORENDER = "--norender" in ARGV
+NORENDER = "--render" not in ARGV          # no preview renders unless asked (speed)
 ONLY = _arg("--only")
 TEX_OVERRIDE = int(_arg("--tex", "0"))
 OUT = os.path.abspath(_arg("--out", os.path.join(ROOT, "export")))
@@ -947,7 +947,7 @@ class Asset:
         self._materials(None)
         img = self._new_img("MASK_" + self.name)
         self._route("mask", img)
-        self._bake(ob, "EMIT", img, 14 if self.tex <= 1024 else 12)
+        self._bake(ob, "EMIT", img, 8)
         a = _np_img(img)
         a[..., :3] = _blur(a[..., :3], 1)
         img.pixels.foreach_set(a.ravel())
@@ -957,15 +957,15 @@ class Asset:
     def _bake_textures(self, ob, mask, tag):
         tex = self.tex
         col = self._new_img("COL_" + tag, color=True)
-        self._route("color", col); self._bake(ob, "EMIT", col, 6)
+        self._route("color", col); self._bake(ob, "EMIT", col, 3)
         rm = self._new_img("RM_" + tag)
-        self._route("rm", rm); self._bake(ob, "EMIT", rm, 4)
+        self._route("rm", rm); self._bake(ob, "EMIT", rm, 2)
         alpha = None
         if self.alpha:
             alpha = self._new_img("A_" + tag)
-            self._route("alpha", alpha); self._bake(ob, "EMIT", alpha, 4)
+            self._route("alpha", alpha); self._bake(ob, "EMIT", alpha, 2)
         nrm = self._new_img("NRM_" + tag)
-        self._route("surface", nrm); self._bake(ob, "NORMAL", nrm, 8)
+        self._route("surface", nrm); self._bake(ob, "NORMAL", nrm, 5)
         self._route("surface", None)
         # ---- write PNGs through system python + PIL (optimised, exact colourspace handling)
         tmp = os.path.join(self.dir, "_tmp")

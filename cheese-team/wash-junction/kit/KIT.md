@@ -5,9 +5,10 @@ Everything is Python run headless in Blender 4.0. Each model has a build script 
 
 ```bash
 cd /home/user/Book/cheese-team/wash-junction
-blender -b -P src/my_script.py -- --draft                  # fast: live procedural shading, 640x480 render, no bake
+blender -b -P src/my_script.py -- --draft                  # seconds: assemble + UV + stats report only (no bake, no render)
 blender -b -P src/my_script.py -- --draft --only Name      # only one asset of a multi-asset script
-blender -b -P src/my_script.py                             # FINAL: bake textures + FBX/GLB/LOD1/UCX + preview + report
+blender -b -P src/my_script.py                             # FINAL: bake textures + FBX/GLB/LOD1/UCX + report
+# add --render to either to also write a preview JPG (slow; off by default -- the user asked for no rendering)
 ```
 
 Drafts write `export/<Name>/_draft_<Name>.jpg` and `_draft.report.json` (tris, dims vs target, texel density).
