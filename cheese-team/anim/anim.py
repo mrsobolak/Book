@@ -711,17 +711,16 @@ reload_lever = keyed([
 ])
 
 # ---- SMG: side mag (sticks out the left), left hand swaps it
-reload_smg = keyed([                                                 # gun rolled so the side mag stands on top; left hand swaps it
+reload_smg = keyed([                                                 # gun rolled so the side mag hangs down; left hand swaps it
     (0.00, {}),
-    (0.08, dict(dg=(0.072, -0.034, -0.12))),                                                  # out and down first
-    (0.18, dict(dr=(0, 4, -90), lh=('w', 120, 0, 266), lel=(1, -0.2, -0.3))),
-    (0.26, dict(lh=('w', 120, 0, 326), ease=snap)),                                           # yank it out the top
+    (0.16, dict(dr=(0, 4, 90), lh=('w', 120, 0, 266), lel=(1, -0.2, -0.6))),
+    (0.24, dict(lh=('w', 120, 0, 326), ease=snap)),                                           # yank it down
     (0.40, dict(lh=BELT_L, lel=(0.6, 0.5, -0.3))),
     (0.44, dict()),
-    (0.58, dict(lh=('w', 120, 0, 326), lel=(1, -0.2, -0.3))),
-    (0.66, dict(lh=('w', 120, 0, 266), dg=(0.072, -0.034, -0.126), ease=snap)),               # seat
-    (0.72, dict(dg=(0.072, -0.034, -0.12))),
-    (0.86, dict(lh=None, lel=None, dr=(0, 0, 0), dg=(0, 0, 0))),
+    (0.58, dict(lh=('w', 120, 0, 326), lel=(1, -0.2, -0.6))),
+    (0.66, dict(lh=('w', 120, 0, 266), dg=(0, 0, 0.006), ease=snap)),                          # seat
+    (0.72, dict(dg=(0, 0, 0))),
+    (0.86, dict(lh=None, lel=None, dr=(0, 0, 0))),
     (1.00, {}),
 ])
 
