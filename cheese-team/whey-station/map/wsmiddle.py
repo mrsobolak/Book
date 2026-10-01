@@ -34,7 +34,7 @@ def pump_skid(K, x, z):
 def half(K, T):
     P = wsparts.Parts(K, T)
     # ---------------- Vat Hall (west half; the rotated pass builds the east half): x -30..30, z -24..24, roof 16 ----------------
-    K.slab('Epoxy', -30, -24, 0, 24, -0.3, 0.0, holes=[(-5, -8, 0, 8)])          # hall floor with the pit hole
+    K.slab('Epoxy', -30, -24, 0, 24, -0.3, 0.0, holes=[(-4.8, -8, 0, 8)])          # hall floor with the pit hole
     K.slab('CorrWorn', -30, -24, 0, 24, 16.0, 16.4, holes=[(-22, -6, -8, 6)], col=False)   # roof with skylight
     for x in (-22, -15):
         K.box('Glass', x, 16.05, -6, x + 7, 16.1, 6)
@@ -71,7 +71,7 @@ def half(K, T):
     P.ibeam(0, 10.0, 0, 5.25, w=0.3)
     # brine pit: channel x -5..5, z -16..16 at y -4 (open to the hall for |z|<8)
     K.slab('FloorDmg', -5, -16, 0, 16, -4.3, -4.0)
-    K.wall('Precast', 'z', -16, 16, -5, WT, -4.0, 0.0, holes=[(-16, -12, -4.0, -1.0)])
+    K.wall('Precast', 'z', -16, 16, -5, WT, -4.0, -0.3, holes=[(-16, -12, -4.0, -1.0)])   # top stays under the floor slab (no z-fight strip)
     K.wall('Precast', 'x', -5, 5, 16, WT, -4.0, -0.3)
     K.box('Grate', -4.6, -4.02, -15.6, -0.2, -3.98, 15.6)
     P.stairs(-3.75, 8 - 21 * 0.27, -PI / 2, 2.0, -4.0, 0.0, kind='conc')            # clear of the pit wall

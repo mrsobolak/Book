@@ -71,8 +71,9 @@ class Parts:
             self.K.opening_rec(axis, s0, s1, c, t, y0, y1)
         for f in faces:
             z0 = c + f * t / 2; z1 = z0 + f * dp
-            self._B(axis, s0 - w, y0, z0, s0, y1 + w, z1, mat); self._B(axis, s1, y0, z0, s1 + w, y1 + w, z1, mat)
-            self._B(axis, s0, y1, z0, s1, y1 + w, z1, mat)
+            # posts/head lap 3 cm over the reveal so the wall's bevelled corner never shows as a bright seam
+            self._B(axis, s0 - w, y0, z0, s0 + 0.03, y1 + w, z1, mat); self._B(axis, s1 - 0.03, y0, z0, s1 + w, y1 + w, z1, mat)
+            self._B(axis, s0 + 0.03, y1 - 0.03, z0, s1 - 0.03, y1 + w, z1, mat)
             if sill:
                 self._B(axis, s0 - w * 1.5, y0 - 0.07, z0, s1 + w * 1.5, y0, z1 + f * 0.06, sill_mat)
         self._B(axis, s0, y0, c - t / 2, s0 + 0.02, y1, c + t / 2, mat)
