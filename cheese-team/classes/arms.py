@@ -5,8 +5,10 @@
 import bpy
 from mathutils import Vector
 
-KU = 1.65          # upper arm length factor  (0.17 -> 0.28 m)
-KL = 1.65          # lower arm length factor  (0.14 -> 0.23 m)
+KU = 2.2           # upper arm length factor  (0.17 -> 0.374 m)
+KL = 2.2           # lower arm length factor  (0.14 -> 0.308 m)
+DY = -0.11         # shoulders moved forward to the front corners of the wedge (m): long guns are held in front of a
+                   # forward-facing body, and the support arm has to reach across the front
 
 
 def _stretch(p, h, t, k):
@@ -16,7 +18,7 @@ def _stretch(p, h, t, k):
     return u * ((k - 1.0) * max(0.0, min(L, a)))
 
 
-def lengthen(ku=KU, kl=KL):
+def lengthen(ku=KU, kl=KL, dy=DY):
     arm = bpy.data.objects['Armature']; body = bpy.data.objects['SK_CheeseTP']
     if arm.get('arm_k'):
         return
@@ -29,6 +31,7 @@ def lengthen(ku=KU, kl=KL):
         d1 = (T1 - H1) * (ku - 1.0)                                   # elbow shift
         d2 = d1 + (T2 - T1) * (kl - 1.0)                             # wrist shift
         plan[s] = (H1, T1, T2, d1, d2)
+    shift = body.matrix_world.inverted().to_3x3() @ Vector((0.0, dy, 0.0))   # whole arm forward (body mesh space)
     # ---- mesh: blend the per-bone displacements by the skin weights
     gi = {g.index: g.name for g in body.vertex_groups}
     for v in body.data.vertices:
@@ -47,7 +50,8 @@ def lengthen(ku=KU, kl=KL):
                 else:
                     disp += d2 * w
         if tot > 0.0:
-            v.co = v.co + disp / tot
+            armw = sum(g.weight for g in v.groups if gi.get(g.group, '')[:-2] in ('upperarm', 'lowerarm', 'hand'))
+            v.co = v.co + disp / tot + shift * (armw / tot)
     body.data.update()
     # ---- bones (edit in armature space; descendants of the lower arm ride the wrist)
     B2A = A2B.inverted()
@@ -64,12 +68,14 @@ def lengthen(ku=KU, kl=KL):
         for s in ('l', 'r'):
             H1, T1, T2, d1, d2 = plan[s]
             e1 = B2A.to_3x3() @ d1; e2 = B2A.to_3x3() @ d2
+            sh = arm.matrix_world.inverted().to_3x3() @ Vector((0.0, dy, 0.0))
             up = eb['upperarm_' + s]; lo = eb['lowerarm_' + s]
-            up.tail = up.tail + e1
-            lo.head = lo.head + e1; lo.tail = lo.tail + e2
+            up.head = up.head + sh
+            up.tail = up.tail + e1 + sh
+            lo.head = lo.head + e1 + sh; lo.tail = lo.tail + e2 + sh
             for c in lo.children_recursive:
-                c.head = c.head + e2; c.tail = c.tail + e2
+                c.head = c.head + e2 + sh; c.tail = c.tail + e2 + sh
         bpy.ops.object.mode_set(mode='OBJECT')
     arm.select_set(False)
-    arm['arm_k'] = (ku, kl)
+    arm['arm_k'] = (ku, kl, dy)
     vw.update()
