@@ -794,6 +794,11 @@ LEVER_DN = ('w', 6, -100, -30)
 fire_lever = combo(kick(32, 0.028, 0.012, 10, 1.0, decay=2.8, body=2.5),
                    keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.3, 0.0))),
                           (0.62, dict(rh='grip', dr=(0, 0, 0))), (0.80, dict(rel=REL_T)), (1.0, {})]))
+# shouldered (Aim): the stock is against the face, so the kick goes into the whole body rocking back, not the gun
+aimfire_bolt = combo(kick(40, 0.0, 0.004, 7, 1.0, decay=3.0, body=5.0), keyed([(0.0, {}), (0.26, {})] + _bolt(0.26, 0.92) + [(1.0, {})]))
+aimfire_lever = combo(kick(32, 0.0, 0.004, 8, 1.0, decay=2.8, body=4.5),
+                      keyed([(0.0, {}), (0.30, {}), (0.46, dict(rh=LEVER_DN, dr=(0, -4, 0), rel=(-1, 0.3, 0.0))),
+                             (0.62, dict(rh='grip', dr=(0, 0, 0))), (0.80, dict(rel=REL_T)), (1.0, {})]))
 GATE = ('w', 14, -16, -62)
 reload_lever = keyed([
     (0.00, {}),
@@ -869,10 +874,10 @@ WDEF = {
     'MachinePistol': dict(hold='pistol', fire=(18, kick(18, 0.012, 0.006, 6, 1.0, decay=1.6, shots=(0, 3, 6)), False),
                           reload=(60, reload_mpistol)),
     'SawedOff':  dict(hold='dual', dual=True, fire=(30, fire_dual, False), reload=(66, reload_dual)),
-    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -27, 0)), aim=Vector((-0.07, -0.39, 0.67)),
+    'BoltRifle': dict(hold='rifle', over=dict(support=(180, -27, 0)), aim=Vector((-0.07, -0.39, 0.67)), aimfire=aimfire_bolt,
                       fire=(40, fire_bolt, False), reload=(90, reload_bolt)),
     'LeverRifle': dict(hold='rifle', over=dict(grip=Vector((-0.125, -0.35, 0.50)), rot=dict(yaw=0, pitch=0, roll=0),
-                                               support=(160, -40, 0)), aim=Vector((-0.07, -0.37, 0.70)),
+                                               support=(160, -40, 0)), aim=Vector((-0.07, -0.37, 0.70)), aimfire=aimfire_lever,
                        fire=(32, fire_lever, False), reload=(84, reload_lever)),
     'SMG':       dict(hold='rifle', over=dict(grip=Vector((-0.10, -0.425, 0.52)), rot=dict(yaw=0, pitch=-5, roll=0),
                                               support=(240, -40, 0)),
@@ -939,7 +944,7 @@ def bake_set(rig, wname, only=None, prefix=None):
         if want('Aim'):
             out.append(bake(rig, prefix, Ha, 'Aim', 60))
         if want('AimFire'):
-            out.append(bake(rig, prefix, Ha, 'AimFire', n, extra=fn, loop=False))
+            out.append(bake(rig, prefix, Ha, 'AimFire', n, extra=d.get('aimfire', fn), loop=False))
     return out
 
 
