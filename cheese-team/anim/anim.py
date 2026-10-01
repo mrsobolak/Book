@@ -322,21 +322,22 @@ def fire_revolver(rig, t):
 
 
 # two-handed: swing out, slap the ejector rod muzzle-up, tip muzzle-down, thumb rounds in from the belt, close
-_UP = dict(dg=(0.14, 0.07, 0.06), dr=(38, 62, -62))
-_DN = dict(dg=(0.15, 0.08, 0.02), dr=(40, -38, -75))
+_UP = dict(dg=(0.15, 0.03, -0.07), dr=(38, 62, -62))
+_DN = dict(dg=(0.16, 0.04, -0.11), dr=(40, -38, -75))
+LDN = (0.6, -0.2, -1)                                   # left elbow out + down: forearm comes up from below
 reload_revolver = keyed([
     (0.00, {}),
-    (0.10, dict(_UP, lh=('w', 150, -50, 8), lel=(1, 0, -1))),                                 # muzzle up, palm under rod
-    (0.15, dict(dg=(0.14, 0.07, 0.072), lh=('w', 95, -50, 8), ease=snap)),                  # slap: shells out
-    (0.20, dict(dg=(0.14, 0.07, 0.06), lh=('w', 140, -58, 20))),
-    (0.30, dict(_DN, lh=Vector((0.30, -0.10, 0.47)), lel=(1, 0.3, -0.3))),                   # tip down, hand to belt
+    (0.10, dict(_UP, lh=('w', 150, -50, 8), lel=LDN)),                                        # muzzle up, palm under rod
+    (0.15, dict(dg=(0.15, 0.03, -0.058), lh=('w', 95, -50, 8), ease=snap)),                 # slap: shells out
+    (0.20, dict(dg=(0.15, 0.03, -0.07), lh=('w', 140, -58, 20))),
+    (0.30, dict(_DN, lh=Vector((0.30, -0.10, 0.40)), lel=(0.6, 0.4, -0.4))),                 # tip down, hand to belt
     (0.36, dict()),
-    (0.46, dict(lh=('w', 0, 8, 58), lel=(1, -0.2, -0.8))),                                    # over the open cylinder
-    (0.51, dict(lh=('w', 4, 0, 46), dg=(0.15, 0.08, 0.014))),                               # thumb in
-    (0.56, dict(lh=('w', 0, 8, 58), dg=(0.15, 0.08, 0.02))),
-    (0.61, dict(lh=('w', 4, 0, 46), dg=(0.15, 0.08, 0.014))),                               # thumb in
-    (0.66, dict(lh=('w', 20, -10, 62), dg=(0.15, 0.08, 0.02))),
-    (0.72, dict(dg=(0.13, 0.07, 0.04), dr=(30, 5, -10), lh=('w', 20, -10, 30), ease=snap)),   # swipe it shut
+    (0.46, dict(lh=('w', 0, 8, 58), lel=LDN)),                                                # over the open cylinder
+    (0.51, dict(lh=('w', 4, 0, 46), dg=(0.16, 0.04, -0.116))),                              # thumb in
+    (0.56, dict(lh=('w', 0, 8, 58), dg=(0.16, 0.04, -0.11))),
+    (0.61, dict(lh=('w', 4, 0, 46), dg=(0.16, 0.04, -0.116))),                              # thumb in
+    (0.66, dict(lh=('w', 20, -10, 62), dg=(0.16, 0.04, -0.11))),
+    (0.72, dict(dg=(0.13, 0.03, -0.08), dr=(30, 5, -10), lh=('w', 20, -10, 30), ease=snap)),  # swipe it shut
     (0.82, dict(lh='rest', lel=(0.4, 1, -0.1))),
     (1.00, dict(dg=(0, 0, 0), dr=(0, 0, 0))),
 ])
