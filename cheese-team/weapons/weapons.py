@@ -541,9 +541,11 @@ def tube_sticker(name, img, R, u0, a0_deg, w, h, rot_deg=0.0, axis_v=0.0, circle
                 faces.append((q, q + nv + 1, q + nv + 2, q + 1))
     bm = wk.bm_from(verts, faces)
     uvl = bm.loops.layers.uv.new('UVMap'); bm.verts.index_update()
+    fu = math.cos(a0) > 0                     # left side: u runs right-to-left on screen; right side: arc runs downward
     for f in bm.faces:
         for lp in f.loops:
-            lp[uvl].uv = uvs[lp.vert.index]
+            uu, vv = uvs[lp.vert.index]
+            lp[uvl].uv = ((1 - uu) if fu else uu, vv if fu else (1 - vv))
     mat = wk.image_mat('M_' + name, img, rough=0.32, bump=0.03)
     return make(name, bm, mat, solid=0.0003)
 
@@ -598,9 +600,9 @@ def rocketlauncher():
     mb = lathe([(R - 3.4, 975.0), (R + 4.0, 975.0), (R + 5.0, 978.0), (R + 5.0, 1004.0), (R + 3.5, 1008.0), (R - 3.4, 1008.0),
                 (R - 3.4, 975.0)], n=96, cap0=False, cap1=False)
     make('Rl_MuzzleBand', mb, steel, bevel=0.0)
-    vf = lathe([(R + 3.0, 22.0), (R + 4.0, 18.0), (R + 4.0, 0.0), (R + 2.0, -10.0), (R + 6.0, -40.0), (R + 18.0, -95.0),
-                (R + 30.0, -128.0), (R + 31.5, -132.0), (R + 29.0, -134.0), (R + 26.0, -128.0), (R + 14.5, -95.0), (R + 2.5, -40.0),
-                (R - 3.4, -10.0), (R - 3.4, 22.0), (R + 3.0, 22.0)], n=96, cap0=False, cap1=False)
+    vf = lathe([(R + 3.0, 22.0), (R + 4.0, 18.0), (R + 4.0, 0.0), (R + 2.0, -12.0), (R + 3.0, -60.0), (R + 9.0, -120.0),
+                (R + 17.0, -160.0), (R + 21.0, -168.0), (R + 21.5, -173.0), (R + 19.0, -175.0), (R + 16.5, -168.0), (R + 7.0, -120.0),
+                (R + 0.5, -60.0), (R - 3.4, -12.0), (R - 3.4, 22.0), (R + 3.0, 22.0)], n=96, cap0=False, cap1=False)
     make('Rl_Venturi', vf, olive)
     # ---- clamp rings with bolts (grip + sight mounts)
     for (u, nm) in ((350.0, 'A'), (580.0, 'B')):
