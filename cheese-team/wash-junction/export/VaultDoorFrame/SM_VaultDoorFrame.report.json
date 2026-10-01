@@ -1,0 +1,119 @@
+{
+ "name": "SM_VaultDoorFrame",
+ "draft": false,
+ "tris": 2862,
+ "budget": 3000,
+ "within_budget": true,
+ "lod1_tris": null,
+ "target_xyz": [
+  0.5,
+  4.7,
+  4.7
+ ],
+ "dims_xyz": [
+  0.517,
+  4.6903,
+  4.6937
+ ],
+ "dims_dev": [
+  0.034,
+  -0.002,
+  -0.001
+ ],
+ "pivot": "bottom",
+ "pivot_shift": [
+  -0.0025,
+  -0.0005,
+  2.35
+ ],
+ "bbox_min": [
+  -0.2585,
+  -2.3452,
+  0.0
+ ],
+ "bbox_max": [
+  0.2585,
+  2.3452,
+  4.6937
+ ],
+ "texture": 2048,
+ "px_per_m": 324.9,
+ "uv_coverage": 0.689,
+ "area_m2": 27.357,
+ "ucx": 18,
+ "slots": [
+  "M_VaultDoorFrame"
+ ],
+ "materials": {
+  "paint_575677": {
+   "recipe": "paint",
+   "slot": "base"
+  },
+  "steel_c31636": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "brass_b25db5": {
+   "recipe": "brass",
+   "slot": "base"
+  },
+  "steel_c7d95d": {
+   "recipe": "steel",
+   "slot": "base"
+  },
+  "iron_05209a": {
+   "recipe": "iron",
+   "slot": "base"
+  },
+  "diamond_cb725b": {
+   "recipe": "diamond",
+   "slot": "base"
+  },
+  "paint_0b7fd6": {
+   "recipe": "paint",
+   "slot": "base"
+  }
+ },
+ "ctx": {
+  "edge_r": 0.0371,
+  "cav_d": 0.1084,
+  "ao_d": 0.8858,
+  "bevel_r": 0.0068
+ },
+ "note": "Vault door frame ring, bore axis along X, front (hinge side) +X. Walk-through bore 4.0 m with a flat tread-plate threshold. Hinge pin axis (vertical) at x=+0.15, y=-2.00 from the ring centre.",
+ "seconds": 181.7,
+ "log": [
+  [
+   "bake",
+   "MASK_VaultDoorFrame",
+   64.9
+  ],
+  [
+   "bake",
+   "COL_VaultDoorFrame",
+   9.5
+  ],
+  [
+   "bake",
+   "RM_VaultDoorFrame",
+   5.6
+  ],
+  [
+   "bake",
+   "NRM_VaultDoorFrame",
+   49.1
+  ],
+  [
+   "textures",
+   "VaultDoorFrame"
+  ]
+ ],
+ "files": [
+  "SM_VaultDoorFrame.fbx",
+  "SM_VaultDoorFrame.glb",
+  "T_VaultDoorFrame_BaseColor.png",
+  "T_VaultDoorFrame_Normal.gl.png",
+  "T_VaultDoorFrame_Normal.png",
+  "T_VaultDoorFrame_ORM.png"
+ ]
+}
