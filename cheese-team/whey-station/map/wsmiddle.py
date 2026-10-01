@@ -65,7 +65,7 @@ def half(K, T):
     for x in (-24, -16, -3.5, 4.5, 16, 24):
         P.ibeam(x, 19.1, 0, 5.45, w=0.28)
     for x in (-26, -20, -14, -8):
-        K.lamp_prop(x, 5.45, 21.3, color='#fff2dc', intensity=1.2, dist=12)          # lights under the catwalk
+        K.light(x, 5.0, 21.3, '#fff2dc', 1.2, 12)                                     # light under the catwalk (no fixture)
     P.stairs(-8, 18.8 - 32 * 0.27, -PI / 2, 2.0, 0.0, 6.0, kind='steel')           # hall floor -> catwalk
     # bridge across the pit (x -1.5..1.5), north half z 0..18.8: open rails, team fascia
     K.box('TF_Grate', -1.5, 5.8, 0, 1.5, 6.0, 18.8, col=True, bevel=False)
