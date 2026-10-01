@@ -1020,7 +1020,7 @@ def smg():
     blk = grease_mat('g', wk.steel('M_SmgBody', base='#161719', bare='#9fa2a7', rough=0.5, wear=1.2, scratch=1.4, edge_gain=8.0, tint_var=0.08))
     blk_dk = wk.steel('M_SmgDark', base='#0f1011', bare='#8d9095', rough=0.45, wear=0.8, scratch=0.8, edge_gain=8.0)
     orange = grease_mat('g2', wk.paint('M_SmgOrange', '#d4510a', under='#1a1a1a', under_metal=0.0, rough=0.55, wear=1.6, scuff=1.3, col_var=0.12))
-    zipm = wk.plastic('M_SmgZipTie', '#121212', rough=0.4)
+    zipm = wk.plastic('M_SmgZipTie', '#e8e2cf', rough=0.4)
     # ---- tubular receiver with cocking slot, rear cap, front nut
     R = 19.0
     rcv = make('Smg_Receiver', lathe([(R, -40.0), (R, 230.0)], n=64, axis_v=0.0), blk)
@@ -1072,7 +1072,7 @@ def smg():
             (0, R + 46.5), (-12.6, R + 44), (-12.6, R + 30), (-15.6, R + 26), (-15.6, R + 4), (-R - 1.6, 0), (-R * 0.72, -R * 0.72 - 1.0)]
     pts = [W(ZU, v, x) for (v, x) in loop]
     P = wk.spline(pts + pts[:3], 6)[: len(pts) * 6]
-    make('Smg_ZipTie', tube(P, 0.0019, n=8, flat=0.45, closed=True, up=Vector((0, 1, 0))), zipm)
+    make('Smg_ZipTie', tube(P, 0.0024, n=8, flat=0.42, closed=True, up=Vector((0, 1, 0))), zipm)
     make('Smg_ZipHead', box(W(ZU, 15.6 + 3.0, R + 15), (0.0060, 0.0080, 0.0060)), zipm, bevel=0.0008)
     make('Smg_ZipTail', tube([W(ZU, 18.6, R + 18), W(ZU - 1, 26, R + 21), W(ZU - 2, 33, R + 26)], 0.0012, n=6, flat=0.45), zipm)
     # ---- trigger group + orange-painted pistol grip
@@ -1102,6 +1102,93 @@ def smg():
 
 
 BUILDERS['SMG'] = smg
+
+
+# ================================================================== 10. BLUEPRINT (Mechanic, secondary)
+def blueprint():
+    alu = wk.steel('M_BpAlu', base='#b9bcc0', bare='#e2e4e7', rough=0.38, wear=0.6, scratch=1.8, edge_gain=8.0, tint_var=0.05)
+    clipm = wk.steel('M_BpClip', base='#a7aaae', bare='#d5d7da', rough=0.25, wear=0.8, scratch=0.8, edge_gain=8.0)
+    paper = wk.image_mat('M_BpPaper', 'blueprint.png', rough=0.82, bump=0.0)
+    wood_p = wk.wood('M_BpPencil', light='#f0b52a', dark='#d89a18', rough=0.5, ring=200.0, axis='Y', grain=0.1, wear=0.3)
+    graphite = wk.plastic('M_BpGraphite', '#262628', rough=0.35)
+    eraser = wk.plastic('M_BpEraser', '#e6909a', rough=0.7)
+    ferrule = wk.steel('M_BpFerrule', base='#9aa0a4', bare='#c8ccd0', rough=0.3, wear=0.3, scratch=0.5)
+    # clipboard lies in the X-Z plane (facing -Y), held like a book: 230 x 320 mm aluminium board
+    Wd, Ht = 230.0, 320.0
+    bd = rounded([(-Wd / 2, -Ht / 2, 8), (Wd / 2, -Ht / 2, 8), (Wd / 2, Ht / 2, 8), (-Wd / 2, Ht / 2, 8)], n=8)
+    # profile() extrudes across x; build in (u=x_board, v=z) then rotate so the board faces -Y
+    board = make('Bp_Board', profile(bd, -1.0, 1.0), alu, bevel=0.0006)
+    R90 = Matrix.Rotation(-PI / 2, 4, 'Z')
+    board.data.transform(R90)
+    # paper: slightly smaller, bowed, curled corners (bottom-right corner most)
+    nu, nv = 40, 56
+    pw, ph = 216.0, 290.0
+    verts = []; uvs = []; faces = []
+    for i in range(nu + 1):
+        for j in range(nv + 1):
+            s = i / nu; t = j / nv
+            x = (s - 0.5) * pw; z = (t - 0.5) * ph - 12.0
+            lift = 1.2 + 0.6 * math.sin(PI * s) * math.sin(PI * t)
+            for (cs, ct, amp) in ((1, 0, 22.0), (0, 0, 9.0), (1, 1, 5.0), (0, 1, 3.0)):
+                d = math.hypot((s - cs) / 0.28, (t - ct) / 0.28)
+                if d < 1:
+                    lift += amp * (1 - d) ** 2.2
+            lift += 0.5 * math.sin(t * 7 + 1.2) * (1 - t)
+            verts.append(Vector((x * MM, -(lift + 1.0) * MM, z * MM))); uvs.append((s, t))
+    for i in range(nu):
+        for j in range(nv):
+            q = i * (nv + 1) + j
+            faces.append((q, q + nv + 1, q + nv + 2, q + 1))
+    bm = wk.bm_from(verts, faces)
+    uvl = bm.loops.layers.uv.new('UVMap'); bm.verts.index_update()
+    for f in bm.faces:
+        for lp in f.loops:
+            lp[uvl].uv = uvs[lp.vert.index]
+    make('Bp_Paper', bm, paper, solid=0.0003)
+    # a couple of under-sheets peeking out
+    for k in range(2):
+        v2 = [Vector((v.x + (k + 1) * 0.0012, v.y + (k + 1) * 0.0003, v.z - (k + 1) * 0.0018)) for v in verts]
+        bm2 = wk.bm_from(v2, faces)
+        uvl = bm2.loops.layers.uv.new('UVMap'); bm2.verts.index_update()
+        for f in bm2.faces:
+            for lp in f.loops:
+                lp[uvl].uv = uvs[lp.vert.index]
+        make('Bp_Under%d' % k, bm2, paper, solid=0.0002)
+    # spring clip at the top: base plate, curved jaw, lever loop, rivets
+    cz = Ht / 2 - 18.0
+    bp = rounded([(-50, cz - 14, 4), (50, cz - 14, 4), (50, cz + 12, 6), (-50, cz + 12, 6)], n=6)
+    base = make('Bp_ClipBase', profile(bp, -1.8, 0.0), clipm, bevel=0.0005)
+    base.data.transform(R90 @ Matrix.Translation((-0.0010, 0, 0)))
+    jw = rounded([(-48, -10, 3), (48, -10, 3), (44, 10, 8), (-44, 10, 8)], n=6)
+    jo = make('Bp_ClipJaw', profile(jw, -1.2, 1.2), clipm, bevel=0.0004)
+    jo.data.transform(Matrix.Translation((0, -0.0058, (cz - 6) * MM)) @ Matrix.Rotation(math.radians(-18), 4, 'X') @ Matrix.Rotation(-PI / 2, 4, 'Z') @
+                      Matrix.Rotation(PI / 2, 4, 'Y'))
+    loop = [Vector((x * MM, -y * MM, (cz + z) * MM)) for (x, y, z) in ((-26, 3, 6), (-26, 14, 20), (-18, 20, 32), (0, 22, 35), (18, 20, 32),
+                                                                        (26, 14, 20), (26, 3, 6))]
+    make('Bp_ClipLever', tube(wk.spline(loop, 6), 0.0024, n=12), clipm)
+    make('Bp_ClipBarrel', cyl(Vector((-32 * MM, -6 * MM, (cz + 4) * MM)), Vector((32 * MM, -6 * MM, (cz + 4) * MM)), 0.0042, n=24), clipm)
+    for x in (-40, 40):
+        make('Bp_Rivet', sphere(Vector((x * MM, -1.9 * MM, (cz + 6) * MM)), 0.0030, seg=16, rings=8, scale=(1, 0.4, 1)), clipm)
+    # pencil clipped under the clip, angled
+    a = math.radians(-8)
+    d = Vector((math.cos(a), 0, math.sin(a)))
+    p0 = Vector((-70 * MM, -9 * MM, (cz - 12) * MM))
+    hexr = 3.6
+    pen = lathe([(hexr, 0.0), (hexr, 150.0)], n=6, phase=PI / 6)
+    po = make('Bp_Pencil', pen, wood_p, bevel=0.0003, angle=40)
+    tip = lathe([(hexr * 0.95, 150.0), (1.0, 166.0), (0.9, 167.0)], n=24)
+    to = make('Bp_PencilWood', tip, wk.wood('M_BpPencilWood', light='#e7c79a', dark='#cfa676', rough=0.6, ring=300, axis='Y', grain=0.2))
+    lead = make('Bp_PencilLead', lathe([(1.15, 162.0), (0.0, 169.0)], n=16), graphite)
+    fe = make('Bp_Ferrule', lathe([(hexr + 0.3, -12.0), (hexr + 0.3, 1.0)], n=32), ferrule)
+    er = make('Bp_Eraser', lathe([(hexr - 0.1, -22.0), (hexr, -12.0)], n=32, cap0=True), eraser)
+    M = Matrix.Translation(p0) @ Matrix.Rotation(a, 4, 'Y') @ Matrix.Rotation(PI / 2, 4, 'Z')
+    for o in (po, to, lead, fe, er):
+        o.data.transform(M)
+    PIVOT['Blueprint'] = (0.0, 0.0)
+    return 'Blueprint'
+
+
+BUILDERS['Blueprint'] = blueprint
 
 
 def build(name):
