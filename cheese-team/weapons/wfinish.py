@@ -249,6 +249,8 @@ def finish(name, export_root, res=2048, logp=None):
         bpy.ops.export_scene.fbx(filepath=os.path.join(outd, '%s.fbx' % name), use_selection=True, object_types={'MESH'},
                                  path_mode='COPY', embed_textures=True, apply_unit_scale=True, mesh_smooth_type='FACE')
         bpy.ops.export_scene.gltf(filepath=os.path.join(outd, '%s.glb' % name), export_format='GLB', use_selection=True)
+    import json
+    json.dump({'pivot_mm': list(weapons.PIVOT.get(name, (0.0, 0.0)))}, open(os.path.join(outd, '%s_pivot.json' % name), 'w'))
     log('  %s: exported (%d tris)' % (name, sum(len(p.vertices) - 2 for p in me.polygons)), logp)
     preview(os.path.join(outd, '%s_preview.png' % name))
     log('%s done' % name, logp)
@@ -311,3 +313,8 @@ def lineup(export_root, path):
     with bpy.context.temp_override(**ov()):
         bpy.ops.render.render(write_still=True)
     bpy.ops.wm.save_as_mainfile(filepath=os.path.join(export_root, 'WeaponLineup.blend'))
+
+
+def finish_all(export_root, names=None, logp=None):
+    for n in (names or WEAPONS):
+        finish(n, export_root, logp=logp)
