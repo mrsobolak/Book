@@ -251,13 +251,12 @@ def finish(cls, export_root, res=2048, logp=None):
     decals = [o for o in obs if uses_alpha(o)]
     solid = [o for o in obs if o not in decals]
     accm = join(solid, 'SK_%s_Accessories' % cls)
-    uvl = smart_uv(accm)
-    me = accm.data
-    # render with the original UVs, bake into BakeUV
-    render_uv = next((l for l in me.uv_layers if l.name != 'BakeUV' and l.name == 'UVMap'), None) or \
-        next((l for l in me.uv_layers if l.name != 'BakeUV'), uvl)
-    render_uv.active_render = True
-    me.uv_layers.active = uvl
+    smart_uv(accm)
+    me = accm.data                                   # (layer references go stale across edit mode: look up by name)
+    # render (sample the pattern textures) with the original UVs, bake into BakeUV
+    rname = 'UVMap' if 'UVMap' in me.uv_layers else next((l.name for l in me.uv_layers if l.name != 'BakeUV'), 'BakeUV')
+    me.uv_layers[rname].active_render = True
+    me.uv_layers.active = me.uv_layers['BakeUV']
     imgs = {
         'basecolor': new_img('T_%s_Acc_BaseColor' % cls, res, (0.5, 0.5, 0.5, 1), False),
         'roughness': new_img('T_%s_Acc_Roughness' % cls, res, (0.6, 0.6, 0.6, 1), True),
