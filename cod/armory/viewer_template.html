@@ -1,0 +1,547 @@
+<title>Armory Weapon Kit</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Saira+Condensed:wght@500;600;700;800&family=Saira:wght@400;500&family=JetBrains+Mono:wght@400;500&display=swap">
+<style>
+  /* Layout: loadout screen. Weapon list | 3D stage | stats; camo strip under the stage. One dark world on purpose. */
+  :root {
+    --bg: #0b0d0e;
+    --panel: #121517;
+    --panel-2: #181c1f;
+    --line: #262c30;
+    --fg: #e8ebe9;
+    --muted: #87908c;
+    --accent: #e3c14b;
+    --good: #7ccf68;
+    --f-display: "Saira Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --f-body: "Saira", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    --f-mono: "JetBrains Mono", ui-monospace, "SFMono-Regular", Menlo, Consolas, monospace;
+    color-scheme: dark;
+  }
+  html, body { background: var(--bg); color: var(--fg); }
+  [hidden] { display: none !important; }
+  body { font-family: var(--f-body); font-size: 14px; line-height: 1.5; padding: 0 16px; }
+  .wrap { max-width: 1520px; margin: 0 auto; padding-block: 18px 48px; display: grid; gap: 16px; }
+
+  header.top { display: flex; flex-wrap: wrap; align-items: flex-end; justify-content: space-between; gap: 8px 24px;
+    border-bottom: 1px solid var(--line); padding-bottom: 12px; }
+  .crumb { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .crumb b { color: var(--accent); font-weight: 700; }
+  h1 { margin: 2px 0 0; font-family: var(--f-display); font-weight: 800; font-size: clamp(34px, 5vw, 60px); line-height: .95;
+    letter-spacing: .02em; text-transform: uppercase; text-wrap: balance; }
+  h1 small { display: block; font-size: 15px; font-weight: 600; letter-spacing: .28em; color: var(--muted); margin-top: 6px; }
+  .kit { font-family: var(--f-display); letter-spacing: .14em; text-transform: uppercase; color: var(--muted); font-size: 14px; }
+  .kit b { color: var(--fg); font-size: 22px; font-weight: 800; margin-right: 4px; }
+
+  .bench { display: grid; grid-template-columns: 300px minmax(0, 1fr) 300px; gap: 16px; align-items: start; }
+  @media (max-width: 1200px) { .bench { grid-template-columns: minmax(0, 1fr) minmax(0, 1fr); } .stage-col { grid-column: 1 / -1; order: -1; } }
+  @media (max-width: 720px) { .bench { grid-template-columns: minmax(0, 1fr); } }
+
+  .panel { background: var(--panel); border: 1px solid var(--line); min-width: 0; }
+  .panel h2 { margin: 0; padding: 10px 14px; font-family: var(--f-display); font-weight: 700; font-size: 14px; letter-spacing: .22em;
+    text-transform: uppercase; color: var(--muted); border-bottom: 1px solid var(--line); display: flex; justify-content: space-between; }
+  .panel h2 span { color: var(--accent); }
+
+  .group-label { padding: 10px 14px 4px; font-family: var(--f-display); font-size: 12px; font-weight: 600; letter-spacing: .22em; text-transform: uppercase; color: var(--muted); }
+  .list { display: grid; gap: 4px; padding: 0 8px 8px; }
+  @media (max-width: 1200px) and (min-width: 721px) { .list { grid-template-columns: 1fr 1fr; } }
+  .wpn { display: grid; grid-template-columns: 112px minmax(0, 1fr); align-items: center; gap: 10px; width: 100%; text-align: left; cursor: pointer;
+    background: var(--panel-2); border: 1px solid transparent; color: var(--fg); padding: 4px 10px 4px 4px; min-height: 52px; }
+  .wpn:hover { border-color: #3a4247; }
+  .wpn[aria-pressed="true"] { border-color: var(--accent); box-shadow: inset 3px 0 0 var(--accent); }
+  .wpn:focus-visible, .chip:focus-visible, .camo:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+  .wpn .th { width: 112px; height: 40px; display: block; object-fit: contain; filter: brightness(1.9) contrast(1.05); }
+  .wpn .th.empty { background: linear-gradient(90deg, transparent, #1f2427, transparent); }
+  .wpn b { display: block; font-family: var(--f-display); font-weight: 700; font-size: 16px; letter-spacing: .04em; text-transform: uppercase; line-height: 1.1; }
+  .wpn small { display: block; font-family: var(--f-mono); font-size: 11px; color: var(--muted); }
+
+  .stage-col { min-width: 0; display: grid; gap: 10px; }
+  .stage { position: relative; height: clamp(420px, 62vh, 760px); max-width: 100%; overflow: hidden; border: 1px solid var(--line);
+    background: radial-gradient(55% 45% at 50% 45%, #3a4247 0%, #1a1f22 50%, #07090a 100%); }
+  @media (max-width: 720px) { .stage { height: auto; aspect-ratio: 4 / 3.4; } }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .stage canvas:active { cursor: grabbing; }
+  .stage .scan { position: absolute; inset: 0; pointer-events: none;
+    background: repeating-linear-gradient(0deg, transparent 0 3px, rgba(255,255,255,.012) 3px 4px),
+                radial-gradient(120% 100% at 50% 50%, transparent 60%, rgba(0,0,0,.55) 100%); }
+  .stage .corner { position: absolute; font-family: var(--f-mono); font-size: 11px; color: var(--muted); pointer-events: none; letter-spacing: .04em; }
+  .stage .tl { top: 10px; left: 12px; } .stage .bl { bottom: 10px; left: 12px; } .stage .br { bottom: 10px; right: 12px; text-align: right; }
+  @media (max-width: 560px) { .stage .tl, .stage .br { display: none; } }
+  .stage .tools { position: absolute; top: 10px; right: 10px; display: flex; gap: 6px; flex-wrap: wrap; justify-content: flex-end; }
+  .stage .status { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-display); letter-spacing: .3em;
+    text-transform: uppercase; color: var(--muted); pointer-events: none; }
+  .chip { font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .14em; text-transform: uppercase; cursor: pointer;
+    color: var(--fg); background: rgba(12,14,15,.8); border: 1px solid var(--line); padding: 5px 10px; white-space: nowrap; }
+  .chip:hover { border-color: #3a4247; }
+  .chip[aria-pressed="true"] { border-color: var(--accent); color: var(--accent); }
+
+  .camos { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+  .camos > span { font-family: var(--f-display); font-size: 12px; font-weight: 600; letter-spacing: .2em; text-transform: uppercase; color: var(--muted); margin-right: 4px; }
+  .camo { display: flex; align-items: center; gap: 8px; cursor: pointer; background: var(--panel); border: 1px solid var(--line); color: var(--fg);
+    padding: 5px 10px 5px 5px; font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .1em; text-transform: uppercase; }
+  .camo i { width: 26px; height: 26px; display: block; border: 1px solid #0008; }
+  .camo[aria-pressed="true"] { border-color: var(--accent); }
+
+  .desc { padding: 12px 14px; color: #c9cfcc; border-bottom: 1px solid var(--line); font-size: 13.5px; }
+  .stat { padding: 8px 14px; border-bottom: 1px solid var(--line); }
+  .stat-top { display: flex; justify-content: space-between; font-family: var(--f-display); font-weight: 600; font-size: 13px; letter-spacing: .16em; text-transform: uppercase; }
+  .stat-top output { font-family: var(--f-mono); font-size: 12px; letter-spacing: 0; font-variant-numeric: tabular-nums; }
+  .bar { position: relative; height: 6px; background: #1f2427; margin-top: 6px; }
+  .bar i { position: absolute; top: 0; bottom: 0; left: 0; background: #d9dcda; transition: width .35s ease; }
+  .bar u { position: absolute; top: -3px; bottom: -3px; width: 2px; background: var(--accent); opacity: .7; }
+  dl.spec { margin: 0; padding: 10px 14px 14px; display: grid; grid-template-columns: auto 1fr; gap: 4px 14px; font-size: 13px; }
+  dl.spec dt { color: var(--muted); font-family: var(--f-display); letter-spacing: .14em; text-transform: uppercase; font-size: 12px; padding-top: 2px; }
+  dl.spec dd { margin: 0; font-family: var(--f-mono); font-size: 12.5px; font-variant-numeric: tabular-nums; text-align: right; }
+  .legend { padding: 8px 14px 0; font-size: 12px; color: var(--muted); display: flex; align-items: center; gap: 6px; }
+  .legend u { display: inline-block; width: 2px; height: 10px; background: var(--accent); }
+
+  section.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 24px; border-top: 1px solid var(--line); padding-top: 16px; }
+  .note { min-width: 0; }
+  .note h3 { margin: 0 0 6px; font-family: var(--f-display); font-weight: 700; font-size: 15px; letter-spacing: .2em; text-transform: uppercase; color: var(--accent); }
+  .note p, .note li { color: #c9cfcc; max-width: 65ch; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note code { font-family: var(--f-mono); font-size: 12px; background: var(--panel-2); padding: 1px 5px; }
+  footer { color: var(--muted); font-family: var(--f-display); letter-spacing: .12em; text-transform: uppercase; font-size: 12px; }
+  @media (prefers-reduced-motion: reduce) { .bar i { transition: none; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="crumb">Loadout › <b>Armory</b> › <span id="crumb-class">—</span></div>
+      <h1 id="title">Armory<small id="subtitle">Weapon kit</small></h1>
+    </div>
+    <div class="kit"><b id="kit-count">10</b> weapons · zero references · built in Blender</div>
+  </header>
+
+  <div class="bench">
+    <aside class="panel" aria-label="Weapons">
+      <h2>Weapon kit <span id="kit-pos">1 / 10</span></h2>
+      <div id="list"></div>
+    </aside>
+
+    <div class="stage-col">
+      <div class="stage" id="stage">
+        <div class="scan"></div>
+        <div class="status" id="status">Loading…</div>
+        <div class="corner tl" id="readout">—</div>
+        <div class="tools">
+          <button class="chip" id="spin" aria-pressed="false">Turntable</button>
+          <button class="chip" id="side">Side view</button>
+          <button class="chip" id="reset">Reset view</button>
+        </div>
+        <div class="corner bl">Drag to rotate · scroll to zoom · ↑ ↓ to switch weapon</div>
+        <div class="corner br" id="tris">—</div>
+      </div>
+      <div class="camos" role="group" aria-label="Camo">
+        <span>Camo</span>
+        <div id="camos" style="display:contents"></div>
+      </div>
+    </div>
+
+    <aside class="panel" aria-label="Weapon stats">
+      <h2>Stats <span id="stat-class">—</span></h2>
+      <p class="desc" id="desc">—</p>
+      <div id="stats"></div>
+      <div class="legend"><u></u> kit average</div>
+      <dl class="spec" id="spec"></dl>
+    </aside>
+  </div>
+
+  <section class="notes" aria-label="Build notes">
+    <div class="note">
+      <h3>Zero references</h3>
+      <p>No images were used. Each weapon is written as numbers in a Python script: profiles, lathes, rods and boolean cuts, sized from how the real mechanisms work. There are 10 scripts on one shared toolkit, with no kitbashing between guns.</p>
+    </div>
+    <div class="note">
+      <h3>Pipeline</h3>
+      <ul>
+        <li>Angle-limited bevels with hardened normals for machined edges.</li>
+        <li>Cycles ambient occlusion plus convexity and concavity masks, baked per vertex.</li>
+        <li>Meshopt-compressed GLBs. Each gun is decoded only when you open it.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Materials</h3>
+      <ul>
+        <li>Cerakote, polymer, phosphate and stainless steel, lacquered walnut, brass, satin-ground blade steel.</li>
+        <li>Paint chips on edges and grime collects in recesses. Camo is procedural and applied across every part.</li>
+        <li>Iridescent lens coatings, glowing reticles and tritium sights.</li>
+      </ul>
+    </div>
+  </section>
+  <footer>Original designs · <code>cod/armory</code> · Blender 4.0 + three.js</footer>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script id="meta" type="application/json">__META__</script>
+<script id="thumbs" type="application/json">__THUMBS__</script>
+__GLB_SCRIPTS__
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+import { RoomEnvironment } from 'three/addons/environments/RoomEnvironment.js';
+import { MeshoptDecoder } from 'three/addons/libs/meshopt_decoder.module.js';
+
+const META = JSON.parse(document.getElementById('meta').textContent);
+let THUMBS = {};
+try { THUMBS = JSON.parse(document.getElementById('thumbs').textContent); } catch (e) {}
+const STAT_KEYS = ['Accuracy', 'Damage', 'Range', 'Fire rate', 'Mobility', 'Handling'];
+const AVG = Object.fromEntries(STAT_KEYS.map((k) => [k, Math.round(META.reduce((s, w) => s + w.stats[k], 0) / META.length)]));
+
+const CAMOS = [
+  { name: 'Graphite', mode: 0, paint: '#232629', poly: '#1e2022', sw: 'linear-gradient(135deg,#3a3e42,#1d1f22)' },
+  { name: 'Desert Tan', mode: 0, paint: '#8c7558', poly: '#7c6951', sw: 'linear-gradient(135deg,#a38a69,#6e5c45)' },
+  { name: 'Ranger Green', mode: 0, paint: '#4b503d', poly: '#43473a', sw: 'linear-gradient(135deg,#5c624b,#383c2f)' },
+  { name: 'Woodland', mode: 1, paint: '#5d5b3e', poly: '#5d5b3e', sw: 'radial-gradient(circle at 30% 30%,#3e4a2f 0 28%,transparent 30%),radial-gradient(circle at 70% 65%,#6b5237 0 25%,transparent 27%),radial-gradient(circle at 65% 25%,#1e201c 0 14%,transparent 16%),#5d5b3e' },
+  { name: 'Gold', mode: 2, paint: '#ffcc66', poly: '#ffcc66', sw: 'linear-gradient(135deg,#fff0b0,#d9a43a 55%,#8a6220)' },
+];
+
+// ------------------------------------------------------------------ renderer
+const stage = document.getElementById('stage');
+const statusEl = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+renderer.toneMapping = THREE.ACESFilmicToneMapping;
+renderer.toneMappingExposure = 1.15;
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const pmrem = new THREE.PMREMGenerator(renderer);
+scene.environment = pmrem.fromScene(new RoomEnvironment(), 0.03).texture;
+const camera = new THREE.PerspectiveCamera(30, 1, 0.005, 30);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 0.12; controls.maxDistance = 5;
+
+const key = new THREE.DirectionalLight('#fff4e6', 2.6);
+key.position.set(-0.9, 1.6, 1.3);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.bias = -0.0002; key.shadow.normalBias = 0.0012; key.shadow.radius = 3;
+scene.add(key, key.target);
+const rim = new THREE.DirectionalLight('#c9dcff', 1.6); rim.position.set(0.6, 1.4, -1.8); scene.add(rim);
+const kick = new THREE.DirectionalLight('#ffd7a8', 0.9); kick.position.set(1.5, -0.4, 1.0); scene.add(kick);
+scene.add(new THREE.HemisphereLight('#b7c4cf', '#1a1411', 0.35));
+
+// ------------------------------------------------------------------ shading
+const U = {
+  uCamoMode: { value: 0 }, uPaint: { value: new THREE.Color() }, uPoly: { value: new THREE.Color() },
+  uW1: { value: new THREE.Color('#3e4a2f') }, uW2: { value: new THREE.Color('#6b5237') }, uW3: { value: new THREE.Color('#1e201c') },
+};
+const NOISE = /* glsl */`
+  float h3(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+  float vnoise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
+    return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x), mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x), mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y), f.z); }
+  float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++){ s += a*vnoise(p); p = p*2.03 + 7.1; a *= 0.5; } return s; }
+  vec3 bumpN(vec3 surf_pos, vec3 n, float h, float fd){
+    vec2 dH = vec2(dFdx(h), dFdy(h));
+    vec3 sx = normalize(dFdx(surf_pos)), sy = normalize(dFdy(surf_pos));
+    vec3 r1 = cross(sy, n), r2 = cross(n, sx);
+    float det = dot(sx, r1) * fd;
+    vec3 g = sign(det) * (dH.x * r1 + dH.y * r2);
+    return normalize(abs(det) * n - g);
+  }
+  float nfade(float freq){ return 1.0 - smoothstep(0.35, 1.2, freq * length(fwidth(vObj))); }
+  vec3 s2l(vec3 c){ return pow(c, vec3(2.2)); }
+`;
+// kinds: 0 paint 1 polymer 2 grip 3 steel 4 bright steel 5 rubber 6 optic 7 suppressor
+//        8 wood 9 brass 10 blade 11 stainless 12 warhead 13 stripe 14 shell hull
+function patch(mat, kind) {
+  mat.onBeforeCompile = (sh) => {
+    Object.assign(sh.uniforms, U);
+    sh.vertexShader = sh.vertexShader
+      .replace('#include <common>', '#include <common>\nattribute vec4 aData;\nvarying vec3 vObj;\nvarying vec4 vData;')
+      .replace('#include <begin_vertex>', '#include <begin_vertex>\nvObj = position;\nvData = aData;');
+    sh.fragmentShader = sh.fragmentShader
+      .replace('#include <common>', `#include <common>
+        varying vec3 vObj; varying vec4 vData;
+        uniform float uCamoMode; uniform vec3 uPaint, uPoly, uW1, uW2, uW3;
+        ${NOISE}`)
+      .replace('#include <color_fragment>', `#include <color_fragment>
+        const float KIND = ${kind.toFixed(1)};
+        float ao = mix(1.0, vData.r, 0.92), edge = vData.g, cav = vData.b;
+        float chips = fbm(vObj * 240.0) * nfade(240.0) + 0.5 * (1.0 - nfade(240.0));
+        float wear = smoothstep(0.78, 0.96, edge + (chips - 0.5) * 0.6) * 0.8;
+        float metalX = metalness, roughX = roughness;
+        bool gold = uCamoMode == 2.0 && (KIND <= 2.0 || KIND == 6.0 || KIND == 10.0 || KIND == 11.0);
+        bool camo = KIND < 1.5;
+        if (camo) {
+          vec3 c = KIND == 1.0 ? uPoly : uPaint;
+          if (uCamoMode == 1.0) {
+            vec3 p = vObj * 17.0; float w = 0.012;
+            c = mix(c, uW1, smoothstep(0.49 - w, 0.49 + w, fbm(p)));
+            c = mix(c, uW2, smoothstep(0.54 - w, 0.54 + w, fbm(p * 1.25 + vec3(5.2, 1.3, 7.7))));
+            c = mix(c, uW3, smoothstep(0.60 - w, 0.60 + w, fbm(p * 1.6 + vec3(2.1, 9.4, 3.3))));
+          }
+          diffuseColor.rgb = c;
+          if (KIND == 1.0) { roughX = 0.58; wear *= 0.25; } else { roughX = 0.6; metalX = 0.04; }
+        }
+        if (KIND == 8.0) {                               // lacquered walnut
+          float g = fbm(vec3(vObj.x * 22.0, vObj.y * 240.0, vObj.z * 22.0));
+          float bands = 0.5 + 0.5 * sin(g * 30.0 + vObj.x * 140.0);
+          float pores = fbm(vObj * 900.0) * nfade(900.0);
+          diffuseColor.rgb = mix(s2l(vec3(0.44, 0.24, 0.12)), s2l(vec3(0.27, 0.13, 0.06)), bands * 0.5 + pores * 0.3);
+          wear = 0.0;
+        } else if (KIND == 10.0 || KIND == 11.0) {       // satin / brushed steel
+          float st = vnoise(vec3(vObj.x * 60.0, vObj.y * 2600.0, vObj.z * 2600.0));
+          roughX = roughness * (0.9 + 0.22 * st);
+        } else if (KIND == 14.0) {
+          wear = 0.0;
+        }
+        if (gold) { diffuseColor.rgb = s2l(vec3(1.0, 0.80, 0.40)); metalX = 1.0; roughX = 0.2 + 0.08 * fbm(vObj * 90.0); wear = 0.0; }
+        if (KIND == 0.0 || KIND == 6.0 || KIND == 12.0 || KIND == 13.0) {   // paint chips to bare metal
+          diffuseColor.rgb = mix(diffuseColor.rgb, vec3(0.36, 0.37, 0.39), wear * 0.8);
+          metalX = mix(metalX, 1.0, wear); roughX = mix(roughX, 0.3, wear);
+        } else if (KIND == 1.0) {
+          diffuseColor.rgb *= 1.0 + 0.5 * wear;
+        } else if (KIND == 3.0 || KIND == 4.0 || KIND == 9.0) {
+          diffuseColor.rgb *= 1.0 + 1.1 * wear; roughX = mix(roughX, 0.22, wear);
+        }
+        diffuseColor.rgb *= 1.0 - 0.45 * cav;
+        roughX = clamp(roughX * (0.86 + 0.28 * fbm(vObj * 140.0)) + 0.12 * cav, 0.04, 1.0);
+      `)
+      .replace('#include <roughnessmap_fragment>', 'float roughnessFactor = roughX;')
+      .replace('#include <metalnessmap_fragment>', 'float metalnessFactor = metalX;')
+      .replace('#include <normal_fragment_maps>', `#include <normal_fragment_maps>
+        {
+          float f = KIND == 2.0 ? 2400.0 : KIND == 1.0 ? 1800.0 : KIND == 5.0 ? 900.0 : KIND == 8.0 ? 700.0 : 1500.0;
+          float amp = KIND == 2.0 ? 0.9 : KIND == 1.0 ? 0.12 : KIND == 5.0 ? 0.2 : KIND == 7.0 ? 0.08 : KIND == 3.0 ? 0.05 :
+                      KIND == 8.0 ? 0.04 : KIND == 14.0 ? 0.0 : 0.03;
+          if (gold) amp *= 0.3;
+          float h = vnoise(vObj * f) * amp * nfade(f);
+          if (KIND == 14.0) h = sin(vObj.y * 2200.0) * 0.05 * nfade(2200.0);
+          normal = bumpN(-vViewPosition, normal, h, faceDirection);
+        }`)
+      .replace('#include <aomap_fragment>', `#include <aomap_fragment>
+        reflectedLight.indirectDiffuse *= ao;
+        reflectedLight.indirectSpecular *= mix(1.0, ao * ao, 0.9);
+        reflectedLight.directDiffuse *= mix(1.0, ao, 0.35);`);
+  };
+  mat.customProgramCacheKey = () => 'arm' + kind;
+  return mat;
+}
+const P = (o) => new THREE.MeshPhysicalMaterial(o);
+const MATS = {
+  Paint:       patch(P({ color: '#2e3135', roughness: 0.6, metalness: 0.04, envMapIntensity: 0.55 }), 0),
+  Polymer:     patch(P({ color: '#26282b', roughness: 0.58, metalness: 0.0, envMapIntensity: 0.5 }), 1),
+  Grip:        patch(P({ color: '#1b1c1e', roughness: 0.82, metalness: 0.0, envMapIntensity: 0.45 }), 2),
+  Steel:       patch(P({ color: '#46494d', roughness: 0.4, metalness: 1.0, envMapIntensity: 1.0 }), 3),
+  BrightSteel: patch(P({ color: '#c2c6ca', roughness: 0.2, metalness: 1.0, envMapIntensity: 1.1 }), 4),
+  Rubber:      patch(P({ color: '#131313', roughness: 0.95, metalness: 0.0 }), 5),
+  Optic:       patch(P({ color: '#16171a', roughness: 0.42, metalness: 0.2, envMapIntensity: 0.6 }), 6),
+  Suppressor:  patch(P({ color: '#2f2d2b', roughness: 0.72, metalness: 0.1 }), 7),
+  Marking:     patch(P({ color: '#d8d6cd', roughness: 0.6, metalness: 0.0 }), 5),
+  Wood:        patch(P({ color: '#ffffff', roughness: 0.42, metalness: 0.0, clearcoat: 0.45, clearcoatRoughness: 0.25, envMapIntensity: 0.7 }), 8),
+  Brass:       patch(P({ color: '#caa24c', roughness: 0.28, metalness: 1.0 }), 9),
+  Blade:       patch(P({ color: '#c3c6c9', roughness: 0.22, metalness: 1.0, envMapIntensity: 1.2 }), 10),
+  Stainless:   patch(P({ color: '#a4a8ad', roughness: 0.3, metalness: 1.0, envMapIntensity: 1.1 }), 11),
+  Warhead:     patch(P({ color: '#4a5029', roughness: 0.66, metalness: 0.0, envMapIntensity: 0.5 }), 12),
+  Stripe:      patch(P({ color: '#d6ac1c', roughness: 0.55, metalness: 0.0, envMapIntensity: 0.5 }), 13),
+  ShellHull:   patch(P({ color: '#a51f1f', roughness: 0.38, metalness: 0.0, clearcoat: 0.3, clearcoatRoughness: 0.35 }), 14),
+  Glass: new THREE.MeshPhysicalMaterial({ color: '#c8def0', roughness: 0.03, metalness: 0, transparent: true, opacity: 0.16,
+    iridescence: 1, iridescenceIOR: 1.35, iridescenceThicknessRange: [220, 560], envMapIntensity: 2.4, depthWrite: false }),
+  Reticle: new THREE.MeshBasicMaterial({ color: '#ff2b1c', toneMapped: false }),
+  Tritium: new THREE.MeshBasicMaterial({ color: '#8dff66', toneMapped: false }),
+};
+
+// ------------------------------------------------------------------ models
+const pivot = new THREE.Group(); scene.add(pivot);
+const shadowFloor = new THREE.Mesh(new THREE.PlaneGeometry(6, 6), new THREE.ShadowMaterial({ opacity: 0.45 }));
+shadowFloor.rotation.x = -Math.PI / 2; shadowFloor.receiveShadow = true; scene.add(shadowFloor);
+const loader = new GLTFLoader().setMeshoptDecoder(MeshoptDecoder);
+const cache = {};
+function b64ToBuffer(id) {
+  const bin = atob(document.getElementById('glb-' + id).textContent.trim());
+  const bytes = new Uint8Array(bin.length);
+  for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+  return bytes.buffer;
+}
+function loadWeapon(w) {
+  if (cache[w.id]) return cache[w.id];
+  cache[w.id] = new Promise((resolve, reject) => {
+    loader.parse(b64ToBuffer(w.id), '', (gltf) => {
+      const root = gltf.scene;
+      let tris = 0;
+      root.traverse((o) => {
+        if (!o.isMesh) return;
+        const name = (o.material.name || '').replace(/\.\d+$/, '');
+        o.material = MATS[name] || MATS.Paint;
+        const g = o.geometry;
+        if (g.attributes.color) g.setAttribute('aData', g.attributes.color);
+        else g.setAttribute('aData', new THREE.BufferAttribute(new Float32Array(g.attributes.position.count * 4).fill(1), 4));
+        g.deleteAttribute('color');
+        o.castShadow = !['Glass', 'Reticle', 'Tritium'].includes(name);
+        o.receiveShadow = !['Reticle', 'Tritium'].includes(name);
+        tris += (g.index ? g.index.count : g.attributes.position.count) / 3;
+      });
+      root.children.forEach((c) => { if (w.show) c.visible = w.show.includes(c.name); });
+      const box = new THREE.Box3();
+      root.children.forEach((c) => { if (c.visible) box.expandByObject(c); });
+      const center = box.getCenter(new THREE.Vector3());
+      root.position.sub(center);
+      box.translate(center.clone().negate());
+      resolve({ root, box, tris: Math.round(tris) });
+    }, reject);
+  });
+  return cache[w.id];
+}
+
+// ------------------------------------------------------------------ camera
+const tween = { t: 1, dur: 0.9, p0: new THREE.Vector3(), p1: new THREE.Vector3(), t0: new THREE.Vector3(), t1: new THREE.Vector3() };
+function fitDist(r, cam = camera) {
+  const v = THREE.MathUtils.degToRad(cam.fov / 2);
+  return r / Math.tan(Math.min(v, Math.atan(Math.tan(v) * cam.aspect)));
+}
+function flyTo(target, dir, dist, instant) {
+  tween.p0.copy(camera.position); tween.t0.copy(controls.target);
+  tween.t1.copy(target);
+  tween.p1.copy(target).add(new THREE.Vector3(...dir).normalize().multiplyScalar(dist));
+  tween.t = instant ? 1 : 0;
+  if (instant) { camera.position.copy(tween.p1); controls.target.copy(tween.t1); }
+}
+let current = null;
+function frame(dir, instant) {
+  if (!current) return;
+  const s = current.box.getSize(new THREE.Vector3());
+  const r = Math.max(s.x / 2, s.y * 0.9);
+  flyTo(new THREE.Vector3(0, 0, 0), dir, fitDist(r) * (camera.aspect < 1.4 ? 1.0 : 0.8), instant);
+}
+const HOME = [0.3, 0.18, 1];
+
+// ------------------------------------------------------------------ UI
+const $ = (id) => document.getElementById(id);
+let index = 0;
+function buildUI() {
+  const list = $('list');
+  let lastGroup = '';
+  META.forEach((w, i) => {
+    if (w.slot !== lastGroup) {
+      const h = document.createElement('div'); h.className = 'group-label'; h.textContent = w.slot; list.append(h);
+      const l = document.createElement('div'); l.className = 'list'; l.id = 'list-' + w.slot; list.append(l);
+      lastGroup = w.slot;
+    }
+    const b = document.createElement('button');
+    b.className = 'wpn'; b.id = 'wpn-' + w.id;
+    b.innerHTML = (THUMBS[w.id] ? `<img class="th" alt="" src="${THUMBS[w.id]}">` : `<span class="th empty"></span>`) +
+      `<span><b>${w.name}</b><small>${w.cls}</small></span>`;
+    b.addEventListener('click', () => select(i));
+    $('list-' + w.slot).append(b);
+  });
+  CAMOS.forEach((c, i) => {
+    const b = document.createElement('button');
+    b.className = 'camo'; b.id = `camo-${i}`;
+    b.innerHTML = `<i style="background:${c.sw}"></i>${c.name}`;
+    b.addEventListener('click', () => applyCamo(i));
+    $('camos').append(b);
+  });
+}
+function applyCamo(i) {
+  const c = CAMOS[i];
+  U.uCamoMode.value = c.mode; U.uPaint.value.set(c.paint); U.uPoly.value.set(c.poly);
+  document.querySelectorAll('.camo').forEach((b, j) => b.setAttribute('aria-pressed', String(i === j)));
+}
+let token = 0;
+async function select(i, instant) {
+  index = (i + META.length) % META.length;
+  const w = META[index];
+  const my = ++token;
+  META.forEach((m, j) => $('wpn-' + m.id).setAttribute('aria-pressed', String(j === index)));
+  $('title').firstChild.nodeValue = w.name;
+  $('subtitle').textContent = `${w.cls} · ${w.maker}`;
+  $('crumb-class').textContent = w.slot;
+  $('stat-class').textContent = w.cls;
+  $('kit-pos').textContent = `${index + 1} / ${META.length}`;
+  $('desc').textContent = w.desc;
+  $('stats').innerHTML = STAT_KEYS.map((k) => `<div class="stat"><div class="stat-top">${k}<output>${w.stats[k]}</output></div>
+    <div class="bar" role="meter" aria-label="${k}" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${w.stats[k]}">
+    <i style="width:${w.stats[k]}%"></i><u style="left:${AVG[k]}%"></u></div></div>`).join('');
+  statusEl.hidden = false; statusEl.textContent = 'Loading ' + w.name + '…';
+  const m = await loadWeapon(w);
+  if (my !== token) return;
+  statusEl.hidden = true;
+  pivot.clear(); pivot.rotation.set(0, 0, 0); pivot.add(m.root);
+  current = m;
+  const size = m.box.getSize(new THREE.Vector3());
+  shadowFloor.position.y = m.box.min.y - Math.max(0.03, size.x * 0.08);
+  const ext = Math.max(size.x, size.z) * 0.75 + 0.1;
+  Object.assign(key.shadow.camera, { left: -ext, right: ext, top: ext, bottom: -ext });
+  key.shadow.camera.updateProjectionMatrix();
+  const len = Math.round(size.x * 1000);
+  $('spec').innerHTML = [...w.spec, ['Length', `${len} mm`]].map(([a, b]) => `<dt>${a}</dt><dd>${b}</dd>`).join('');
+  $('readout').textContent = `${w.code} · ${w.spec[0][1]} · ${len} mm`;
+  $('tris').textContent = `${m.tris.toLocaleString('en-US')} tris · PBR`;
+  frame(HOME, instant);
+}
+let spinning = false;
+function setSpin(on) { spinning = on; $('spin').setAttribute('aria-pressed', String(on)); }
+$('spin').addEventListener('click', () => setSpin(!spinning));
+$('reset').addEventListener('click', () => { pivot.rotation.y = 0; frame(HOME); });
+$('side').addEventListener('click', () => { pivot.rotation.y = 0; setSpin(false); frame([0, 0.02, 1]); });
+renderer.domElement.addEventListener('pointerdown', () => { tween.t = 1; setSpin(false); });
+renderer.domElement.addEventListener('wheel', () => { tween.t = 1; }, { passive: true });
+addEventListener('keydown', (e) => {
+  if (e.target.closest && e.target.closest('input, textarea')) return;
+  if (e.key === 'ArrowDown' || e.key === 'ArrowRight') { e.preventDefault(); select(index + 1); $('wpn-' + META[index].id).focus(); }
+  if (e.key === 'ArrowUp' || e.key === 'ArrowLeft') { e.preventDefault(); select(index - 1); $('wpn-' + META[index].id).focus(); }
+});
+
+// thumbnail renderer (used when building the page; also handy for debugging)
+async function thumbs() {
+  const tr = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+  tr.setPixelRatio(1); tr.setSize(336, 120);
+  tr.toneMapping = THREE.ACESFilmicToneMapping; tr.toneMappingExposure = 1.25;
+  const cam = new THREE.PerspectiveCamera(20, 336 / 120, 0.005, 30);
+  const out = {};
+  shadowFloor.visible = false;
+  for (const w of META) {
+    const m = await loadWeapon(w);
+    pivot.clear(); pivot.rotation.set(0, 0, 0); pivot.add(m.root);
+    const s = m.box.getSize(new THREE.Vector3());
+    const d = Math.max(s.x / 2 / Math.tan(THREE.MathUtils.degToRad(10)) / cam.aspect, s.y / 2 / Math.tan(THREE.MathUtils.degToRad(10))) * 1.08;
+    cam.position.set(0, d * 0.06, d); cam.lookAt(0, 0, 0);
+    tr.render(scene, cam);
+    out[w.id] = tr.domElement.toDataURL('image/png');
+  }
+  shadowFloor.visible = true;
+  return out;
+}
+
+// ------------------------------------------------------------------ loop
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+const clock = new THREE.Clock();
+const ease = (t) => 1 - Math.pow(1 - t, 3);
+renderer.setAnimationLoop(() => {
+  const raw = clock.getDelta(), dt = Math.min(raw, 0.05);
+  if (tween.t < 1) {
+    tween.t = Math.min(1, tween.t + raw / tween.dur);
+    const k = ease(tween.t);
+    camera.position.lerpVectors(tween.p0, tween.p1, k);
+    controls.target.lerpVectors(tween.t0, tween.t1, k);
+  }
+  if (spinning && !matchMedia('(prefers-reduced-motion: reduce)').matches) pivot.rotation.y += dt * 0.35;
+  controls.update();
+  renderer.render(scene, camera);
+});
+
+buildUI();
+applyCamo(0);
+await select(0, true);
+window.__api = { select, flyTo, frame, applyCamo, thumbs, THREE, META, get current() { return current; } };
+window.__ready = true;
+</script>

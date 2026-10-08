@@ -1,0 +1,442 @@
+<title>Lone Star Repeater</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bowlby+One&family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500&display=swap">
+<style>
+  /* Layout: TF2 loadout screen. A big 3D stage on the left, the item card on the right, analysis notes underneath. One dark world, on purpose. */
+  :root {
+    --bg: #1d1916;
+    --stage: #2a2420;
+    --panel: #2e2824;
+    --line: #4d4238;
+    --fg: #ece3d4;
+    --muted: #a7978a;
+    --unique: #ffd35a;
+    --pos: #99ccff;
+    --neg: #ff6a55;
+    --red: #b8383b;
+    --blu: #5885a2;
+    --team: var(--red);
+    --f-display: "Bowlby One", "Arial Black", Impact, sans-serif;
+    --f-ui: "Barlow Condensed", "Arial Narrow", "Roboto Condensed", sans-serif;
+    --f-body: "Barlow", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    color-scheme: dark;
+  }
+  :root[data-team="blu"] { --team: var(--blu); }
+  html, body { background: var(--bg); color: var(--fg); }
+  [hidden] { display: none !important; }
+  body { font-family: var(--f-body); font-size: 15px; line-height: 1.5; padding: 0 16px; }
+  .wrap { max-width: 1240px; margin: 0 auto; padding-block: 20px 48px; display: grid; gap: 20px; }
+
+  header.top { display: flex; flex-wrap: wrap; align-items: baseline; justify-content: space-between; gap: 8px 20px;
+    border-bottom: 2px solid var(--line); padding-bottom: 12px; }
+  .eyebrow { font-family: var(--f-ui); text-transform: uppercase; letter-spacing: .14em; font-weight: 600; font-size: 13px; color: var(--muted); }
+  header.top h1 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: clamp(26px, 4.4vw, 44px); line-height: 1.05;
+    letter-spacing: .01em; color: var(--unique); text-wrap: balance; text-shadow: 0 2px 0 #000a; }
+
+  .main { display: grid; grid-template-columns: minmax(0, 1fr) 340px; gap: 20px; align-items: start; }
+  @media (max-width: 900px) { .main { grid-template-columns: minmax(0, 1fr); } }
+
+  .stage { position: relative; min-width: 0; border-radius: 6px; overflow: hidden; border: 2px solid var(--line);
+    background: radial-gradient(120% 90% at 50% 45%, #3a322c 0%, var(--stage) 55%, #161311 100%);
+    aspect-ratio: 4 / 3; max-width: 100%; }
+  .stage canvas { display: block; width: 100%; height: 100%; touch-action: none; cursor: grab; }
+  .stage canvas:active { cursor: grabbing; }
+  .stage .glow { position: absolute; inset: 0; pointer-events: none;
+    background: radial-gradient(45% 35% at 50% 52%, color-mix(in srgb, var(--team) 26%, transparent), transparent 70%); }
+  .stage .hint { position: absolute; left: 12px; bottom: 10px; font-family: var(--f-ui); font-size: 13px; letter-spacing: .06em;
+    text-transform: uppercase; color: var(--muted); pointer-events: none; }
+  .stage .status { position: absolute; inset: 0; display: grid; place-items: center; font-family: var(--f-ui);
+    text-transform: uppercase; letter-spacing: .12em; color: var(--muted); }
+
+  .toolbar { display: flex; flex-wrap: wrap; gap: 8px 16px; margin-top: 12px; }
+  .group { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; }
+  .group > span { font-family: var(--f-ui); font-size: 12px; text-transform: uppercase; letter-spacing: .12em; color: var(--muted); margin-right: 4px; }
+  button.chip { font-family: var(--f-ui); font-weight: 600; font-size: 14px; letter-spacing: .06em; text-transform: uppercase;
+    color: var(--fg); background: var(--panel); border: 1px solid var(--line); border-radius: 3px; padding: 5px 11px; cursor: pointer; white-space: nowrap; }
+  button.chip:hover { border-color: var(--muted); }
+  button.chip[aria-pressed="true"] { background: var(--fg); color: var(--bg); border-color: var(--fg); }
+  button.chip.red[aria-pressed="true"] { background: var(--red); border-color: var(--red); color: #fff; }
+  button.chip.blu[aria-pressed="true"] { background: var(--blu); border-color: var(--blu); color: #fff; }
+  button.chip:focus-visible { outline: 2px solid var(--unique); outline-offset: 2px; }
+
+  /* TF2-style item card */
+  .card { background: #1a1614; border: 2px solid #5c4d40; border-radius: 6px; padding: 18px 18px 16px; text-align: center;
+    box-shadow: 0 10px 30px #0008; min-width: 0; }
+  .card h2 { margin: 0; font-family: var(--f-display); font-weight: 400; font-size: 21px; letter-spacing: .02em; color: var(--unique); line-height: 1.15; }
+  .card .level { font-family: var(--f-ui); color: var(--muted); font-size: 15px; margin-top: 2px; }
+  .card ul { list-style: none; margin: 12px 0 0; padding: 0; font-family: var(--f-ui); font-size: 16px; font-weight: 500; line-height: 1.35; }
+  .pos { color: var(--pos); } .neg { color: var(--neg); }
+  .card .flavor { margin: 14px 0 0; font-family: var(--f-ui); font-style: italic; font-size: 15px; color: #d8cfc2; }
+  .card dl { margin: 16px 0 0; padding-top: 12px; border-top: 1px solid var(--line); display: grid; grid-template-columns: auto 1fr;
+    gap: 3px 12px; text-align: left; font-family: var(--f-ui); font-size: 14px; }
+  .card dt { color: var(--muted); text-transform: uppercase; letter-spacing: .08em; font-size: 12px; padding-top: 2px; }
+  .card dd { margin: 0; font-variant-numeric: tabular-nums; overflow-wrap: anywhere; }
+  .swatches { display: flex; gap: 6px; flex-wrap: wrap; }
+  .sw { width: 18px; height: 18px; border-radius: 3px; border: 1px solid #0006; }
+
+  section.notes { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+  .note { min-width: 0; }
+  .note h3 { margin: 0 0 6px; font-family: var(--f-ui); font-weight: 700; font-size: 17px; text-transform: uppercase; letter-spacing: .1em; color: var(--unique); }
+  .note p, .note li { color: #d9cfc1; max-width: 65ch; }
+  .note ul { margin: 0; padding-left: 18px; display: grid; gap: 4px; }
+  .note code { font-size: 13px; background: var(--panel); padding: 1px 5px; border-radius: 3px; }
+  footer { color: var(--muted); font-family: var(--f-ui); font-size: 13px; letter-spacing: .06em; text-transform: uppercase; }
+  @media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
+</style>
+
+<div class="wrap">
+  <header class="top">
+    <div>
+      <div class="eyebrow">TF2-style concept · Weapon 01 · Engineer primary</div>
+      <h1>The Lone Star Repeater</h1>
+    </div>
+    <div class="eyebrow">Built in Blender 4.0 · rendered live with three.js</div>
+  </header>
+
+  <div class="main">
+    <div>
+      <div class="stage" id="stage">
+        <div class="glow"></div>
+        <div class="status" id="status">Loading model…</div>
+        <div class="hint">Drag to orbit · scroll to zoom</div>
+      </div>
+      <div class="toolbar" role="toolbar" aria-label="Viewer controls">
+        <div class="group"><span>Team</span>
+          <button class="chip red" id="team-red" aria-pressed="true">RED</button>
+          <button class="chip blu" id="team-blu" aria-pressed="false">BLU</button>
+        </div>
+        <div class="group"><span>View</span>
+          <button class="chip" data-view="hero" aria-pressed="true">3/4</button>
+          <button class="chip" data-view="side" aria-pressed="false">Left</button>
+          <button class="chip" data-view="right" aria-pressed="false">Right</button>
+          <button class="chip" data-view="top" aria-pressed="false">Top</button>
+          <button class="chip" data-view="fp" aria-pressed="false">First person</button>
+        </div>
+        <div class="group"><span>Look</span>
+          <button class="chip" id="shade" aria-pressed="true">TF2 paint</button>
+          <button class="chip" id="outline" aria-pressed="true">Ink lines</button>
+          <button class="chip" id="spin" aria-pressed="true">Turntable</button>
+        </div>
+      </div>
+    </div>
+
+    <aside class="card" aria-label="Item card">
+      <h2>The Lone Star Repeater</h2>
+      <div class="level">Level 25 Semi-Auto Shotgun</div>
+      <ul>
+        <li class="pos">+35% faster firing speed</li>
+        <li class="pos">+2 shells in clip</li>
+        <li class="pos">On Kill: next shell reloads instantly</li>
+        <li class="neg">−15% damage per pellet</li>
+        <li class="neg">−10% slower reload per shell</li>
+      </ul>
+      <p class="flavor">"Semi-automatic, fully Texan. Reloads itself faster than you can say howdy."</p>
+      <dl>
+        <dt>Class</dt><dd>Engineer · Primary</dd>
+        <dt>Parts</dt><dd id="stat-parts">28 meshes</dd>
+        <dt>Triangles</dt><dd id="stat-tris">~19,000</dd>
+        <dt>Palette</dt><dd><div class="swatches" aria-label="Material colours">
+          <span class="sw" style="background:#b0692f" title="Walnut"></span>
+          <span class="sw" style="background:#606a78" title="Gunmetal"></span>
+          <span class="sw" style="background:#8a9098" title="Steel"></span>
+          <span class="sw" style="background:#d4a041" title="Brass"></span>
+          <span class="sw" style="background:#3b322d" title="Rubber"></span>
+          <span class="sw" style="background:var(--team)" title="Team colour"></span>
+        </div></dd>
+        <dt>Files</dt><dd><code>lone_star_repeater.glb</code>, <code>.blend</code>, <code>build_gun.py</code></dd>
+      </dl>
+    </aside>
+  </div>
+
+  <section class="notes" aria-label="Design analysis">
+    <div class="note">
+      <h3>Reference analysis</h3>
+      <p>The clip is a showcase of a community semi-auto shotgun for the Engineer: an item card with blue upsides, red downsides and a one-line joke, then first-person gameplay on 2Fort-style maps.</p>
+      <ul>
+        <li>In first person the gun fills the lower right corner. The silhouette has to read at a glance.</li>
+        <li>Surfaces are soft, bevelled slabs, with no sharp CAD edges.</li>
+        <li>Materials stick to a small set: dark blue-grey metal, warm wood, brass accents.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Shape language</h3>
+      <ul>
+        <li>One family of forms: every part is a side profile extruded and bevelled, or a lathe turned around the bore. Nothing borrows a shape from another gun.</li>
+        <li>Humpback receiver gives it a clear semi-auto look, with a chunky pistol grip and a fat forend.</li>
+        <li>The lone-star medallion on the left side carries the team colour.</li>
+        <li>Proportions are pushed: thicker barrel, bigger trigger guard, oversized brass cap.</li>
+      </ul>
+    </div>
+    <div class="note">
+      <h3>Shading recipe</h3>
+      <ul>
+        <li>Half-Lambert diffuse through a warm light ramp, as TF2 does. Shadows stay readable and never go black.</li>
+        <li>Sky-coloured rim light from above, with Phong specular tuned per material.</li>
+        <li>Wood grain and metal wear come from procedural noise in object space.</li>
+        <li>Ink lines come from an inverted hull that holds a constant pixel width.</li>
+      </ul>
+    </div>
+  </section>
+
+  <footer>Fan concept, not affiliated with Valve. Rebuild the model with <code>blender -b --python build_gun.py -- .</code></footer>
+</div>
+
+<script type="importmap">
+{ "imports": {
+  "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+  "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+} }
+</script>
+<script id="glb" type="application/octet-stream">__GLB_BASE64__</script>
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { GLTFLoader } from 'three/addons/loaders/GLTFLoader.js';
+
+const stage = document.getElementById('stage');
+const statusEl = document.getElementById('status');
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true, preserveDrawingBuffer: true });
+renderer.setPixelRatio(Math.min(devicePixelRatio, 2));
+stage.prepend(renderer.domElement);
+
+const scene = new THREE.Scene();
+const camera = new THREE.PerspectiveCamera(28, 4 / 3, 0.01, 50);
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true; controls.dampingFactor = 0.08;
+controls.minDistance = 0.5; controls.maxDistance = 8;
+
+// ---------- lighting shared by every material (world space) ----------
+const L = {
+  uKeyDir:  { value: new THREE.Vector3(-0.45, 0.8, 0.55).normalize() },
+  uKeyCol:  { value: new THREE.Color('#fff1dc') },
+  uFillDir: { value: new THREE.Vector3(0.7, 0.2, -0.6).normalize() },
+  uFillCol: { value: new THREE.Color('#5a6f8c') },
+  uAmbTop:  { value: new THREE.Color('#5d6470') },
+  uAmbBot:  { value: new THREE.Color('#3b2d24') },
+  uRimCol:  { value: new THREE.Color('#d2dcea') },
+  uClay:    { value: 0 },
+};
+
+const NOISE = /* glsl */`
+  float h3(vec3 p){ p = fract(p*0.3183099 + 0.1); p *= 17.0; return fract(p.x*p.y*p.z*(p.x+p.y+p.z)); }
+  float vnoise(vec3 x){ vec3 i = floor(x), f = fract(x); f = f*f*(3.0-2.0*f);
+    return mix(mix(mix(h3(i),h3(i+vec3(1,0,0)),f.x), mix(h3(i+vec3(0,1,0)),h3(i+vec3(1,1,0)),f.x),f.y),
+               mix(mix(h3(i+vec3(0,0,1)),h3(i+vec3(1,0,1)),f.x), mix(h3(i+vec3(0,1,1)),h3(i+vec3(1,1,1)),f.x),f.y), f.z); }
+  float fbm(vec3 p){ float a = 0.5, s = 0.0; for (int i = 0; i < 4; i++){ s += a*vnoise(p); p = p*2.03 + 7.1; a *= 0.5; } return s; }
+`;
+
+const VERT = /* glsl */`
+  varying vec3 vN; varying vec3 vW; varying vec3 vO;
+  void main(){
+    vO = position;
+    vec4 w = modelMatrix * vec4(position, 1.0);
+    vW = w.xyz;
+    vN = normalize(mat3(modelMatrix) * normal);
+    gl_Position = projectionMatrix * viewMatrix * w;
+  }`;
+
+const FRAG = /* glsl */`
+  uniform vec3 uBase, uBase2; uniform float uKind, uSpec, uPow, uRim;
+  uniform vec3 uKeyDir, uKeyCol, uFillDir, uFillCol, uAmbTop, uAmbBot, uRimCol; uniform float uClay;
+  varying vec3 vN; varying vec3 vW; varying vec3 vO;
+  ${NOISE}
+  vec3 lin(vec3 c){ return pow(c, vec3(2.2)); }
+  void main(){
+    vec3 N = normalize(vN); if (!gl_FrontFacing) N = -N;
+    vec3 V = normalize(cameraPosition - vW);
+    vec3 base = uBase;
+    float spec = uSpec, pw = uPow;
+    if (uKind == 1.0) {                       // walnut: long grain along the gun
+      float warp = fbm(vO * vec3(3.0, 22.0, 22.0));
+      float rings = sin(vO.y * 150.0 + vO.z * 35.0 + warp * 9.0) * 0.5 + 0.5;
+      rings = smoothstep(0.35, 1.0, rings);
+      float fine = fbm(vO * vec3(6.0, 190.0, 190.0));
+      base = mix(uBase, uBase2, clamp(rings * 0.38 + fine * 0.30 - 0.05, 0.0, 1.0));
+      spec *= 0.7 + 0.6 * fine;
+    } else if (uKind == 0.0 || uKind == 2.0) { // metals: soft painterly mottling
+      float m = fbm(vO * 26.0);
+      base *= 0.88 + 0.24 * m;
+      spec *= 0.75 + 0.5 * fbm(vO * 60.0 + 3.0);
+    } else if (uKind == 3.0) {
+      base *= 0.9 + 0.2 * fbm(vO * 120.0);
+    }
+    if (uClay > 0.5) { base = vec3(0.72, 0.70, 0.68); spec = 0.12; pw = 10.0; }
+    vec3 b = lin(base);
+
+    // TF2-ish half-Lambert through a warm ramp
+    float ndl = dot(N, uKeyDir);
+    float hl = ndl * 0.5 + 0.5;
+    float lit = smoothstep(0.30, 0.78, hl * hl * 1.15);
+    vec3 shadowTint = vec3(0.33, 0.33, 0.37);
+    vec3 diffuse = mix(shadowTint, vec3(1.0), lit);
+    diffuse += vec3(0.20, 0.07, 0.0) * exp(-pow((hl - 0.55) / 0.10, 2.0));   // warm terminator band
+    vec3 amb = mix(lin(uAmbBot), lin(uAmbTop), N.y * 0.5 + 0.5);
+    float fill = max(dot(N, uFillDir), 0.0);
+    vec3 col = b * (lin(uKeyCol) * diffuse * 0.95 + amb * 0.55 + lin(uFillCol) * fill * 0.45);
+
+    // specular (key) + rim (sky from above)
+    vec3 R = reflect(-uKeyDir, N);
+    float s = pow(max(dot(R, V), 0.0), pw) * spec;
+    vec3 specCol = uKind == 2.0 ? lin(vec3(1.0, 0.85, 0.55)) : vec3(1.0);
+    col += specCol * s * lin(uKeyCol) * (0.4 + 0.6 * lit);
+    float fres = pow(1.0 - max(dot(N, V), 0.0), 3.5);
+    col += lin(uRimCol) * fres * uRim * 0.35 * smoothstep(-0.3, 0.8, N.y);
+
+    col = col / (1.0 + col * 0.18);               // gentle shoulder
+    gl_FragColor = vec4(pow(col, vec3(1.0 / 2.2)), 1.0);
+  }`;
+
+// ink lines: inverted hull pushed out along smoothed normals, constant pixel width
+const OUT_VERT = /* glsl */`
+  attribute vec3 smoothNormal; uniform float uWidth; uniform vec2 uRes;
+  void main(){
+    vec4 clip = projectionMatrix * modelViewMatrix * vec4(position, 1.0);
+    vec3 nv = normalize(normalMatrix * smoothNormal);
+    vec2 d = (projectionMatrix * vec4(nv, 0.0)).xy;
+    float l = length(d);
+    if (l > 1e-5) clip.xy += (d / l) * uWidth * clip.w * 2.0 / uRes;
+    clip.z += 0.00002 * clip.w;
+    gl_Position = clip;
+  }`;
+const OUT_FRAG = `uniform vec3 uCol; void main(){ gl_FragColor = vec4(uCol, 1.0); }`;
+const outlineUniforms = { uWidth: { value: 2.2 }, uRes: { value: new THREE.Vector2(1, 1) }, uCol: { value: new THREE.Color('#150f0b') } };
+const outlineMat = new THREE.ShaderMaterial({ vertexShader: OUT_VERT, fragmentShader: OUT_FRAG, uniforms: outlineUniforms, side: THREE.BackSide });
+
+const TEAM = { red: '#b8383b', blu: '#5885a2' };
+const MATS = {
+  Gunmetal: { base: '#606a78', base2: '#606a78', kind: 0, spec: 0.5, pow: 22, rim: 0.8 },
+  Steel:    { base: '#8b9199', base2: '#8b9199', kind: 0, spec: 0.85, pow: 30, rim: 1.0 },
+  Wood:     { base: '#b0692f', base2: '#72391a', kind: 1, spec: 0.22, pow: 12, rim: 0.55 },
+  Brass:    { base: '#d4a041', base2: '#d4a041', kind: 2, spec: 1.0, pow: 18, rim: 0.8 },
+  Rubber:   { base: '#3b322d', base2: '#3b322d', kind: 3, spec: 0.08, pow: 6, rim: 0.35 },
+  Bore:     { base: '#0b0b0c', base2: '#0b0b0c', kind: 4, spec: 0.0, pow: 1, rim: 0.0 },
+  Team:     { base: TEAM.red, base2: TEAM.red, kind: 5, spec: 0.3, pow: 14, rim: 0.6 },
+};
+const shaders = {};
+for (const [name, m] of Object.entries(MATS)) {
+  shaders[name] = new THREE.ShaderMaterial({
+    vertexShader: VERT, fragmentShader: FRAG,
+    uniforms: { ...L, uBase: { value: new THREE.Color(m.base) }, uBase2: { value: new THREE.Color(m.base2) },
+      uKind: { value: m.kind }, uSpec: { value: m.spec }, uPow: { value: m.pow }, uRim: { value: m.rim } },
+  });
+}
+
+function addSmoothNormals(geo) {
+  const pos = geo.attributes.position, nrm = geo.attributes.normal;
+  const acc = new Map(), keys = new Array(pos.count);
+  for (let i = 0; i < pos.count; i++) {
+    const k = `${pos.getX(i).toFixed(4)},${pos.getY(i).toFixed(4)},${pos.getZ(i).toFixed(4)}`;
+    keys[i] = k;
+    const a = acc.get(k) || [0, 0, 0];
+    a[0] += nrm.getX(i); a[1] += nrm.getY(i); a[2] += nrm.getZ(i);
+    acc.set(k, a);
+  }
+  const out = new Float32Array(pos.count * 3);
+  for (let i = 0; i < pos.count; i++) {
+    const a = acc.get(keys[i]); const l = Math.hypot(...a) || 1;
+    out[i * 3] = a[0] / l; out[i * 3 + 1] = a[1] / l; out[i * 3 + 2] = a[2] / l;
+  }
+  geo.setAttribute('smoothNormal', new THREE.BufferAttribute(out, 3));
+}
+
+const pivot = new THREE.Group();
+scene.add(pivot);
+const outlines = [];
+let fitRadius = 1;
+
+const bin = atob(document.getElementById('glb').textContent.trim());
+const bytes = new Uint8Array(bin.length);
+for (let i = 0; i < bin.length; i++) bytes[i] = bin.charCodeAt(i);
+
+new GLTFLoader().parse(bytes.buffer, '', (gltf) => {
+  const root = gltf.scene;
+  let tris = 0, parts = 0;
+  const meshes = [];
+  root.traverse((o) => { if (o.isMesh) meshes.push(o); });
+  for (const o of meshes) {
+    const key = (o.material.name || '').replace(/\.\d+$/, '');
+    o.material = shaders[key] || shaders.Gunmetal;
+    addSmoothNormals(o.geometry);
+    const hull = new THREE.Mesh(o.geometry, outlineMat);
+    hull.renderOrder = -1;
+    o.add(hull); outlines.push(hull);
+    tris += (o.geometry.index ? o.geometry.index.count : o.geometry.attributes.position.count) / 3;
+  }
+  root.traverse((o) => { if (o.isObject3D && o.parent === root) parts++; });
+  const box = new THREE.Box3().setFromObject(root);
+  const c = box.getCenter(new THREE.Vector3());
+  root.position.sub(c);
+  fitRadius = box.getSize(new THREE.Vector3()).length() / 2;
+  pivot.add(root);
+  document.getElementById('stat-tris').textContent = Math.round(tris).toLocaleString('en-US');
+  document.getElementById('stat-parts').textContent = `${parts} parts`;
+  statusEl.hidden = true;
+  setView(location.hash.replace('#', '') || 'hero', true);
+}, (err) => { statusEl.textContent = 'Could not load the model: ' + err.message; });
+
+// ---------- views ----------
+const VIEWS = {
+  hero:  { dir: [0.55, 0.32, 1.0], dist: 2.35, spin: true },
+  side:  { dir: [0, 0.02, 1], dist: 2.25, spin: false },
+  right: { dir: [0, 0.02, -1], dist: 2.25, spin: false },
+  top:   { dir: [0, 1, 0.2], dist: 2.3, spin: false },
+  fp:    { pos: [-0.78, 0.3, 0.4], target: [0.42, -0.1, -0.02], spin: false },
+};
+let spinning = true;
+function setView(name, instant) {
+  const v = VIEWS[name] || VIEWS.hero;
+  pivot.rotation.set(0, 0, 0);
+  const vHalf = THREE.MathUtils.degToRad(camera.fov / 2);
+  const half = Math.min(vHalf, Math.atan(Math.tan(vHalf) * camera.aspect));
+  if (v.pos) {
+    camera.position.set(...v.pos); controls.target.set(...v.target);
+  } else {
+    const d = new THREE.Vector3(...v.dir).normalize().multiplyScalar(v.dist / 2.3 * 0.92 * fitRadius / Math.tan(half));
+    camera.position.copy(d); controls.target.set(0, 0, 0);
+  }
+  controls.update();
+  setSpin(v.spin && !matchMedia('(prefers-reduced-motion: reduce)').matches);
+  document.querySelectorAll('[data-view]').forEach((b) => b.setAttribute('aria-pressed', String(b.dataset.view === name)));
+}
+function setSpin(on) { spinning = on; document.getElementById('spin').setAttribute('aria-pressed', String(on)); }
+document.querySelectorAll('[data-view]').forEach((b) => b.addEventListener('click', () => setView(b.dataset.view)));
+document.getElementById('spin').addEventListener('click', () => setSpin(!spinning));
+document.getElementById('outline').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  outlines.forEach((h) => (h.visible = on));
+});
+document.getElementById('shade').addEventListener('click', (e) => {
+  const on = e.currentTarget.getAttribute('aria-pressed') !== 'true';
+  e.currentTarget.setAttribute('aria-pressed', String(on));
+  L.uClay.value = on ? 0 : 1;
+});
+function setTeam(t) {
+  shaders.Team.uniforms.uBase.value.set(TEAM[t]);
+  document.documentElement.dataset.team = t;
+  document.getElementById('team-red').setAttribute('aria-pressed', String(t === 'red'));
+  document.getElementById('team-blu').setAttribute('aria-pressed', String(t === 'blu'));
+}
+document.getElementById('team-red').addEventListener('click', () => setTeam('red'));
+document.getElementById('team-blu').addEventListener('click', () => setTeam('blu'));
+renderer.domElement.addEventListener('pointerdown', () => setSpin(false));
+
+// ---------- render loop ----------
+function resize() {
+  const w = stage.clientWidth, h = stage.clientHeight;
+  renderer.setSize(w, h, false);
+  camera.aspect = w / h; camera.updateProjectionMatrix();
+  renderer.getDrawingBufferSize(outlineUniforms.uRes.value);
+  outlineUniforms.uWidth.value = 2.4 * renderer.getPixelRatio();
+}
+new ResizeObserver(resize).observe(stage);
+resize();
+const clock = new THREE.Clock();
+renderer.setAnimationLoop(() => {
+  const dt = Math.min(clock.getDelta(), 0.05);
+  if (spinning) pivot.rotation.y += dt * 0.45;
+  controls.update();
+  renderer.render(scene, camera);
+});
+</script>

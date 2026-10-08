@@ -1,0 +1,106 @@
+{
+ "name": "SM_FlagCheese_Cheddar",
+ "draft": false,
+ "tris": 2906,
+ "budget": 3000,
+ "within_budget": true,
+ "lod1_tris": null,
+ "target_xyz": [
+  1.2,
+  1.2,
+  0.42
+ ],
+ "dims_xyz": [
+  1.1747,
+  1.212,
+  0.42
+ ],
+ "dims_dev": [
+  -0.021,
+  0.01,
+  0.0
+ ],
+ "pivot": "center",
+ "pivot_shift": [
+  0.0244,
+  -0.0006,
+  -0.0
+ ],
+ "bbox_min": [
+  -0.5874,
+  -0.606,
+  -0.21
+ ],
+ "bbox_max": [
+  0.5874,
+  0.606,
+  0.21
+ ],
+ "texture": 2048,
+ "px_per_m": 876.3,
+ "uv_coverage": 0.684,
+ "area_m2": 3.736,
+ "ucx": 1,
+ "slots": [
+  "M_FlagCheese_Cheddar"
+ ],
+ "materials": {
+  "wax_d36bb8": {
+   "recipe": "wax",
+   "slot": "base"
+  },
+  "cheddar_b8e600": {
+   "recipe": "cheddar",
+   "slot": "base"
+  }
+ },
+ "ctx": {
+  "edge_r": 0.0215,
+  "cav_d": 0.0548,
+  "ao_d": 0.3905,
+  "bevel_r": 0.0025
+ },
+ "note": "Pivot at the wheel centre. Wedge (45 deg) faces +X.",
+ "seconds": 241.3,
+ "log": [
+  [
+   "bake",
+   "MASK_FlagCheese_Cheddar",
+   48.8
+  ],
+  [
+   "bake",
+   "COL_FlagCheese_Cheddar",
+   13.0
+  ],
+  [
+   "bake",
+   "RM_FlagCheese_Cheddar",
+   8.7
+  ],
+  [
+   "bake",
+   "NRM_FlagCheese_Cheddar",
+   55.7
+  ],
+  [
+   "textures",
+   "FlagCheese_Cheddar"
+  ],
+  [
+   "render",
+   "SM_FlagCheese_Cheddar_preview.jpg",
+   74.5
+  ]
+ ],
+ "files": [
+  "SM_FlagCheese_Cheddar.fbx",
+  "SM_FlagCheese_Cheddar.glb",
+  "SM_FlagCheese_Cheddar.report.json",
+  "SM_FlagCheese_Cheddar_preview.jpg",
+  "T_FlagCheese_Cheddar_BaseColor.png",
+  "T_FlagCheese_Cheddar_Normal.gl.png",
+  "T_FlagCheese_Cheddar_Normal.png",
+  "T_FlagCheese_Cheddar_ORM.png"
+ ]
+}
